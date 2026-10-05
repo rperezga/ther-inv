@@ -50,7 +50,7 @@ export default function NewInvoicePage() {
   const [items, setItems] = useState<InvoiceLineItem[]>([]);
   const [taxRate, setTaxRate] = useState<number>(0);
   const [notes, setNotes] = useState(
-    "Factura correspondiente a servicios semanales de personal de salud / cuidado. Favor transferir o emitir pago dentro del plazo estipulado."
+    "Weekly agency invoice corresponding to healthcare professional services. Net 14 payment terms. Please submit payment via wire transfer or ACH."
   );
 
   const [submitting, setSubmitting] = useState(false);
@@ -126,7 +126,7 @@ export default function NewInvoicePage() {
             regularRate: regRate,
             overtimeHours: 0,
             overtimeRate: otRate,
-            description: `Turno semanal - ${selectedWorker.role}`,
+            description: `Weekly shift - ${selectedWorker.role}`,
             amount: 40 * regRate,
           },
         ]);
@@ -139,12 +139,12 @@ export default function NewInvoicePage() {
       ...prev,
       {
         workerName: "",
-        role: "Servicios Generales",
+        role: "General Healthcare Services",
         regularHours: 40,
         regularRate: 35,
         overtimeHours: 0,
         overtimeRate: 52.5,
-        description: "Servicios semanales de personal",
+        description: "Weekly clinical shifts",
         amount: 40 * 35,
       },
     ]);
@@ -188,17 +188,17 @@ export default function NewInvoicePage() {
     setError("");
 
     if (!clientName.trim()) {
-      setError("Por favor ingresa el nombre del cliente o centro");
+      setError("Please enter the client or healthcare facility name");
       return;
     }
 
     if (!periodStart || !periodEnd) {
-      setError("Por favor define las fechas de inicio y fin del ciclo semanal");
+      setError("Please define the weekly payroll start and end dates");
       return;
     }
 
     if (items.length === 0) {
-      setError("Debes añadir al menos un trabajador o servicio a la factura semanal");
+      setError("Please add at least one staff member or service to the invoice");
       return;
     }
 
@@ -229,12 +229,12 @@ export default function NewInvoicePage() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Error al crear factura");
+        throw new Error(data.error || "Failed to create invoice");
       }
 
       router.push(`/dashboard/invoices/${data.invoice._id}`);
     } catch (err: any) {
-      setError(err.message || "Error al procesar la factura");
+      setError(err.message || "Failed to process invoice");
       setSubmitting(false);
     }
   };
@@ -247,7 +247,7 @@ export default function NewInvoicePage() {
     }).format(val || 0);
   };
 
-  return (
+    return (
     <div style={{ maxWidth: "1150px", margin: "0 auto" }}>
       {/* Back button & Title */}
       <div style={{ marginBottom: "1.5rem" }}>
@@ -262,7 +262,7 @@ export default function NewInvoicePage() {
             marginBottom: "0.75rem",
           }}
         >
-          <ArrowLeft size={16} /> Volver a facturas
+          <ArrowLeft size={16} /> Back to invoices
         </Link>
         <div
           style={{
@@ -275,10 +275,10 @@ export default function NewInvoicePage() {
         >
           <div>
             <h1 style={{ fontSize: "1.75rem", marginBottom: "0.25rem" }}>
-              Generar Invoice Semanal
+              Generate Weekly Invoice
             </h1>
             <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem" }}>
-              Crea la factura detallada por horas de personal para el cliente y el payroll.
+              Create an itemized client bill based on staff hours for this weekly payroll cycle.
             </p>
           </div>
 
@@ -289,14 +289,14 @@ export default function NewInvoicePage() {
               onClick={() => applyWeeklyPreset("last-week")}
               className="btn btn-secondary btn-sm"
             >
-              <Calendar size={15} /> Semana Pasada
+              <Calendar size={15} /> Last Week
             </button>
             <button
               type="button"
               onClick={() => applyWeeklyPreset("current-week")}
               className="btn btn-secondary btn-sm"
             >
-              <Calendar size={15} /> Semana Actual
+              <Calendar size={15} /> Current Week
             </button>
           </div>
         </div>
@@ -337,19 +337,19 @@ export default function NewInvoicePage() {
           {/* Client Information */}
           <div>
             <h3 style={{ fontSize: "1.05rem", marginBottom: "1rem", color: "var(--primary)" }}>
-              1. Datos del Cliente / Centro Médico
+              1. Client / Healthcare Facility Details
             </h3>
 
             <div className="form-group">
               <label className="form-label" htmlFor="client-name">
-                Nombre del Cliente o Centro *
+                Client or Facility Name *
               </label>
               <input
                 id="client-name"
                 type="text"
                 required
                 className="form-input"
-                placeholder="Ej. Metropolitan Healthcare Center"
+                placeholder="e.g. Metropolitan Healthcare Center"
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
               />
@@ -357,13 +357,13 @@ export default function NewInvoicePage() {
 
             <div className="form-group">
               <label className="form-label" htmlFor="client-email">
-                Correo de Facturación / Contacto
+                Billing Contact Email
               </label>
               <input
                 id="client-email"
                 type="email"
                 className="form-input"
-                placeholder="billing@cliente.com"
+                placeholder="billing@facility.com"
                 value={clientEmail}
                 onChange={(e) => setClientEmail(e.target.value)}
               />
@@ -371,13 +371,13 @@ export default function NewInvoicePage() {
 
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label" htmlFor="client-address">
-                Dirección del Centro
+                Facility Address
               </label>
               <input
                 id="client-address"
                 type="text"
                 className="form-input"
-                placeholder="Dirección, Ciudad, Estado"
+                placeholder="Address, City, State, Zip Code"
                 value={clientAddress}
                 onChange={(e) => setClientAddress(e.target.value)}
               />
@@ -387,7 +387,7 @@ export default function NewInvoicePage() {
           {/* Invoice Dates & Details */}
           <div>
             <h3 style={{ fontSize: "1.05rem", marginBottom: "1rem", color: "var(--primary)" }}>
-              2. Período Semanal y Fechas
+              2. Weekly Period & Billing Dates
             </h3>
 
             <div
@@ -399,7 +399,7 @@ export default function NewInvoicePage() {
             >
               <div className="form-group">
                 <label className="form-label" htmlFor="period-start">
-                  Inicio de Semana *
+                  Week Start Date *
                 </label>
                 <input
                   id="period-start"
@@ -413,7 +413,7 @@ export default function NewInvoicePage() {
 
               <div className="form-group">
                 <label className="form-label" htmlFor="period-end">
-                  Fin de Semana *
+                  Week End Date *
                 </label>
                 <input
                   id="period-end"
@@ -435,7 +435,7 @@ export default function NewInvoicePage() {
             >
               <div className="form-group">
                 <label className="form-label" htmlFor="invoice-date">
-                  Fecha del Invoice
+                  Invoice Date
                 </label>
                 <input
                   id="invoice-date"
@@ -448,7 +448,7 @@ export default function NewInvoicePage() {
 
               <div className="form-group">
                 <label className="form-label" htmlFor="due-date">
-                  Fecha Vencimiento *
+                  Payment Due Date *
                 </label>
                 <input
                   id="due-date"
@@ -463,7 +463,7 @@ export default function NewInvoicePage() {
 
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label" htmlFor="invoice-num">
-                No. Factura (Dejar vacío para correlativo automático)
+                Invoice # (Leave empty for auto-generated sequence)
               </label>
               <input
                 id="invoice-num"
@@ -491,10 +491,10 @@ export default function NewInvoicePage() {
           >
             <div>
               <h3 style={{ fontSize: "1.1rem", color: "var(--primary)" }}>
-                3. Trabajadores y Horas de Nómina
+                3. Agency Staff & Payroll Hours
               </h3>
               <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
-                Selecciona los miembros del equipo que laboraron esta semana o añade líneas manuales.
+                Select agency team members who worked shifts this week or add custom service lines.
               </p>
             </div>
 
@@ -512,7 +512,7 @@ export default function NewInvoicePage() {
                 }}
               >
                 <option value="" disabled>
-                  + Añadir Trabajador de Agencia...
+                  + Add Agency Staff Member...
                 </option>
                 {workers.map((w) => (
                   <option key={w._id} value={w._id}>
@@ -526,7 +526,7 @@ export default function NewInvoicePage() {
                 onClick={() => handleAddWorkerItem()}
                 className="btn btn-secondary btn-sm"
               >
-                <Plus size={16} /> Línea Manual
+                <Plus size={16} /> Manual Line
               </button>
             </div>
           </div>
@@ -543,10 +543,10 @@ export default function NewInvoicePage() {
             >
               <UserCheck size={36} color="var(--primary)" style={{ opacity: 0.6, marginBottom: "0.5rem" }} />
               <p style={{ fontWeight: 600, color: "var(--text-primary)" }}>
-                No hay trabajadores en esta factura
+                No staff members added to this invoice yet
               </p>
               <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "1rem" }}>
-                Usa el selector arriba para agregar al personal que trabajó esta semana.
+                Use the dropdown above to add team members who worked this week.
               </p>
             </div>
           ) : (
@@ -554,12 +554,12 @@ export default function NewInvoicePage() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th style={{ width: "22%" }}>Trabajador / Profesional</th>
-                    <th style={{ width: "16%" }}>Rol / Cargo</th>
-                    <th style={{ width: "11%" }}>Horas Reg.</th>
-                    <th style={{ width: "11%" }}>Tarifa Reg.</th>
-                    <th style={{ width: "11%" }}>Horas Extra</th>
-                    <th style={{ width: "11%" }}>Tarifa Extra</th>
+                    <th style={{ width: "22%" }}>Staff Member</th>
+                    <th style={{ width: "16%" }}>Role / Title</th>
+                    <th style={{ width: "11%" }}>Reg. Hours</th>
+                    <th style={{ width: "11%" }}>Reg. Rate</th>
+                    <th style={{ width: "11%" }}>OT Hours</th>
+                    <th style={{ width: "11%" }}>OT Rate</th>
                     <th style={{ width: "13%" }}>Subtotal</th>
                     <th style={{ width: "5%" }}></th>
                   </tr>
@@ -572,7 +572,7 @@ export default function NewInvoicePage() {
                           type="text"
                           className="form-input"
                           style={{ padding: "0.45rem 0.6rem", fontSize: "0.875rem" }}
-                          placeholder="Nombre del trabajador"
+                          placeholder="Staff member name"
                           value={it.workerName}
                           onChange={(e) => updateItem(idx, "workerName", e.target.value)}
                         />
@@ -582,7 +582,7 @@ export default function NewInvoicePage() {
                           type="text"
                           className="form-input"
                           style={{ padding: "0.45rem 0.6rem", fontSize: "0.875rem" }}
-                          placeholder="Ej. RN, PT, CNA"
+                          placeholder="e.g. RN, PT, CNA"
                           value={it.role}
                           onChange={(e) => updateItem(idx, "role", e.target.value)}
                         />
@@ -683,7 +683,7 @@ export default function NewInvoicePage() {
                           type="button"
                           onClick={() => removeItem(idx)}
                           style={{ color: "var(--danger)", padding: "0.3rem" }}
-                          title="Eliminar fila"
+                          title="Remove line item"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -709,7 +709,7 @@ export default function NewInvoicePage() {
           {/* Notes */}
           <div>
             <label className="form-label" htmlFor="invoice-notes">
-              Notas y Condiciones de Pago
+              Payment Terms & Notes
             </label>
             <textarea
               id="invoice-notes"
@@ -717,7 +717,7 @@ export default function NewInvoicePage() {
               rows={4}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Instrucciones para la transferencia o términos..."
+              placeholder="Payment instructions, bank wire details, or notes..."
             />
           </div>
 
@@ -738,7 +738,7 @@ export default function NewInvoicePage() {
                 fontSize: "0.95rem",
               }}
             >
-              <span style={{ color: "var(--text-secondary)" }}>Subtotal Horas:</span>
+              <span style={{ color: "var(--text-secondary)" }}>Hours Subtotal:</span>
               <span style={{ fontWeight: 600 }}>{formatCurrency(subtotal)}</span>
             </div>
 
@@ -751,7 +751,7 @@ export default function NewInvoicePage() {
                 fontSize: "0.95rem",
               }}
             >
-              <span style={{ color: "var(--text-secondary)" }}>Impuesto / Tax (%):</span>
+              <span style={{ color: "var(--text-secondary)" }}>Tax Rate (%):</span>
               <input
                 type="number"
                 min="0"
@@ -773,7 +773,7 @@ export default function NewInvoicePage() {
                   fontSize: "0.95rem",
                 }}
               >
-                <span style={{ color: "var(--text-secondary)" }}>Monto de Impuesto:</span>
+                <span style={{ color: "var(--text-secondary)" }}>Tax Amount:</span>
                 <span style={{ fontWeight: 600 }}>{formatCurrency(taxAmount)}</span>
               </div>
             )}
@@ -787,7 +787,7 @@ export default function NewInvoicePage() {
                 alignItems: "baseline",
               }}
             >
-              <span style={{ fontSize: "1.1rem", fontWeight: 700 }}>Total a Cobrar:</span>
+              <span style={{ fontSize: "1.1rem", fontWeight: 700 }}>Total Billed:</span>
               <span
                 style={{
                   fontSize: "1.6rem",
@@ -818,7 +818,7 @@ export default function NewInvoicePage() {
           onClick={() => handleSubmit("draft")}
           className="btn btn-secondary"
         >
-          <Save size={18} /> Guardar Borrador
+          <Save size={18} /> Save Draft
         </button>
 
         <button
@@ -829,7 +829,7 @@ export default function NewInvoicePage() {
           className="btn btn-primary"
           style={{ padding: "0.85rem 1.8rem", fontSize: "1rem" }}
         >
-          {submitting ? "Generando Factura..." : "Emitir Factura Semanal"}
+          {submitting ? "Generating Invoice..." : "Issue Weekly Invoice"}
           {!submitting && <CheckCircle size={18} />}
         </button>
       </div>

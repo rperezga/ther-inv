@@ -52,7 +52,7 @@ export default function DashboardPage() {
 
   const formatDate = (dateStr?: string | Date) => {
     if (!dateStr) return "-";
-    return new Date(dateStr).toLocaleDateString("es-ES", {
+    return new Date(dateStr).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
@@ -62,13 +62,13 @@ export default function DashboardPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "paid":
-        return <span className="badge badge-paid">Pagado</span>;
+        return <span className="badge badge-paid">Paid</span>;
       case "pending":
-        return <span className="badge badge-pending">Pendiente</span>;
+        return <span className="badge badge-pending">Pending</span>;
       case "draft":
-        return <span className="badge badge-draft">Borrador</span>;
+        return <span className="badge badge-draft">Draft</span>;
       case "cancelled":
-        return <span className="badge badge-cancelled">Cancelado</span>;
+        return <span className="badge badge-cancelled">Cancelled</span>;
       default:
         return <span className="badge">{status}</span>;
     }
@@ -89,10 +89,10 @@ export default function DashboardPage() {
       >
         <div>
           <h1 style={{ fontSize: "1.75rem", marginBottom: "0.25rem" }}>
-            Panel de Control
+            Agency Overview
           </h1>
           <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem" }}>
-            Resumen semanal de invoices, nómina y personal activo de la agencia.
+            Weekly payroll cycles, active agency staff, and invoicing summary.
           </p>
         </div>
 
@@ -103,7 +103,7 @@ export default function DashboardPage() {
             className="btn btn-primary"
           >
             <PlusCircle size={18} />
-            <span>Crear Invoice Semanal</span>
+            <span>Create Weekly Invoice</span>
           </Link>
         </div>
       </div>
@@ -121,7 +121,7 @@ export default function DashboardPage() {
             <div className="stat-value">
               {loading ? "..." : formatCurrency(stats?.totalBilled || 0)}
             </div>
-            <div className="stat-label">Total Facturado</div>
+            <div className="stat-label">Total Invoiced</div>
           </div>
         </div>
 
@@ -136,7 +136,7 @@ export default function DashboardPage() {
             <div className="stat-value">
               {loading ? "..." : formatCurrency(stats?.totalPending || 0)}
             </div>
-            <div className="stat-label">Pendiente de Cobro</div>
+            <div className="stat-label">Pending Balance</div>
           </div>
         </div>
 
@@ -151,7 +151,7 @@ export default function DashboardPage() {
             <div className="stat-value">
               {loading ? "..." : formatCurrency(stats?.totalPaid || 0)}
             </div>
-            <div className="stat-label">Cobrado con Éxito</div>
+            <div className="stat-label">Collected Payments</div>
           </div>
         </div>
 
@@ -167,7 +167,7 @@ export default function DashboardPage() {
               {loading ? "..." : stats?.activeWorkersCount ?? 0}
             </div>
             <div className="stat-label">
-              Trabajadores Activos ({stats?.totalWorkersCount ?? 0} totales)
+              Active Staff ({stats?.totalWorkersCount ?? 0} total)
             </div>
           </div>
         </div>
@@ -203,14 +203,14 @@ export default function DashboardPage() {
               marginBottom: "0.5rem",
             }}
           >
-            Ciclo Semanal de Nómina
+            Weekly Payroll Cycle
           </span>
           <h2 style={{ color: "#ffffff", fontSize: "1.35rem", marginBottom: "0.35rem" }}>
-            ¿Listo para emitir el invoice semanal de tu cliente?
+            Ready to issue this week&apos;s client invoice?
           </h2>
           <p style={{ color: "rgba(255, 255, 255, 0.85)", fontSize: "0.9rem" }}>
-            Selecciona las fechas de la semana, añade los trabajadores que prestaron
-            servicio y genera la factura con desglose detallado de horas y tarifas.
+            Select the weekly payroll period, add staff members who worked shifts, and generate
+            the itemized billing statement with hours and rates.
           </p>
         </div>
 
@@ -225,7 +225,7 @@ export default function DashboardPage() {
             boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
           }}
         >
-          Iniciar Invoice Semanal <ArrowUpRight size={18} />
+          Start Weekly Invoice <ArrowUpRight size={18} />
         </Link>
       </div>
 
@@ -233,9 +233,9 @@ export default function DashboardPage() {
       <div className="card">
         <div className="card-header">
           <div>
-            <h2 className="card-title">Facturas Semanales Recientes</h2>
+            <h2 className="card-title">Recent Weekly Invoices</h2>
             <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginTop: "2px" }}>
-              Últimos invoices creados en la plataforma
+              Latest billing records generated in the platform
             </p>
           </div>
           <Link
@@ -249,7 +249,7 @@ export default function DashboardPage() {
               gap: "0.25rem",
             }}
           >
-            Ver todos los invoices <ArrowUpRight size={16} />
+            View all invoices <ArrowUpRight size={16} />
           </Link>
         </div>
 
@@ -263,13 +263,13 @@ export default function DashboardPage() {
           >
             <FileText size={40} style={{ opacity: 0.4, marginBottom: "0.75rem" }} />
             <p style={{ fontWeight: 600, fontSize: "1rem", color: "var(--text-primary)" }}>
-              No hay facturas registradas aún
+              No invoices generated yet
             </p>
             <p style={{ fontSize: "0.875rem", marginBottom: "1.25rem" }}>
-              Crea tu primer invoice semanal para comenzar el seguimiento
+              Create your first weekly client invoice to begin tracking payroll
             </p>
             <Link href="/dashboard/invoices/new" className="btn btn-primary btn-sm">
-              <PlusCircle size={16} /> Crear Primer Invoice
+              <PlusCircle size={16} /> Create First Invoice
             </Link>
           </div>
         ) : (
@@ -277,13 +277,13 @@ export default function DashboardPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>No. Invoice</th>
-                  <th>Cliente</th>
-                  <th>Período Semanal</th>
-                  <th>Personal Facturado</th>
-                  <th>Total</th>
-                  <th>Estado</th>
-                  <th style={{ textAlign: "right" }}>Acción</th>
+                  <th>Invoice #</th>
+                  <th>Client Name</th>
+                  <th>Weekly Period</th>
+                  <th>Billed Staff</th>
+                  <th>Total Amount</th>
+                  <th>Status</th>
+                  <th style={{ textAlign: "right" }}>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -308,7 +308,7 @@ export default function DashboardPage() {
                           fontWeight: 500,
                         }}
                       >
-                        {inv.items?.length || 0} trabajadores
+                        {inv.items?.length || 0} staff members
                       </span>
                     </td>
                     <td style={{ fontWeight: 700 }}>
@@ -320,7 +320,7 @@ export default function DashboardPage() {
                         href={`/dashboard/invoices/${inv._id}`}
                         className="btn btn-secondary btn-sm"
                       >
-                        Ver Detalle
+                        View Details
                       </Link>
                     </td>
                   </tr>

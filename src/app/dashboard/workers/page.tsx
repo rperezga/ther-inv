@@ -104,7 +104,7 @@ export default function WorkersPage() {
     setModalError("");
 
     if (!firstName.trim() || !lastName.trim() || !role.trim()) {
-      setModalError("Nombre, apellidos y cargo son requeridos");
+      setModalError("First name, last name, and role/specialty are required");
       return;
     }
 
@@ -135,20 +135,20 @@ export default function WorkersPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Error al guardar trabajador");
+        throw new Error(data.error || "Failed to save worker");
       }
 
       setIsModalOpen(false);
       fetchWorkers();
     } catch (err: any) {
-      setModalError(err.message || "Error al procesar trabajador");
+      setModalError(err.message || "Failed to process worker");
     } finally {
       setSaving(false);
     }
   };
 
   const handleDeleteWorker = async (id: string, name: string) => {
-    if (!confirm(`¿Estás seguro de que deseas eliminar a ${name} de la lista de la agencia?`)) {
+    if (!confirm(`Are you sure you want to remove ${name} from the agency roster?`)) {
       return;
     }
 
@@ -157,10 +157,10 @@ export default function WorkersPage() {
       if (res.ok) {
         setWorkers((prev) => prev.filter((w) => w._id !== id));
       } else {
-        alert("Error al eliminar trabajador");
+        alert("Failed to delete worker");
       }
     } catch {
-      alert("Error de conexión");
+      alert("Connection error");
     }
   };
 
@@ -185,10 +185,10 @@ export default function WorkersPage() {
       >
         <div>
           <h1 style={{ fontSize: "1.75rem", marginBottom: "0.25rem" }}>
-            Directorio de Trabajadores de la Agencia
+            Agency Staff Directory
           </h1>
           <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem" }}>
-            Personal activo disponible para asignar en las facturas semanales de clientes.
+            Active roster available to assign on weekly client invoices and payroll cycles.
           </p>
         </div>
 
@@ -198,7 +198,7 @@ export default function WorkersPage() {
           className="btn btn-primary"
         >
           <UserPlus size={18} />
-          <span>Añadir Trabajador</span>
+          <span>Add Staff Member</span>
         </button>
       </div>
 
@@ -213,7 +213,7 @@ export default function WorkersPage() {
       >
         <div className="card" style={{ padding: "1rem 1.25rem" }}>
           <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", fontWeight: 600 }}>
-            Total Personal
+            Total Staff
           </div>
           <div style={{ fontSize: "1.5rem", fontWeight: 800, marginTop: "0.25rem" }}>
             {workers.length}
@@ -222,7 +222,7 @@ export default function WorkersPage() {
 
         <div className="card" style={{ padding: "1rem 1.25rem" }}>
           <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", fontWeight: 600 }}>
-            Activos para Facturación
+            Active for Billing
           </div>
           <div
             style={{
@@ -238,7 +238,7 @@ export default function WorkersPage() {
 
         <div className="card" style={{ padding: "1rem 1.25rem" }}>
           <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", fontWeight: 600 }}>
-            Tarifa Promedio ($/hora)
+            Average Rate ($/hr)
           </div>
           <div
             style={{
@@ -271,19 +271,19 @@ export default function WorkersPage() {
             onClick={() => setStatusFilter("all")}
             className={`btn btn-sm ${statusFilter === "all" ? "btn-primary" : "btn-secondary"}`}
           >
-            Todos ({workers.length})
+            All ({workers.length})
           </button>
           <button
             onClick={() => setStatusFilter("active")}
             className={`btn btn-sm ${statusFilter === "active" ? "btn-primary" : "btn-secondary"}`}
           >
-            Activos
+            Active
           </button>
           <button
             onClick={() => setStatusFilter("inactive")}
             className={`btn btn-sm ${statusFilter === "inactive" ? "btn-primary" : "btn-secondary"}`}
           >
-            Inactivos
+            Inactive
           </button>
         </div>
 
@@ -295,7 +295,7 @@ export default function WorkersPage() {
             <input
               type="text"
               className="form-input"
-              placeholder="Buscar por nombre o rol..."
+              placeholder="Search by name or specialty..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{ paddingLeft: "2.2rem" }}
@@ -306,13 +306,13 @@ export default function WorkersPage() {
                 position: "absolute",
                 left: "0.75rem",
                 top: "50%",
-                transform: "translateY(-50)",
+                transform: "translateY(-50%)",
                 color: "var(--text-muted)",
               }}
             />
           </div>
           <button type="submit" className="btn btn-secondary btn-sm">
-            Buscar
+            Search
           </button>
         </form>
       </div>
@@ -321,19 +321,19 @@ export default function WorkersPage() {
       <div className="card" style={{ padding: 0 }}>
         {loading ? (
           <div style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>
-            Cargando trabajadores...
+            Loading staff directory...
           </div>
         ) : workers.length === 0 ? (
           <div style={{ padding: "3.5rem 1.5rem", textAlign: "center" }}>
             <Users size={44} style={{ opacity: 0.35, marginBottom: "0.75rem" }} />
             <p style={{ fontWeight: 600, fontSize: "1.1rem" }}>
-              No se encontraron trabajadores
+              No staff members found
             </p>
             <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "1.25rem" }}>
-              Añade al personal de la agencia para poder agregarlos a los invoices semanales.
+              Add agency personnel so you can assign them to weekly client invoices.
             </p>
             <button onClick={openCreateModal} className="btn btn-primary btn-sm">
-              <UserPlus size={16} /> Añadir Trabajador
+              <UserPlus size={16} /> Add Staff Member
             </button>
           </div>
         ) : (
@@ -341,13 +341,13 @@ export default function WorkersPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Nombre y Apellidos</th>
-                  <th>Rol / Especialidad</th>
-                  <th>Tarifa Estándar</th>
-                  <th>Contacto</th>
-                  <th>Estado</th>
-                  <th>Notas</th>
-                  <th style={{ textAlign: "right" }}>Acciones</th>
+                  <th>Staff Name</th>
+                  <th>Role / Specialty</th>
+                  <th>Standard Rate</th>
+                  <th>Contact Info</th>
+                  <th>Status</th>
+                  <th>Notes</th>
+                  <th style={{ textAlign: "right" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -410,9 +410,9 @@ export default function WorkersPage() {
                     </td>
                     <td>
                       {w.status === "active" ? (
-                        <span className="badge badge-active">Activo</span>
+                        <span className="badge badge-active">Active</span>
                       ) : (
-                        <span className="badge badge-inactive">Inactivo</span>
+                        <span className="badge badge-inactive">Inactive</span>
                       )}
                     </td>
                     <td style={{ maxWidth: "200px" }}>
@@ -440,7 +440,7 @@ export default function WorkersPage() {
                         <button
                           onClick={() => openEditModal(w)}
                           className="btn btn-secondary btn-sm"
-                          title="Editar Trabajador"
+                          title="Edit Staff Member"
                         >
                           <Edit2 size={14} />
                         </button>
@@ -454,7 +454,7 @@ export default function WorkersPage() {
                             border: "1px solid var(--danger-border)",
                             backgroundColor: "var(--danger-subtle)",
                           }}
-                          title="Eliminar Trabajador"
+                          title="Delete Staff Member"
                         >
                           <Trash2 size={14} />
                         </button>
@@ -474,7 +474,7 @@ export default function WorkersPage() {
           <div className="modal-content">
             <div className="modal-header">
               <h3 style={{ fontSize: "1.2rem" }}>
-                {editingWorker ? "Editar Trabajador" : "Nuevo Trabajador de Agencia"}
+                {editingWorker ? "Edit Staff Member" : "New Agency Staff Member"}
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -510,24 +510,24 @@ export default function WorkersPage() {
                   }}
                 >
                   <div className="form-group">
-                    <label className="form-label">Nombre *</label>
+                    <label className="form-label">First Name *</label>
                     <input
                       type="text"
                       required
                       className="form-input"
-                      placeholder="Ej. Camila"
+                      placeholder="e.g. Camila"
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
                     />
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Apellidos *</label>
+                    <label className="form-label">Last Name *</label>
                     <input
                       type="text"
                       required
                       className="form-input"
-                      placeholder="Ej. Rodriguez"
+                      placeholder="e.g. Rodriguez"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
                     />
@@ -542,19 +542,19 @@ export default function WorkersPage() {
                   }}
                 >
                   <div className="form-group">
-                    <label className="form-label">Rol / Cargo Especialidad *</label>
+                    <label className="form-label">Role / Clinical Specialty *</label>
                     <input
                       type="text"
                       required
                       className="form-input"
-                      placeholder="Ej. Registered Nurse (RN), PT, CNA"
+                      placeholder="e.g. Registered Nurse (RN), PT, CNA"
                       value={role}
                       onChange={(e) => setRole(e.target.value)}
                     />
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Tarifa ($/Hora) *</label>
+                    <label className="form-label">Standard Hourly Rate ($/hr) *</label>
                     <input
                       type="number"
                       required
@@ -576,7 +576,7 @@ export default function WorkersPage() {
                   }}
                 >
                   <div className="form-group">
-                    <label className="form-label">Teléfono</label>
+                    <label className="form-label">Phone Number</label>
                     <input
                       type="text"
                       className="form-input"
@@ -587,11 +587,11 @@ export default function WorkersPage() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Correo Electrónico</label>
+                    <label className="form-label">Email Address</label>
                     <input
                       type="email"
                       className="form-input"
-                      placeholder="trabajador@email.com"
+                      placeholder="worker@email.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />
@@ -606,7 +606,7 @@ export default function WorkersPage() {
                   }}
                 >
                   <div className="form-group">
-                    <label className="form-label">Últimos 4 Dígitos SSN</label>
+                    <label className="form-label">Last 4 SSN Digits</label>
                     <input
                       type="text"
                       maxLength={4}
@@ -618,24 +618,24 @@ export default function WorkersPage() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Estado en la Agencia</label>
+                    <label className="form-label">Agency Status</label>
                     <select
                       className="form-select"
                       value={status}
                       onChange={(e) => setStatus(e.target.value as "active" | "inactive")}
                     >
-                      <option value="active">Activo (Disponible)</option>
-                      <option value="inactive">Inactivo</option>
+                      <option value="active">Active (Available)</option>
+                      <option value="inactive">Inactive</option>
                     </select>
                   </div>
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label">Notas Adicionales</label>
+                  <label className="form-label">Notes & Preferences</label>
                   <textarea
                     className="form-textarea"
                     rows={2}
-                    placeholder="Disponibilidad horaria, certificaciones o preferencias..."
+                    placeholder="Shift availability, certifications, license details..."
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                   />
@@ -648,10 +648,10 @@ export default function WorkersPage() {
                   onClick={() => setIsModalOpen(false)}
                   className="btn btn-secondary"
                 >
-                  Cancelar
+                  Cancel
                 </button>
                 <button type="submit" disabled={saving} className="btn btn-primary">
-                  {saving ? "Guardando..." : editingWorker ? "Guardar Cambios" : "Crear Trabajador"}
+                  {saving ? "Saving..." : editingWorker ? "Save Changes" : "Create Staff Member"}
                 </button>
               </div>
             </form>

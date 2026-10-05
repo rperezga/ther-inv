@@ -42,14 +42,14 @@ function RegisterContent() {
         setTokenValid(true);
         setEmail(data.email);
         setRoleInfo(data.role);
-        setInvitedByInfo(data.invitedBy?.name || "Administrador");
+        setInvitedByInfo(data.invitedBy?.name || "Administrator");
       } else {
         setTokenValid(false);
-        setError(data.error || "Invitación inválida o expirada");
+        setError(data.error || "Invalid or expired invitation");
       }
     } catch {
       setTokenValid(false);
-      setError("Error al verificar invitación");
+      setError("Failed to verify invitation token");
     } finally {
       setValidatingToken(false);
     }
@@ -60,12 +60,12 @@ function RegisterContent() {
     setError("");
 
     if (password !== confirmPassword) {
-      setError("Las contraseñas no coinciden");
+      setError("Passwords do not match");
       return;
     }
 
     if (password.length < 6) {
-      setError("La contraseña debe tener al menos 6 caracteres");
+      setError("Password must be at least 6 characters");
       return;
     }
 
@@ -86,12 +86,12 @@ function RegisterContent() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Error al completar el registro");
+        throw new Error(data.error || "Failed to complete registration");
       }
 
       router.push("/dashboard");
     } catch (err: any) {
-      setError(err.message || "Error al registrar");
+      setError(err.message || "Registration failed");
     } finally {
       setLoading(false);
     }
@@ -111,10 +111,10 @@ function RegisterContent() {
     >
       <div style={{ textAlign: "center", marginBottom: "1.75rem" }}>
         <h1 style={{ fontSize: "1.65rem", marginBottom: "0.35rem" }}>
-          Aceptar Invitación
+          Accept Invitation
         </h1>
         <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-          Configura tu cuenta para unirte al equipo de THER-INV
+          Set up your credentials to join the THER-INV team
         </p>
       </div>
 
@@ -150,14 +150,14 @@ function RegisterContent() {
           }}
         >
           <label className="form-label" htmlFor="token-input">
-            Código o Token de Invitación
+            Invitation Code or Token
           </label>
           <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.35rem" }}>
             <input
               id="token-input"
               type="text"
               className="form-input"
-              placeholder="Pega el token aquí..."
+              placeholder="Paste invitation token here..."
               value={tokenInput}
               onChange={(e) => setTokenInput(e.target.value)}
             />
@@ -167,7 +167,7 @@ function RegisterContent() {
               disabled={validatingToken || !tokenInput}
               className="btn btn-primary btn-sm"
             >
-              {validatingToken ? "Verificando..." : "Validar"}
+              {validatingToken ? "Checking..." : "Verify"}
             </button>
           </div>
         </div>
@@ -189,10 +189,10 @@ function RegisterContent() {
           <CheckCircle size={20} color="var(--success)" style={{ marginTop: "2px" }} />
           <div>
             <p style={{ fontWeight: 600, color: "var(--success)", fontSize: "0.9rem" }}>
-              Invitación válida de {invitedByInfo}
+              Valid invitation from {invitedByInfo}
             </p>
             <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-              Rol asignado:{" "}
+              Assigned role:{" "}
               <strong style={{ textTransform: "capitalize" }}>{roleInfo}</strong>
             </p>
           </div>
@@ -202,7 +202,7 @@ function RegisterContent() {
       <form onSubmit={handleRegister}>
         <div className="form-group">
           <label className="form-label" htmlFor="register-name">
-            Nombre Completo
+            Full Name
           </label>
           <div style={{ position: "relative" }}>
             <input
@@ -210,7 +210,7 @@ function RegisterContent() {
               type="text"
               required
               className="form-input"
-              placeholder="Ej. Carmen Perez"
+              placeholder="e.g. Carmen Perez"
               value={name}
               onChange={(e) => setName(e.target.value)}
               style={{ paddingLeft: "2.5rem" }}
@@ -230,7 +230,7 @@ function RegisterContent() {
 
         <div className="form-group">
           <label className="form-label" htmlFor="register-email">
-            Correo Electrónico
+            Email Address
           </label>
           <div style={{ position: "relative" }}>
             <input
@@ -239,7 +239,7 @@ function RegisterContent() {
               required
               readOnly={tokenValid === true}
               className="form-input"
-              placeholder="tu@correo.com"
+              placeholder="your@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               style={{
@@ -262,7 +262,7 @@ function RegisterContent() {
 
         <div className="form-group">
           <label className="form-label" htmlFor="register-password">
-            Contraseña
+            Password
           </label>
           <div style={{ position: "relative" }}>
             <input
@@ -270,7 +270,7 @@ function RegisterContent() {
               type="password"
               required
               className="form-input"
-              placeholder="Mínimo 6 caracteres"
+              placeholder="Minimum 6 characters"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               style={{ paddingLeft: "2.5rem" }}
@@ -290,7 +290,7 @@ function RegisterContent() {
 
         <div className="form-group" style={{ marginBottom: "1.75rem" }}>
           <label className="form-label" htmlFor="register-confirm-password">
-            Confirmar Contraseña
+            Confirm Password
           </label>
           <div style={{ position: "relative" }}>
             <input
@@ -298,7 +298,7 @@ function RegisterContent() {
               type="password"
               required
               className="form-input"
-              placeholder="Repite tu contraseña"
+              placeholder="Repeat your password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               style={{ paddingLeft: "2.5rem" }}
@@ -323,7 +323,7 @@ function RegisterContent() {
           className="btn btn-primary"
           style={{ width: "100%", padding: "0.85rem", fontSize: "0.95rem" }}
         >
-          {loading ? "Creando cuenta..." : "Completar Registro"}
+          {loading ? "Creating account..." : "Complete Registration"}
           {!loading && <ArrowRight size={18} />}
         </button>
       </form>
@@ -336,9 +336,9 @@ function RegisterContent() {
           color: "var(--text-muted)",
         }}
       >
-        ¿Ya tienes cuenta?{" "}
+        Already have an account?{" "}
         <Link href="/login" style={{ color: "var(--primary)", fontWeight: 600 }}>
-          Inicia sesión
+          Sign In
         </Link>
       </div>
     </div>
@@ -357,7 +357,7 @@ export default function RegisterPage() {
         padding: "1.5rem",
       }}
     >
-      <Suspense fallback={<div>Cargando formulario...</div>}>
+      <Suspense fallback={<div>Loading form...</div>}>
         <RegisterContent />
       </Suspense>
     </div>

@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
   } catch (error: any) {
     console.error("Invoices GET error:", error);
     return NextResponse.json(
-      { error: "Error al obtener facturas/invoices" },
+      { error: "Failed to fetch invoices" },
       { status: 500 }
     );
   }
@@ -70,14 +70,14 @@ export async function POST(req: NextRequest) {
 
     if (!clientName || !periodStart || !periodEnd || !dueDate) {
       return NextResponse.json(
-        { error: "Cliente, período de payroll y fecha de vencimiento son requeridos" },
+        { error: "Client name, weekly payroll period, and due date are required" },
         { status: 400 }
       );
     }
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
-        { error: "Debe incluir al menos un trabajador o servicio en el invoice" },
+        { error: "At least one worker or service line item is required" },
         { status: 400 }
       );
     }
@@ -102,8 +102,8 @@ export async function POST(req: NextRequest) {
 
       return {
         workerId: item.workerId || undefined,
-        workerName: item.workerName || "Trabajador",
-        role: item.role || "Servicios",
+        workerName: item.workerName || "Worker",
+        role: item.role || "Services",
         regularHours: regH,
         regularRate: regR,
         overtimeHours: otH,
@@ -145,12 +145,12 @@ export async function POST(req: NextRequest) {
     console.error("Invoice POST error:", error);
     if (error.code === 11000) {
       return NextResponse.json(
-        { error: "Ya existe una factura con ese número de invoice" },
+        { error: "An invoice with this number already exists" },
         { status: 400 }
       );
     }
     return NextResponse.json(
-      { error: "Error al crear invoice semanal" },
+      { error: "Failed to create weekly invoice" },
       { status: 500 }
     );
   }

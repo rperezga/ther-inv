@@ -21,7 +21,7 @@ export async function GET(
 
     if (!invoice) {
       return NextResponse.json(
-        { error: "Factura no encontrada" },
+        { error: "Invoice not found" },
         { status: 404 }
       );
     }
@@ -29,7 +29,7 @@ export async function GET(
     return NextResponse.json({ invoice });
   } catch (error: any) {
     return NextResponse.json(
-      { error: "Error al buscar factura" },
+      { error: "Failed to fetch invoice" },
       { status: 500 }
     );
   }
@@ -63,8 +63,8 @@ export async function PUT(
 
         return {
           workerId: item.workerId || undefined,
-          workerName: item.workerName || "Trabajador",
-          role: item.role || "Servicios",
+          workerName: item.workerName || "Worker",
+          role: item.role || "Services",
           regularHours: regH,
           regularRate: regR,
           overtimeHours: otH,
@@ -99,7 +99,7 @@ export async function PUT(
 
     if (!updated) {
       return NextResponse.json(
-        { error: "Factura no encontrada" },
+        { error: "Invoice not found" },
         { status: 404 }
       );
     }
@@ -108,7 +108,7 @@ export async function PUT(
   } catch (error: any) {
     console.error("Invoice update error:", error);
     return NextResponse.json(
-      { error: "Error al actualizar factura" },
+      { error: "Failed to update invoice" },
       { status: 500 }
     );
   }
@@ -131,15 +131,15 @@ export async function DELETE(
 
     if (!deleted) {
       return NextResponse.json(
-        { error: "Factura no encontrada" },
+        { error: "Invoice not found" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ success: true, message: "Factura eliminada" });
+    return NextResponse.json({ success: true, message: "Invoice deleted successfully" });
   } catch (error: any) {
     return NextResponse.json(
-      { error: "Error al eliminar factura" },
+      { error: "Failed to delete invoice" },
       { status: 500 }
     );
   }

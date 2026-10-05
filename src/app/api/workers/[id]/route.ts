@@ -20,7 +20,7 @@ export async function GET(
     const worker = await Worker.findById(id);
     if (!worker) {
       return NextResponse.json(
-        { error: "Trabajador no encontrado" },
+        { error: "Worker not found" },
         { status: 404 }
       );
     }
@@ -28,7 +28,7 @@ export async function GET(
     return NextResponse.json({ worker });
   } catch (error: any) {
     return NextResponse.json(
-      { error: "Error al buscar trabajador" },
+      { error: "Failed to fetch worker" },
       { status: 500 }
     );
   }
@@ -67,7 +67,7 @@ export async function PUT(
 
     if (!updated) {
       return NextResponse.json(
-        { error: "Trabajador no encontrado" },
+        { error: "Worker not found" },
         { status: 404 }
       );
     }
@@ -75,7 +75,7 @@ export async function PUT(
     return NextResponse.json({ success: true, worker: updated });
   } catch (error: any) {
     return NextResponse.json(
-      { error: "Error al actualizar trabajador" },
+      { error: "Failed to update worker" },
       { status: 500 }
     );
   }
@@ -95,15 +95,15 @@ export async function DELETE(
 
     if (!deleted) {
       return NextResponse.json(
-        { error: "Trabajador no encontrado" },
+        { error: "Worker not found" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ success: true, message: "Trabajador eliminado" });
+    return NextResponse.json({ success: true, message: "Worker deleted successfully" });
   } catch (error: any) {
     return NextResponse.json(
-      { error: "Error al eliminar trabajador" },
+      { error: "Failed to delete worker" },
       { status: 500 }
     );
   }

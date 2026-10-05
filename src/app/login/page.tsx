@@ -28,31 +28,31 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Credenciales incorrectas");
+        throw new Error(data.error || "Invalid credentials");
       }
 
       router.push("/dashboard");
     } catch (err: any) {
-      setError(err.message || "Error al conectar con el servidor");
+      setError(err.message || "Failed to connect to server");
     } finally {
       setLoading(false);
     }
   };
 
   const handleQuickSeed = async () => {
-    setSeedStatus("Inicializando datos...");
+    setSeedStatus("Initializing sample data...");
     try {
       const res = await fetch("/api/seed", { method: "POST" });
       const data = await res.json();
       if (res.ok) {
-        setSeedStatus("¡Datos inicializados! Puedes entrar como Roger o Therina.");
+        setSeedStatus("Data initialized! You can now log in as Roger or Therina.");
         setEmail("therina@agency.com");
         setPassword("therina123456");
       } else {
-        setSeedStatus(data.error || "Error al inicializar");
+        setSeedStatus(data.error || "Initialization failed");
       }
     } catch {
-      setSeedStatus("Error de conexión");
+      setSeedStatus("Connection error");
     }
   };
 
@@ -105,10 +105,10 @@ export default function LoginPage() {
             T
           </div>
           <h1 style={{ fontSize: "1.65rem", marginBottom: "0.35rem" }}>
-            Bienvenido a THER-INV
+            Welcome to THER-INV
           </h1>
           <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-            Inicia sesión para gestionar invoices y nómina
+            Sign in to manage agency weekly invoices and payroll
           </p>
         </div>
 
@@ -155,7 +155,7 @@ export default function LoginPage() {
         <form onSubmit={handleLogin}>
           <div className="form-group">
             <label className="form-label" htmlFor="email-input">
-              Correo Electrónico
+              Email Address
             </label>
             <div style={{ position: "relative" }}>
               <input
@@ -163,7 +163,7 @@ export default function LoginPage() {
                 type="email"
                 required
                 className="form-input"
-                placeholder="ejemplo@agency.com"
+                placeholder="user@agency.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 style={{ paddingLeft: "2.5rem" }}
@@ -190,7 +190,7 @@ export default function LoginPage() {
               }}
             >
               <label className="form-label" htmlFor="password-input">
-                Contraseña
+                Password
               </label>
             </div>
             <div style={{ position: "relative" }}>
@@ -224,7 +224,7 @@ export default function LoginPage() {
             className="btn btn-primary"
             style={{ width: "100%", padding: "0.85rem", fontSize: "0.95rem" }}
           >
-            {loading ? "Accediendo..." : "Acceder al Sistema"}
+            {loading ? "Signing in..." : "Sign In to Portal"}
             {!loading && <ArrowRight size={18} />}
           </button>
         </form>
@@ -248,7 +248,7 @@ export default function LoginPage() {
               textAlign: "center",
             }}
           >
-            Acceso Rápido / Cuentas de Acceso
+            Quick Access / Demo Accounts
           </p>
 
           <div style={{ display: "flex", gap: "0.5rem" }}>
@@ -284,7 +284,7 @@ export default function LoginPage() {
                 textDecoration: "underline",
               }}
             >
-              ¿Base de datos nueva? Cargar datos iniciales
+              Fresh database? Load sample data
             </button>
           </div>
         </div>
@@ -298,12 +298,12 @@ export default function LoginPage() {
             color: "var(--text-muted)",
           }}
         >
-          ¿Tienes una invitación?{" "}
+          Have an invitation?{" "}
           <Link
             href="/register"
             style={{ color: "var(--primary)", fontWeight: 600 }}
           >
-            Registrarte aquí
+            Register here
           </Link>
         </div>
       </div>

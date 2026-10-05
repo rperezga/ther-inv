@@ -54,7 +54,7 @@ export default function InvitationsPage() {
     setLastCreatedUrl(null);
 
     if (!email.trim()) {
-      setFormError("Ingresa un correo electrónico");
+      setFormError("Please enter an email address");
       return;
     }
 
@@ -70,7 +70,7 @@ export default function InvitationsPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Error al generar invitación");
+        throw new Error(data.error || "Failed to generate invitation");
       }
 
       const fullUrl = `${window.location.origin}${data.inviteUrl}`;
@@ -78,7 +78,7 @@ export default function InvitationsPage() {
       setEmail("");
       fetchInvitations();
     } catch (err: any) {
-      setFormError(err.message || "Error al crear invitación");
+      setFormError(err.message || "Failed to create invitation");
     } finally {
       setSending(false);
     }
@@ -92,7 +92,7 @@ export default function InvitationsPage() {
   };
 
   const handleDeleteInvite = async (id: string) => {
-    if (!confirm("¿Deseas revocar esta invitación?")) return;
+    if (!confirm("Are you sure you want to revoke this invitation?")) return;
 
     try {
       const res = await fetch(`/api/invitations?id=${id}`, { method: "DELETE" });
@@ -100,13 +100,13 @@ export default function InvitationsPage() {
         setInvitations((prev) => prev.filter((it) => it._id !== id));
       }
     } catch {
-      alert("Error al eliminar");
+      alert("Failed to revoke invitation");
     }
   };
 
   const formatDate = (d?: string | Date) => {
     if (!d) return "-";
-    return new Date(d).toLocaleDateString("es-ES", {
+    return new Date(d).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
@@ -118,11 +118,11 @@ export default function InvitationsPage() {
       {/* Header */}
       <div style={{ marginBottom: "2rem" }}>
         <h1 style={{ fontSize: "1.75rem", marginBottom: "0.25rem" }}>
-          Gestión de Invitaciones y Equipo
+          Invitations & Team Management
         </h1>
         <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem" }}>
-          Como administrador o manager (Therina), invita a nuevos usuarios de forma
-          segura asignando el rol y permisos que tendrán en el sistema.
+          As an administrator or manager (Therina), securely invite new users and assign
+          their access roles and permissions.
         </p>
       </div>
 
@@ -138,9 +138,9 @@ export default function InvitationsPage() {
         <div className="card">
           <div className="card-header">
             <div>
-              <h2 className="card-title">Enviar Nueva Invitación</h2>
+              <h2 className="card-title">Send New Invitation</h2>
               <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
-                Genera un enlace de registro seguro para el nuevo usuario
+                Generate a secure registration link for a new team member
               </p>
             </div>
             <div
@@ -190,10 +190,10 @@ export default function InvitationsPage() {
               }}
             >
               <p style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--success)", marginBottom: "0.5rem" }}>
-                ¡Invitación generada exitosamente!
+                Invitation link generated successfully!
               </p>
               <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.5rem" }}>
-                Comparte este enlace directamente con el usuario:
+                Share this secure link directly with the user:
               </p>
               <div style={{ display: "flex", gap: "0.5rem" }}>
                 <input
@@ -207,11 +207,11 @@ export default function InvitationsPage() {
                   type="button"
                   onClick={() => {
                     navigator.clipboard.writeText(lastCreatedUrl);
-                    alert("Enlace copiado al portapapeles");
+                    alert("Invitation link copied to clipboard");
                   }}
                   className="btn btn-primary btn-sm"
                 >
-                  Copiar
+                  Copy
                 </button>
               </div>
             </div>
@@ -220,7 +220,7 @@ export default function InvitationsPage() {
           <form onSubmit={handleCreateInvitation}>
             <div className="form-group">
               <label className="form-label" htmlFor="invite-email">
-                Correo Electrónico del Invitado *
+                Invitee Email Address *
               </label>
               <div style={{ position: "relative" }}>
                 <input
@@ -228,7 +228,7 @@ export default function InvitationsPage() {
                   type="email"
                   required
                   className="form-input"
-                  placeholder="usuario@cliente.com"
+                  placeholder="name@agency.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   style={{ paddingLeft: "2.3rem" }}
@@ -247,17 +247,17 @@ export default function InvitationsPage() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Rol y Nivel de Acceso</label>
+              <label className="form-label">Role & Access Level</label>
               <select
                 className="form-select"
                 value={role}
                 onChange={(e) => setRole(e.target.value as "manager" | "viewer")}
               >
                 <option value="viewer">
-                  Viewer / Observador (Solo lectura de facturas y reportes)
+                  Viewer (Read-only access to invoices and reports)
                 </option>
                 <option value="manager">
-                  Manager (Crear y editar facturas, gestionar trabajadores)
+                  Manager (Create & edit invoices, manage staff directory)
                 </option>
               </select>
             </div>
@@ -269,7 +269,7 @@ export default function InvitationsPage() {
               className="btn btn-primary"
               style={{ width: "100%", marginTop: "0.5rem" }}
             >
-              {sending ? "Generando Invitación..." : "Generar Enlace de Invitación"}
+              {sending ? "Generating Invitation..." : "Generate Invitation Link"}
             </button>
           </form>
         </div>
@@ -278,9 +278,9 @@ export default function InvitationsPage() {
         <div className="card">
           <div className="card-header">
             <div>
-              <h2 className="card-title">Usuarios Activos en el Sistema</h2>
+              <h2 className="card-title">Active System Users</h2>
               <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
-                Miembros actuales con acceso al portal
+                Current team members with portal access
               </p>
             </div>
             <div
@@ -354,31 +354,31 @@ export default function InvitationsPage() {
       {/* Invitations History Table */}
       <div className="card" style={{ padding: 0 }}>
         <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid var(--border-color)" }}>
-          <h2 className="card-title">Historial de Invitaciones Enviadas</h2>
+          <h2 className="card-title">Sent Invitations History</h2>
           <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginTop: "2px" }}>
-            Estado de los enlaces de invitación emitidos
+            Status of issued invitation links
           </p>
         </div>
 
         {loading ? (
           <div style={{ padding: "2.5rem", textAlign: "center", color: "var(--text-muted)" }}>
-            Cargando invitaciones...
+            Loading invitations...
           </div>
         ) : invitations.length === 0 ? (
           <div style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>
-            No se han enviado invitaciones aún.
+            No invitations sent yet.
           </div>
         ) : (
           <div className="table-container" style={{ border: "none" }}>
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Correo Destino</th>
-                  <th>Rol Otorgado</th>
-                  <th>Invitado Por</th>
-                  <th>Vence El</th>
-                  <th>Estado</th>
-                  <th style={{ textAlign: "right" }}>Acciones</th>
+                  <th>Recipient Email</th>
+                  <th>Assigned Role</th>
+                  <th>Invited By</th>
+                  <th>Expires On</th>
+                  <th>Status</th>
+                  <th style={{ textAlign: "right" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -391,18 +391,18 @@ export default function InvitationsPage() {
                       </span>
                     </td>
                     <td style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                      {inv.invitedBy?.name || "Administrador"}
+                      {inv.invitedBy?.name || "Administrator"}
                     </td>
                     <td style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
                       {formatDate(inv.expiresAt)}
                     </td>
                     <td>
                       {inv.status === "accepted" ? (
-                        <span className="badge badge-paid">Aceptada</span>
+                        <span className="badge badge-paid">Accepted</span>
                       ) : inv.status === "pending" ? (
-                        <span className="badge badge-pending">Pendiente</span>
+                        <span className="badge badge-pending">Pending</span>
                       ) : (
-                        <span className="badge badge-cancelled">Expirada</span>
+                        <span className="badge badge-cancelled">Expired</span>
                       )}
                     </td>
                     <td style={{ textAlign: "right" }}>
@@ -417,7 +417,7 @@ export default function InvitationsPage() {
                           <button
                             onClick={() => handleCopyLink(inv.token)}
                             className="btn btn-secondary btn-sm"
-                            title="Copiar Enlace"
+                            title="Copy Link"
                           >
                             {copiedToken === inv.token ? (
                               <Check size={14} color="var(--success)" />
@@ -425,7 +425,7 @@ export default function InvitationsPage() {
                               <Copy size={14} />
                             )}
                             <span style={{ fontSize: "0.75rem" }}>
-                              {copiedToken === inv.token ? "Copiado" : "Copiar"}
+                              {copiedToken === inv.token ? "Copied" : "Copy"}
                             </span>
                           </button>
                         )}
@@ -437,7 +437,7 @@ export default function InvitationsPage() {
                             border: "1px solid var(--danger-border)",
                             backgroundColor: "var(--danger-subtle)",
                           }}
-                          title="Revocar"
+                          title="Revoke"
                         >
                           <Trash2 size={14} />
                         </button>

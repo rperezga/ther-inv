@@ -79,7 +79,7 @@ export async function verifyUserHasRole(
   if (!user) {
     return {
       user: null,
-      errorResponse: NextResponse.json({ error: "No autorizado" }, { status: 401 }),
+      errorResponse: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
     };
   }
 
@@ -87,7 +87,7 @@ export async function verifyUserHasRole(
     return {
       user: null,
       errorResponse: NextResponse.json(
-        { error: "Permisos insuficientes" },
+        { error: "Insufficient permissions" },
         { status: 403 }
       ),
     };

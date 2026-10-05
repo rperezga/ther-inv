@@ -10,14 +10,14 @@ export async function POST(req: NextRequest) {
 
     if (!name || !email || !password) {
       return NextResponse.json(
-        { error: "Nombre, correo y contraseña son obligatorios" },
+        { error: "Name, email, and password are required" },
         { status: 400 }
       );
     }
 
     if (password.length < 6) {
       return NextResponse.json(
-        { error: "La contraseña debe tener al menos 6 caracteres" },
+        { error: "Password must be at least 6 characters" },
         { status: 400 }
       );
     }
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return NextResponse.json(
-        { error: "Ya existe un usuario registrado con este correo" },
+        { error: "A user is already registered with this email" },
         { status: 400 }
       );
     }
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
       // Must have valid invitation token
       if (!invitationToken) {
         return NextResponse.json(
-          { error: "Se requiere un token de invitación válido para registrarse" },
+          { error: "A valid invitation token is required to register" },
           { status: 400 }
         );
       }
@@ -57,14 +57,14 @@ export async function POST(req: NextRequest) {
 
       if (!invite) {
         return NextResponse.json(
-          { error: "La invitación es inválida, ha expirado o ya fue utilizada" },
+          { error: "The invitation is invalid, expired, or has already been used" },
           { status: 400 }
         );
       }
 
       if (invite.email.toLowerCase() !== normalizedEmail) {
         return NextResponse.json(
-          { error: `Esta invitación fue emitida para ${invite.email}` },
+          { error: `This invitation was issued for ${invite.email}` },
           { status: 400 }
         );
       }
@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error("Register error:", error);
     return NextResponse.json(
-      { error: "Error en el servidor al registrar usuario" },
+      { error: "Internal server error during user registration" },
       { status: 500 }
     );
   }

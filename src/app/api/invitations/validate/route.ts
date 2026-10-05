@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
 
     if (!token) {
       return NextResponse.json(
-        { valid: false, error: "Token de invitación requerido" },
+        { valid: false, error: "Invitation token is required" },
         { status: 400 }
       );
     }
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
 
     if (!invite) {
       return NextResponse.json(
-        { valid: false, error: "Invitación inválida, expirada o ya utilizada" },
+        { valid: false, error: "Invalid, expired, or already used invitation" },
         { status: 404 }
       );
     }
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     return NextResponse.json(
-      { valid: false, error: "Error al validar invitación" },
+      { valid: false, error: "Failed to validate invitation" },
       { status: 500 }
     );
   }

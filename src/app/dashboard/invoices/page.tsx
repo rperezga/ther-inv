@@ -50,7 +50,7 @@ export default function InvoicesListPage() {
   };
 
   const handleDelete = async (id: string, invoiceNum: string) => {
-    if (!confirm(`¿Estás seguro de que deseas eliminar la factura ${invoiceNum}?`)) {
+    if (!confirm(`Are you sure you want to delete invoice ${invoiceNum}?`)) {
       return;
     }
 
@@ -60,10 +60,10 @@ export default function InvoicesListPage() {
       if (res.ok) {
         setInvoices((prev) => prev.filter((inv) => inv._id !== id));
       } else {
-        alert("Error al eliminar la factura");
+        alert("Failed to delete invoice");
       }
     } catch {
-      alert("Error al conectar con el servidor");
+      alert("Failed to connect to server");
     } finally {
       setDeletingId(null);
     }
@@ -79,7 +79,7 @@ export default function InvoicesListPage() {
 
   const formatDate = (dateStr?: string | Date) => {
     if (!dateStr) return "-";
-    return new Date(dateStr).toLocaleDateString("es-ES", {
+    return new Date(dateStr).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
@@ -89,13 +89,13 @@ export default function InvoicesListPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "paid":
-        return <span className="badge badge-paid">Pagado</span>;
+        return <span className="badge badge-paid">Paid</span>;
       case "pending":
-        return <span className="badge badge-pending">Pendiente</span>;
+        return <span className="badge badge-pending">Pending</span>;
       case "draft":
-        return <span className="badge badge-draft">Borrador</span>;
+        return <span className="badge badge-draft">Draft</span>;
       case "cancelled":
-        return <span className="badge badge-cancelled">Cancelado</span>;
+        return <span className="badge badge-cancelled">Cancelled</span>;
       default:
         return <span className="badge">{status}</span>;
     }
@@ -116,10 +116,10 @@ export default function InvoicesListPage() {
       >
         <div>
           <h1 style={{ fontSize: "1.75rem", marginBottom: "0.25rem" }}>
-            Invoices y Facturas Semanales
+            Weekly Invoices
           </h1>
           <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem" }}>
-            Gestiona todas las facturas emitidas por cada ciclo de payroll.
+            Manage and track all issued client invoices across weekly payroll periods.
           </p>
         </div>
 
@@ -129,7 +129,7 @@ export default function InvoicesListPage() {
           className="btn btn-primary"
         >
           <PlusCircle size={18} />
-          <span>Nuevo Invoice Semanal</span>
+          <span>New Weekly Invoice</span>
         </Link>
       </div>
 
@@ -158,12 +158,12 @@ export default function InvoicesListPage() {
               style={{ textTransform: "capitalize" }}
             >
               {st === "all"
-                ? "Todos"
+                ? "All"
                 : st === "pending"
-                ? "Pendientes"
+                ? "Pending"
                 : st === "paid"
-                ? "Pagados"
-                : "Borradores"}
+                ? "Paid"
+                : "Drafts"}
             </button>
           ))}
         </div>
@@ -177,7 +177,7 @@ export default function InvoicesListPage() {
             <input
               type="text"
               className="form-input"
-              placeholder="Buscar por cliente o No..."
+              placeholder="Search by client or invoice #..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{ paddingLeft: "2.2rem", paddingRight: "0.5rem" }}
@@ -194,7 +194,7 @@ export default function InvoicesListPage() {
             />
           </div>
           <button type="submit" className="btn btn-secondary btn-sm">
-            Buscar
+            Search
           </button>
         </form>
       </div>
@@ -203,19 +203,19 @@ export default function InvoicesListPage() {
       <div className="card" style={{ padding: 0 }}>
         {loading ? (
           <div style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>
-            Cargando invoices...
+            Loading invoices...
           </div>
         ) : invoices.length === 0 ? (
           <div style={{ padding: "3.5rem 1.5rem", textAlign: "center" }}>
             <FileText size={48} style={{ opacity: 0.35, marginBottom: "1rem" }} />
             <p style={{ fontWeight: 600, fontSize: "1.1rem" }}>
-              No se encontraron facturas
+              No invoices found
             </p>
             <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", marginBottom: "1.5rem" }}>
-              Intenta cambiar los filtros o crea un nuevo invoice semanal.
+              Try changing the search filter or generate a new weekly invoice.
             </p>
             <Link href="/dashboard/invoices/new" className="btn btn-primary btn-sm">
-              <PlusCircle size={16} /> Crear Invoice Ahora
+              <PlusCircle size={16} /> Create Invoice Now
             </Link>
           </div>
         ) : (
@@ -223,15 +223,15 @@ export default function InvoicesListPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>No. Invoice</th>
-                  <th>Cliente</th>
-                  <th>Período Semanal</th>
-                  <th>Fecha Emisión</th>
-                  <th>Vencimiento</th>
-                  <th>Trabajadores</th>
-                  <th>Total</th>
-                  <th>Estado</th>
-                  <th style={{ textAlign: "right" }}>Acciones</th>
+                  <th>Invoice #</th>
+                  <th>Client Name</th>
+                  <th>Weekly Period</th>
+                  <th>Issue Date</th>
+                  <th>Due Date</th>
+                  <th>Staff Count</th>
+                  <th>Total Amount</th>
+                  <th>Status</th>
+                  <th style={{ textAlign: "right" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -262,7 +262,7 @@ export default function InvoicesListPage() {
                           fontWeight: 500,
                         }}
                       >
-                        {inv.items?.length || 0} personas
+                        {inv.items?.length || 0} staff
                       </span>
                     </td>
                     <td style={{ fontWeight: 800, fontSize: "0.95rem" }}>
@@ -280,7 +280,7 @@ export default function InvoicesListPage() {
                         <Link
                           href={`/dashboard/invoices/${inv._id}`}
                           className="btn btn-secondary btn-sm"
-                          title="Ver Factura"
+                          title="View Invoice"
                         >
                           <Eye size={15} />
                         </Link>
@@ -293,7 +293,7 @@ export default function InvoicesListPage() {
                             border: "1px solid var(--danger-border)",
                             backgroundColor: "var(--danger-subtle)",
                           }}
-                          title="Eliminar Factura"
+                          title="Delete Invoice"
                         >
                           <Trash2 size={15} />
                         </button>

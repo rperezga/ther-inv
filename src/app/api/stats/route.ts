@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
   } catch (error: any) {
     console.error("Stats GET error:", error);
     return NextResponse.json(
-      { error: "Error al calcular estadísticas" },
+      { error: "Failed to compute statistics" },
       { status: 500 }
     );
   }

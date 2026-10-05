@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
 
     if (!email || !password) {
       return NextResponse.json(
-        { error: "Correo electrónico y contraseña requeridos" },
+        { error: "Email address and password are required" },
         { status: 400 }
       );
     }
@@ -19,14 +19,14 @@ export async function POST(req: NextRequest) {
     const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
       return NextResponse.json(
-        { error: "Credenciales inválidas" },
+        { error: "Invalid credentials" },
         { status: 401 }
       );
     }
 
     if (!user.isActive) {
       return NextResponse.json(
-        { error: "Esta cuenta se encuentra desactivada" },
+        { error: "This account has been deactivated" },
         { status: 403 }
       );
     }
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     const isValid = comparePassword(password, user.password || "");
     if (!isValid) {
       return NextResponse.json(
-        { error: "Credenciales inválidas" },
+        { error: "Invalid credentials" },
         { status: 401 }
       );
     }
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error("Login error:", error);
     return NextResponse.json(
-      { error: "Error en el servidor al iniciar sesión" },
+      { error: "Internal server error during login" },
       { status: 500 }
     );
   }

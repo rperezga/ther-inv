@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
   } catch (error: any) {
     console.error("Workers GET error:", error);
     return NextResponse.json(
-      { error: "Error al obtener trabajadores" },
+      { error: "Failed to fetch workers" },
       { status: 500 }
     );
   }
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
 
     if (!firstName || !lastName || !role || hourlyRate === undefined) {
       return NextResponse.json(
-        { error: "Nombre, apellidos, rol y tarifa por hora son obligatorios" },
+        { error: "First name, last name, role, and hourly rate are required" },
         { status: 400 }
       );
     }
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error("Workers POST error:", error);
     return NextResponse.json(
-      { error: "Error al crear trabajador" },
+      { error: "Failed to create worker" },
       { status: 500 }
     );
   }

@@ -97,32 +97,32 @@ export default function DashboardLayout({
 
   const navItems = [
     {
-      label: "Panel Principal",
+      label: "Overview",
       href: "/dashboard",
       icon: LayoutDashboard,
       active: pathname === "/dashboard",
     },
     {
-      label: "Invoices Semanales",
+      label: "Weekly Invoices",
       href: "/dashboard/invoices",
       icon: FileText,
       active: pathname === "/dashboard/invoices",
     },
     {
-      label: "Crear Invoice",
+      label: "Create Invoice",
       href: "/dashboard/invoices/new",
       icon: PlusCircle,
       active: pathname === "/dashboard/invoices/new",
       hidden: user?.role === "viewer",
     },
     {
-      label: "Trabajadores",
+      label: "Staff Directory",
       href: "/dashboard/workers",
       icon: Users,
       active: pathname === "/dashboard/workers",
     },
     {
-      label: "Invitaciones & Equipo",
+      label: "Team & Invites",
       href: "/dashboard/invitations",
       icon: UserPlus,
       active: pathname === "/dashboard/invitations",
@@ -180,7 +180,7 @@ export default function DashboardLayout({
                 textTransform: "uppercase",
               }}
             >
-              Nómina & Invoicing
+              Agency Invoicing & Payroll
             </span>
           </div>
           {mobileMenuOpen && (
@@ -265,7 +265,7 @@ export default function DashboardLayout({
             className="btn btn-secondary btn-sm"
             style={{ width: "100%", justifyContent: "center" }}
           >
-            <LogOut size={15} /> Cerrar Sesión
+            <LogOut size={15} /> Sign Out
           </button>
         </div>
       </aside>
@@ -295,7 +295,7 @@ export default function DashboardLayout({
                 fontWeight: 500,
               }}
             >
-              Sistema de Invoicing Semanal
+              Weekly Invoicing & Payroll
             </span>
           </div>
 
@@ -307,7 +307,7 @@ export default function DashboardLayout({
                 className="btn btn-primary btn-sm"
               >
                 <PlusCircle size={16} />
-                <span className="btn-responsive-text">Nuevo Invoice</span>
+                <span className="btn-responsive-text">New Invoice</span>
               </Link>
             )}
 
@@ -340,7 +340,7 @@ export default function DashboardLayout({
             className={`mobile-nav-btn ${pathname === "/dashboard" ? "active" : ""}`}
           >
             <LayoutDashboard size={20} />
-            <span>Inicio</span>
+            <span>Home</span>
           </Link>
           <Link
             href="/dashboard/invoices"
@@ -355,7 +355,7 @@ export default function DashboardLayout({
               className={`mobile-nav-btn ${pathname === "/dashboard/invoices/new" ? "active" : ""}`}
             >
               <PlusCircle size={20} />
-              <span>Crear</span>
+              <span>Create</span>
             </Link>
           )}
           <Link
@@ -363,7 +363,7 @@ export default function DashboardLayout({
             className={`mobile-nav-btn ${pathname === "/dashboard/workers" ? "active" : ""}`}
           >
             <Users size={20} />
-            <span>Personal</span>
+            <span>Staff</span>
           </Link>
           {user?.role !== "viewer" && (
             <Link
@@ -371,7 +371,7 @@ export default function DashboardLayout({
               className={`mobile-nav-btn ${pathname === "/dashboard/invitations" ? "active" : ""}`}
             >
               <UserPlus size={20} />
-              <span>Equipo</span>
+              <span>Team</span>
             </Link>
           )}
         </nav>

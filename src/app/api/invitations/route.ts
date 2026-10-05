@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
   } catch (error: any) {
     console.error("Invitations GET error:", error);
     return NextResponse.json(
-      { error: "Error al obtener invitaciones" },
+      { error: "Failed to fetch invitations" },
       { status: 500 }
     );
   }
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
 
     if (!email) {
       return NextResponse.json(
-        { error: "Correo electrónico requerido" },
+        { error: "Email address is required" },
         { status: 400 }
       );
     }
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return NextResponse.json(
-        { error: "Ya existe un usuario con este correo electrónico" },
+        { error: "A user with this email address already exists" },
         { status: 400 }
       );
     }
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
     // Role restrictions: Only admin can invite other admins
     if (role === "admin" && user.role !== "admin") {
       return NextResponse.json(
-        { error: "Solo los administradores pueden invitar a otros administradores" },
+        { error: "Only administrators can invite other administrators" },
         { status: 403 }
       );
     }
@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error("Invitation POST error:", error);
     return NextResponse.json(
-      { error: "Error al generar invitación" },
+      { error: "Failed to generate invitation" },
       { status: 500 }
     );
   }
@@ -124,7 +124,7 @@ export async function DELETE(req: NextRequest) {
 
     if (!id) {
       return NextResponse.json(
-        { error: "ID de invitación requerido" },
+        { error: "Invitation ID is required" },
         { status: 400 }
       );
     }
@@ -132,10 +132,10 @@ export async function DELETE(req: NextRequest) {
     await connectDB();
     await Invitation.findByIdAndDelete(id);
 
-    return NextResponse.json({ success: true, message: "Invitación eliminada" });
+    return NextResponse.json({ success: true, message: "Invitation revoked successfully" });
   } catch (error: any) {
     return NextResponse.json(
-      { error: "Error al eliminar invitación" },
+      { error: "Failed to delete invitation" },
       { status: 500 }
     );
   }

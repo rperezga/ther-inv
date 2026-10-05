@@ -33,7 +33,7 @@ export default function InvoiceDetailPage({
   useEffect(() => {
     fetch(`/api/invoices/${id}`)
       .then((res) => {
-        if (!res.ok) throw new Error("Factura no encontrada");
+        if (!res.ok) throw new Error("Invoice not found");
         return res.json();
       })
       .then((data) => {
@@ -79,7 +79,7 @@ export default function InvoiceDetailPage({
 
   const formatDate = (dateStr?: string | Date) => {
     if (!dateStr) return "-";
-    return new Date(dateStr).toLocaleDateString("es-ES", {
+    return new Date(dateStr).toLocaleDateString("en-US", {
       month: "long",
       day: "numeric",
       year: "numeric",
@@ -89,7 +89,7 @@ export default function InvoiceDetailPage({
   if (loading) {
     return (
       <div style={{ padding: "4rem", textAlign: "center", color: "var(--text-muted)" }}>
-        Cargando detalle de la factura...
+        Loading invoice details...
       </div>
     );
   }
@@ -97,9 +97,9 @@ export default function InvoiceDetailPage({
   if (!invoice) {
     return (
       <div style={{ textAlign: "center", padding: "4rem 1rem" }}>
-        <h2 style={{ marginBottom: "1rem" }}>Factura no encontrada</h2>
+        <h2 style={{ marginBottom: "1rem" }}>Invoice not found</h2>
         <Link href="/dashboard/invoices" className="btn btn-primary">
-          <ArrowLeft size={16} /> Volver a facturas
+          <ArrowLeft size={16} /> Back to invoices
         </Link>
       </div>
     );
@@ -129,14 +129,14 @@ export default function InvoiceDetailPage({
             fontSize: "0.875rem",
           }}
         >
-          <ArrowLeft size={16} /> Volver al listado
+          <ArrowLeft size={16} /> Back to invoices list
         </Link>
 
         <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
           {/* Quick status dropdown */}
           <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
             <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
-              Estado:
+              Status:
             </span>
             <select
               className="form-select"
@@ -145,10 +145,10 @@ export default function InvoiceDetailPage({
               disabled={updatingStatus}
               onChange={(e) => handleStatusChange(e.target.value)}
             >
-              <option value="draft">Borrador</option>
-              <option value="pending">Pendiente</option>
-              <option value="paid">Pagado</option>
-              <option value="cancelled">Cancelado</option>
+              <option value="draft">Draft</option>
+              <option value="pending">Pending</option>
+              <option value="paid">Paid</option>
+              <option value="cancelled">Cancelled</option>
             </select>
           </div>
 
@@ -158,7 +158,7 @@ export default function InvoiceDetailPage({
             className="btn btn-primary btn-sm"
           >
             <Printer size={16} />
-            <span>Imprimir / Descargar PDF</span>
+            <span>Print / Save as PDF</span>
           </button>
         </div>
       </div>
@@ -223,10 +223,10 @@ export default function InvoiceDetailPage({
               </h1>
             </div>
             <p style={{ fontSize: "0.875rem", color: "#475569" }}>
-              Servicios Profesionales de Personal & Nómina
+              Healthcare Staffing & Professional Payroll Services
             </p>
             <p style={{ fontSize: "0.85rem", color: "#64748b" }}>
-              Email: contact@therina-agency.com | Tel: (305) 555-0100
+              Email: contact@therina-agency.com | Phone: (305) 555-0100
             </p>
           </div>
 
@@ -275,21 +275,21 @@ export default function InvoiceDetailPage({
                 }}
               >
                 {invoice.status === "paid"
-                  ? "PAGADO"
+                  ? "PAID"
                   : invoice.status === "pending"
-                  ? "PENDIENTE DE PAGO"
+                  ? "PENDING PAYMENT"
                   : invoice.status === "draft"
-                  ? "BORRADOR"
-                  : "CANCELADO"}
+                  ? "DRAFT"
+                  : "CANCELLED"}
               </span>
             </div>
 
             <div style={{ marginTop: "0.75rem", fontSize: "0.85rem", color: "#475569" }}>
               <div>
-                <strong>Fecha Emisión:</strong> {formatDate(invoice.invoiceDate)}
+                <strong>Issue Date:</strong> {formatDate(invoice.invoiceDate)}
               </div>
               <div style={{ marginTop: "0.2rem" }}>
-                <strong>Vencimiento:</strong> {formatDate(invoice.dueDate)}
+                <strong>Due Date:</strong> {formatDate(invoice.dueDate)}
               </div>
             </div>
           </div>
@@ -323,7 +323,7 @@ export default function InvoiceDetailPage({
                 marginBottom: "0.4rem",
               }}
             >
-              Facturado A:
+              Billed To:
             </div>
             <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#0f172a" }}>
               {invoice.clientName}
@@ -359,13 +359,13 @@ export default function InvoiceDetailPage({
                 marginBottom: "0.4rem",
               }}
             >
-              Período de Nómina Semanal:
+              Weekly Payroll Period:
             </div>
             <div style={{ fontSize: "1.05rem", fontWeight: 700, color: "#0f172a" }}>
-              {formatDate(invoice.periodStart)} al {formatDate(invoice.periodEnd)}
+              {formatDate(invoice.periodStart)} through {formatDate(invoice.periodEnd)}
             </div>
             <div style={{ fontSize: "0.85rem", color: "#475569", marginTop: "0.4rem" }}>
-              Personal asignado: <strong>{invoice.items?.length || 0} trabajadores</strong>
+              Assigned Staff: <strong>{invoice.items?.length || 0} team members</strong>
             </div>
           </div>
         </div>
@@ -383,22 +383,22 @@ export default function InvoiceDetailPage({
             <thead>
               <tr style={{ borderBottom: "2px solid #0f172a" }}>
                 <th style={{ padding: "0.75rem 0.5rem", fontWeight: 700 }}>
-                  Trabajador / Cargo
+                  Staff Member / Role
                 </th>
                 <th style={{ padding: "0.75rem 0.5rem", textAlign: "right" }}>
-                  Horas Reg.
+                  Reg. Hours
                 </th>
                 <th style={{ padding: "0.75rem 0.5rem", textAlign: "right" }}>
-                  Tarifa
+                  Reg. Rate
                 </th>
                 <th style={{ padding: "0.75rem 0.5rem", textAlign: "right" }}>
-                  Horas Extra
+                  OT Hours
                 </th>
                 <th style={{ padding: "0.75rem 0.5rem", textAlign: "right" }}>
-                  Tarifa OT
+                  OT Rate
                 </th>
                 <th style={{ padding: "0.75rem 0.5rem", textAlign: "right" }}>
-                  Importe
+                  Amount
                 </th>
               </tr>
             </thead>
@@ -462,7 +462,7 @@ export default function InvoiceDetailPage({
                 marginBottom: "0.4rem",
               }}
             >
-              Notas y Términos:
+              Notes & Terms:
             </div>
             <p
               style={{
@@ -473,7 +473,7 @@ export default function InvoiceDetailPage({
               }}
             >
               {invoice.notes ||
-                "Gracias por su preferencia. Favor emitir pago mediante transferencia bancaria antes de la fecha de vencimiento."}
+                "Thank you for your business. Please submit payment via wire transfer or ACH before the due date."}
             </p>
           </div>
 
@@ -495,7 +495,7 @@ export default function InvoiceDetailPage({
                 color: "#475569",
               }}
             >
-              <span>Subtotal:</span>
+              <span>Hours Subtotal:</span>
               <span style={{ fontWeight: 600, color: "#0f172a" }}>
                 {formatCurrency(invoice.subtotal)}
               </span>
@@ -511,7 +511,7 @@ export default function InvoiceDetailPage({
                   color: "#475569",
                 }}
               >
-                <span>Impuesto ({invoice.taxRate}%):</span>
+                <span>Tax ({invoice.taxRate}%):</span>
                 <span style={{ fontWeight: 600, color: "#0f172a" }}>
                   {formatCurrency(invoice.taxAmount)}
                 </span>
@@ -529,7 +529,7 @@ export default function InvoiceDetailPage({
               }}
             >
               <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "#0f172a" }}>
-                Total a Pagar:
+                Total Due:
               </span>
               <span
                 style={{

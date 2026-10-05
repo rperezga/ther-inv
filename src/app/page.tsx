@@ -45,7 +45,7 @@ export default function HomePage() {
             }}
           />
           <p style={{ color: "var(--text-muted)", fontSize: "0.95rem" }}>
-            Cargando THER-INV...
+            Loading THER-INV...
           </p>
           <style jsx>{`
             @keyframes spin {
@@ -128,7 +128,7 @@ export default function HomePage() {
 
         <div>
           <Link href="/login" id="home-login-btn" className="btn btn-primary">
-            Iniciar Sesión
+            Sign In
           </Link>
         </div>
       </header>
@@ -159,7 +159,7 @@ export default function HomePage() {
               border: "1px solid var(--primary-border)",
             }}
           >
-            <Shield size={16} /> Sistema Privado y Seguro
+            <Shield size={16} /> Private & Secure System
           </div>
 
           <h1
@@ -171,7 +171,7 @@ export default function HomePage() {
               color: "var(--text-primary)",
             }}
           >
-            Facturación Semanal y Nómina para Agencias
+            Weekly Invoicing & Payroll for Agencies
           </h1>
 
           <p
@@ -183,9 +183,9 @@ export default function HomePage() {
               lineHeight: 1.6,
             }}
           >
-            Plataforma profesional para generar invoices semanales de clientes,
-            controlar el personal activo, gestionar invitaciones por roles y mantener
-            el control total del payroll con alta visibilidad y diseño responsive.
+            A modern, private platform to generate weekly client invoices, maintain active
+            agency staff, manage role-based invitations, and ensure effortless payroll
+            billing with high visibility on desktop and mobile.
           </p>
 
           <div
@@ -203,7 +203,7 @@ export default function HomePage() {
               className="btn btn-primary btn-lg"
               style={{ padding: "0.9rem 2rem", fontSize: "1.05rem" }}
             >
-              Acceder al Portal <ArrowRight size={18} />
+              Access Portal <ArrowRight size={18} />
             </Link>
             <Link
               href="/login?demo=1"
@@ -211,7 +211,7 @@ export default function HomePage() {
               className="btn btn-secondary btn-lg"
               style={{ padding: "0.9rem 2rem", fontSize: "1.05rem" }}
             >
-              Ver Demo Rápida
+              Quick Demo
             </Link>
           </div>
 
@@ -241,11 +241,11 @@ export default function HomePage() {
                 <FileText size={22} />
               </div>
               <h3 style={{ fontSize: "1.1rem", marginBottom: "0.5rem" }}>
-                Invoices Semanales
+                Weekly Invoices
               </h3>
               <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>
-                Calcula automáticamente horas regulares, horas extra, tarifas y
-                totales al instante para el ciclo de payroll.
+                Automatically calculate regular hours, overtime, rates, and totals
+                instantly for each weekly payroll period.
               </p>
             </div>
 
@@ -266,11 +266,11 @@ export default function HomePage() {
                 <Users size={22} />
               </div>
               <h3 style={{ fontSize: "1.1rem", marginBottom: "0.5rem" }}>
-                Directorio de Personal
+                Staff Directory
               </h3>
               <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>
-                Mantén un registro actualizado de todos los trabajadores (RN, PT,
-                CNA, terapeutas) y sus tarifas por hora.
+                Maintain an updated directory of all agency workers (RN, PT, CNA,
+                therapists) and their customizable hourly rates.
               </p>
             </div>
 
@@ -291,11 +291,11 @@ export default function HomePage() {
                 <Shield size={22} />
               </div>
               <h3 style={{ fontSize: "1.1rem", marginBottom: "0.5rem" }}>
-                Invitaciones y Permisos
+                Invitations & Roles
               </h3>
               <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>
-                Therina y los administradores pueden enviar invitaciones con
-                permisos granulares (Manager o Viewer).
+                Therina and administrators can send secure invitation links with
+                granular roles (Manager or Viewer).
               </p>
             </div>
           </div>
@@ -317,10 +317,10 @@ export default function HomePage() {
           color: "var(--text-muted)",
         }}
       >
-        <div>THER-INV © {new Date().getFullYear()} — Todos los derechos reservados.</div>
+        <div>THER-INV © {new Date().getFullYear()} — All rights reserved.</div>
         <div style={{ display: "flex", gap: "1.5rem" }}>
-          <span>Privado & Seguro</span>
-          <span>Desplegado en Kali Server</span>
+          <span>Private & Secure</span>
+          <span>Deployed on Kali Linux</span>
           <span>MongoDB Powered</span>
         </div>
       </footer>

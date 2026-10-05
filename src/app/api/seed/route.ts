@@ -20,7 +20,7 @@ async function seedDatabase() {
     const existingUsers = await User.countDocuments();
     if (existingUsers > 0) {
       return NextResponse.json({
-        message: "La base de datos ya contiene usuarios. No se sobreescribió.",
+        message: "The database already contains users. Existing data was not overwritten.",
         status: "already_seeded",
       });
     }
@@ -57,7 +57,7 @@ async function seedDatabase() {
         email: "camila.rodriguez@email.com",
         ssnLast4: "4921",
         status: "active",
-        notes: "Especialista en cuidados intensivos y post-operatorio.",
+        notes: "Intensive care and post-operative specialist.",
       },
       {
         firstName: "David",
@@ -68,7 +68,7 @@ async function seedDatabase() {
         email: "david.h@email.com",
         ssnLast4: "1830",
         status: "active",
-        notes: "Rehabilitación motriz ambulatoria y domiciliaria.",
+        notes: "Ambulatory and home health rehabilitation.",
       },
       {
         firstName: "Sofia",
@@ -79,7 +79,7 @@ async function seedDatabase() {
         email: "sofia.m@email.com",
         ssnLast4: "7219",
         status: "active",
-        notes: "Asistencia geriátrica diaria.",
+        notes: "Daily geriatric patient care.",
       },
       {
         firstName: "Carlos",
@@ -90,7 +90,7 @@ async function seedDatabase() {
         email: "carlos.morales@email.com",
         ssnLast4: "3384",
         status: "active",
-        notes: "Terapia ocupacional pediátrica y adultos mayores.",
+        notes: "Pediatric and geriatric occupational therapy.",
       },
       {
         firstName: "Elena",
@@ -101,7 +101,7 @@ async function seedDatabase() {
         email: "elena.ramos@email.com",
         ssnLast4: "8841",
         status: "active",
-        notes: "Control de medicación y curaciones complejas.",
+        notes: "Medication management and complex wound care.",
       },
       {
         firstName: "Marcos",
@@ -112,7 +112,7 @@ async function seedDatabase() {
         email: "marcos.p@email.com",
         ssnLast4: "9512",
         status: "active",
-        notes: "Terapia de deglución y lenguaje.",
+        notes: "Speech and swallowing pathology therapy.",
       },
     ];
 
@@ -136,7 +136,7 @@ async function seedDatabase() {
         regularRate: createdWorkers[0].hourlyRate,
         overtimeHours: 4,
         overtimeRate: 72,
-        description: "Servicios clínicos semanales RN - Turno diurno",
+        description: "Weekly clinical RN services - Day shift",
         amount: 40 * 48 + 4 * 72, // 1920 + 288 = 2208
       },
       {
@@ -147,7 +147,7 @@ async function seedDatabase() {
         regularRate: createdWorkers[1].hourlyRate,
         overtimeHours: 0,
         overtimeRate: 0,
-        description: "Sesiones de fisioterapia integral",
+        description: "Comprehensive physical therapy sessions",
         amount: 35 * 55, // 1925
       },
       {
@@ -158,7 +158,7 @@ async function seedDatabase() {
         regularRate: createdWorkers[2].hourlyRate,
         overtimeHours: 6,
         overtimeRate: 42,
-        description: "Cuidado asistencial continuo CNA",
+        description: "Continuous CNA patient assistance",
         amount: 40 * 28 + 6 * 42, // 1120 + 252 = 1372
       },
     ];
@@ -180,13 +180,13 @@ async function seedDatabase() {
       taxAmount: 0,
       totalAmount: subtotal,
       status: "pending",
-      notes: "Invoice semanal correspondiente al cierre del ciclo de payroll. Pago a 14 días.",
+      notes: "Weekly invoice corresponding to payroll cycle. Net 14 payment terms.",
       createdBy: therinaUser._id,
     });
 
     return NextResponse.json({
       success: true,
-      message: "Base de datos inicializada correctamente con usuarios, trabajadores y facturas de muestra.",
+      message: "Database initialized successfully with default users, staff directory, and sample weekly invoice.",
       admin: { email: adminUser.email, password: process.env.ADMIN_PASSWORD || "admin123456" },
       therina: { email: therinaUser.email, password: process.env.MANAGER_PASSWORD || "therina123456" },
       workersCreated: createdWorkers.length,
@@ -195,7 +195,7 @@ async function seedDatabase() {
   } catch (error: any) {
     console.error("Seed error:", error);
     return NextResponse.json(
-      { error: "Error al inicializar datos", details: error.message },
+      { error: "Failed to initialize database", details: error.message },
       { status: 500 }
     );
   }
