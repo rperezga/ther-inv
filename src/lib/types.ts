@@ -1,0 +1,81 @@
+export type UserRole = "admin" | "manager" | "viewer";
+
+export interface IUser {
+  _id?: string;
+  name: string;
+  email: string;
+  password?: string;
+  role: UserRole;
+  isActive: boolean;
+  invitedBy?: string;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+}
+
+export interface IWorker {
+  _id?: string;
+  firstName: string;
+  lastName: string;
+  role: string; // e.g. "Registered Nurse (RN)", "Physical Therapist", "CNA", "Administrative"
+  hourlyRate: number;
+  phone?: string;
+  email?: string;
+  ssnLast4?: string;
+  status: "active" | "inactive";
+  notes?: string;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+}
+
+export interface IInvoiceItem {
+  workerId?: string;
+  workerName: string;
+  role: string;
+  regularHours: number;
+  regularRate: number;
+  overtimeHours: number;
+  overtimeRate: number;
+  description?: string;
+  amount: number;
+}
+
+export interface IInvoice {
+  _id?: string;
+  invoiceNumber: string;
+  clientName: string;
+  clientEmail?: string;
+  clientAddress?: string;
+  periodStart: string;
+  periodEnd: string;
+  invoiceDate: string;
+  dueDate: string;
+  items: IInvoiceItem[];
+  subtotal: number;
+  taxRate: number;
+  taxAmount: number;
+  totalAmount: number;
+  status: "draft" | "pending" | "paid" | "cancelled";
+  notes?: string;
+  createdBy?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+}
+
+export interface IInvitation {
+  _id?: string;
+  token: string;
+  email: string;
+  role: UserRole;
+  status: "pending" | "accepted" | "expired";
+  invitedBy: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  expiresAt: string | Date;
+  createdAt?: string | Date;
+}
