@@ -39,7 +39,7 @@ Before setting up the app, inspect how existing applications are hosted on this 
 
 ### STEP 2: REPOSITORY CLONING & ENVIRONMENT CONFIGURATION
 1. Clone our repository into the server's standard application directory (e.g., `/opt/ther-inv` or `~/ther-inv`):
-   `git clone <GITHUB_REPO_URL> /opt/ther-inv`
+   `git clone https://github.com/rperezga/ther-inv.git /opt/ther-inv`
    `cd /opt/ther-inv`
 2. Create the production `.env` file inside the application directory:
    ```env
