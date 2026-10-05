@@ -79,6 +79,47 @@ A modern, secure, private, and fully responsive web application designed for wee
 
 ---
 
+---
+
+## 🧪 Automated Testing
+
+THER-INV includes a comprehensive automated test suite powered by **Vitest** (25 unit and integration tests):
+
+```bash
+# Run all automated tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+```
+
+Test coverage includes:
+- **`tests/calculations.test.ts`**: Regular and overtime hour calculations, subtotal, tax calculations, and date range validations.
+- **`tests/auth.test.ts`**: Bcrypt password hashing, JWT encoding/decoding, and RBAC permission checks.
+- **`tests/invitation.test.ts`**: Crypto token uniqueness, expiration boundary checks, and role restrictions.
+
+---
+
+## 📚 Technical Documentation & Guides
+
+Detailed technical specifications and user guides are available in the [`docs/`](file:///c:/Users/roger/Desktop/THER-INV/docs) directory:
+
+- [System Architecture](file:///c:/Users/roger/Desktop/THER-INV/docs/ARCHITECTURE.md): Next.js App Router, database models, session cookies, and security invariants.
+- [Invoice & Payroll Guide](file:///c:/Users/roger/Desktop/THER-INV/docs/INVOICE_AND_PAYROLL_GUIDE.md): Weekly payroll workflows, overtime formulas, line items, and print/PDF generation.
+- [Authentication & Roles](file:///c:/Users/roger/Desktop/THER-INV/docs/AUTHENTICATION_AND_ROLES.md): RBAC matrix, admin vs manager capabilities, and token invitation flow.
+- [Testing Strategy](file:///c:/Users/roger/Desktop/THER-INV/docs/TESTING_STRATEGY.md): Vitest setup, assertion conventions, and test catalog.
+
+---
+
+## ⚡ Workspace Skills (`.agents/skills`)
+
+Custom agent skills for this repository:
+- [ther-inv-invoicing](file:///c:/Users/roger/Desktop/THER-INV/.agents/skills/ther-inv-invoicing/SKILL.md): Invoicing and payroll management workflows.
+- [ther-inv-testing](file:///c:/Users/roger/Desktop/THER-INV/.agents/skills/ther-inv-testing/SKILL.md): Test authoring and execution procedures.
+- [ther-inv-deployment](file:///c:/Users/roger/Desktop/THER-INV/.agents/skills/ther-inv-deployment/SKILL.md): Native Kali Linux deployment with Hermes.
+
+---
+
 ## 📦 Production Deployment on Kali Linux (with Hermes)
 
 This project is built for **native hosting** (without Docker) to integrate seamlessly with the server's existing services:
