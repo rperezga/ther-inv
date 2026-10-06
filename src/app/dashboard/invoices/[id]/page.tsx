@@ -189,386 +189,290 @@ export default function InvoiceDetailPage({
         </div>
       </div>
 
-      {/* Invoice Document Canvas - Clean, Printable Sheet */}
+      {/* Invoice Document Canvas - Clean, Printable Sheet matching user's exact design */}
       <div
         className="card print-invoice-sheet"
         style={{
-          padding: "3.5rem 3rem",
+          padding: "3rem 3.5rem",
           backgroundColor: "#ffffff",
           borderRadius: "var(--radius-lg)",
           boxShadow: "var(--shadow-md)",
           marginBottom: "3rem",
+          color: "#000000",
+          fontFamily: "'Arial', 'Helvetica', sans-serif",
+          fontSize: "13px",
         }}
       >
-        {/* Brand & Invoice No Header */}
+        {/* Header Section: Left (Company name & phone), Right (INVOICE title & date) */}
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "flex-start",
-            paddingBottom: "2.5rem",
-            borderBottom: "2px solid #e2e8f0",
-            marginBottom: "2.5rem",
+            marginBottom: "2rem",
           }}
         >
-          {/* Agency Details */}
           <div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.6rem",
-                marginBottom: "0.5rem",
-              }}
-            >
-              <div
-                style={{
-                  width: "38px",
-                  height: "38px",
-                  borderRadius: "8px",
-                  backgroundColor: "#2563eb",
-                  color: "#ffffff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontWeight: 800,
-                  fontSize: "1.2rem",
-                }}
-              >
-                T
-              </div>
-              <h1
-                style={{
-                  fontSize: "1.65rem",
-                  fontWeight: 800,
-                  letterSpacing: "-0.02em",
-                  color: "#0f172a",
-                }}
-              >
-                THER-INV AGENCY
-              </h1>
-            </div>
-            <p style={{ fontSize: "0.875rem", color: "#475569" }}>
-              Healthcare Staffing & Professional Payroll Services
-            </p>
-            <p style={{ fontSize: "0.85rem", color: "#64748b" }}>
-              Email: contact@therina-agency.com | Phone: (305) 555-0100
-            </p>
-          </div>
-
-          {/* Invoice Meta */}
-          <div style={{ textAlign: "right" }}>
             <div
               style={{
                 fontSize: "1.75rem",
                 fontWeight: 800,
-                color: "#2563eb",
-                fontFamily: "var(--font-heading)",
+                color: "#000000",
+                letterSpacing: "-0.01em",
+                marginBottom: "1rem",
               }}
             >
-              {invoice.invoiceNumber}
+              AP Home care
             </div>
-
-            <div style={{ marginTop: "0.4rem" }}>
-              <span
-                style={{
-                  display: "inline-block",
-                  padding: "0.25rem 0.75rem",
-                  fontSize: "0.8rem",
-                  fontWeight: 700,
-                  borderRadius: "9999px",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                  backgroundColor:
-                    invoice.status === "paid"
-                      ? "#ecfdf5"
-                      : invoice.status === "pending"
-                      ? "#fffbeb"
-                      : "#f1f5f9",
-                  color:
-                    invoice.status === "paid"
-                      ? "#059669"
-                      : invoice.status === "pending"
-                      ? "#d97706"
-                      : "#64748b",
-                  border: `1px solid ${
-                    invoice.status === "paid"
-                      ? "#a7f3d0"
-                      : invoice.status === "pending"
-                      ? "#fde68a"
-                      : "#cbd5e1"
-                  }`,
-                }}
-              >
-                {invoice.status === "paid"
-                  ? "PAID"
-                  : invoice.status === "pending"
-                  ? "PENDING PAYMENT"
-                  : invoice.status === "draft"
-                  ? "DRAFT"
-                  : "CANCELLED"}
-              </span>
+            <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "#000000" }}>
+              Phone 786 287-4540
             </div>
+          </div>
 
-            <div style={{ marginTop: "0.75rem", fontSize: "0.85rem", color: "#475569" }}>
-              <div>
-                <strong>Issue Date:</strong> {formatDate(invoice.invoiceDate)}
-              </div>
-              <div style={{ marginTop: "0.2rem" }}>
-                <strong>Due Date:</strong> {formatDate(invoice.dueDate)}
-              </div>
+          <div style={{ textAlign: "right" }}>
+            <div
+              style={{
+                fontSize: "2.5rem",
+                fontWeight: 900,
+                color: "#000000",
+                letterSpacing: "0.08em",
+                lineHeight: 1,
+                marginBottom: "1.25rem",
+              }}
+            >
+              INVOICE
+            </div>
+            <div
+              style={{
+                fontSize: "1rem",
+                fontWeight: 700,
+                color: "#000000",
+              }}
+            >
+              {invoice.invoiceDate
+                ? new Date(invoice.invoiceDate).toLocaleDateString("en-US", {
+                    month: "numeric",
+                    day: "numeric",
+                    year: "numeric",
+                  })
+                : new Date().toLocaleDateString("en-US")}
             </div>
           </div>
         </div>
 
-        {/* Client & Period Blocks */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "2rem",
-            marginBottom: "2.5rem",
-          }}
-        >
-          {/* Bill To */}
-          <div
-            style={{
-              padding: "1.25rem",
-              backgroundColor: "#f8fafc",
-              borderRadius: "8px",
-              border: "1px solid #e2e8f0",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "0.75rem",
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-                fontWeight: 700,
-                color: "#64748b",
-                marginBottom: "0.4rem",
-              }}
-            >
-              Billed To:
-            </div>
-            <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#0f172a" }}>
-              {invoice.clientName}
-            </div>
-            {invoice.clientEmail && (
-              <div style={{ fontSize: "0.875rem", color: "#475569", marginTop: "0.25rem" }}>
-                {invoice.clientEmail}
-              </div>
-            )}
-            {invoice.clientAddress && (
-              <div style={{ fontSize: "0.875rem", color: "#475569", marginTop: "0.25rem" }}>
-                {invoice.clientAddress}
-              </div>
-            )}
+        {/* Invoice # & Bill To */}
+        <div style={{ marginBottom: "2rem" }}>
+          {/* Invoice Number Row */}
+          <div style={{ display: "flex", alignItems: "baseline", gap: "1rem", marginBottom: "1rem" }}>
+            <span style={{ fontSize: "1rem", fontWeight: 800, color: "#000000" }}>
+              INVOICE #
+            </span>
+            <span style={{ fontSize: "1rem", fontWeight: 700, color: "#000000" }}>
+              {invoice.invoiceNumber || "75-62"}
+              {invoice.items && invoice.items[0]?.workerName
+                ? ` ${invoice.items[0].workerName.split(" ")[0].toLowerCase()}`
+                : ""}
+            </span>
           </div>
 
-          {/* Period Details */}
-          <div
-            style={{
-              padding: "1.25rem",
-              backgroundColor: "#f8fafc",
-              borderRadius: "8px",
-              border: "1px solid #e2e8f0",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "0.75rem",
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-                fontWeight: 700,
-                color: "#64748b",
-                marginBottom: "0.4rem",
-              }}
-            >
-              Weekly Payroll Period:
+          {/* Bill To Box */}
+          <div style={{ maxWidth: "340px", lineHeight: "1.35" }}>
+            <div style={{ fontSize: "1rem", fontWeight: 800, color: "#000000", marginBottom: "0.2rem" }}>
+              Bill To:
             </div>
-            <div style={{ fontSize: "1.05rem", fontWeight: 700, color: "#0f172a" }}>
-              {formatDate(invoice.periodStart)} through {formatDate(invoice.periodEnd)}
+            <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "#000000", textTransform: "uppercase" }}>
+              {invoice.clientName || "ALC HOME HEALTH"}
             </div>
-            <div style={{ fontSize: "0.85rem", color: "#475569", marginTop: "0.4rem" }}>
-              Assigned Staff: <strong>{invoice.items?.length || 0} team members</strong>
+            <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "#000000", textTransform: "uppercase" }}>
+              {invoice.clientAddress || "1916 NW 84 AVE"}
+            </div>
+            <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "#000000", textTransform: "uppercase" }}>
+              DORAL, FLORIDA 33126
             </div>
           </div>
         </div>
 
-        {/* Breakdown Line Items Table */}
-        <div style={{ marginBottom: "2.5rem" }}>
+        {/* Exact Grid Table */}
+        <div style={{ marginBottom: "1.5rem" }}>
           <table
             style={{
               width: "100%",
               borderCollapse: "collapse",
-              textAlign: "left",
-              fontSize: "0.9rem",
+              border: "1.5px solid #000000",
+              fontSize: "11px",
+              fontWeight: 700,
             }}
           >
             <thead>
-              <tr style={{ borderBottom: "2px solid #0f172a" }}>
-                <th style={{ padding: "0.75rem 0.5rem", fontWeight: 700 }}>
-                  Staff Member / Role
+              <tr style={{ backgroundColor: "#ffffff" }}>
+                <th
+                  style={{
+                    border: "1.5px solid #000000",
+                    padding: "4px 8px",
+                    textAlign: "left",
+                    fontWeight: 800,
+                    fontSize: "12px",
+                  }}
+                >
+                  &nbsp;
                 </th>
-                <th style={{ padding: "0.75rem 0.5rem", textAlign: "right" }}>
-                  Reg. Hours
+                <th
+                  style={{
+                    border: "1.5px solid #000000",
+                    padding: "4px 8px",
+                    width: "90px",
+                    textAlign: "center",
+                    fontWeight: 800,
+                    fontSize: "12px",
+                  }}
+                >
+                  RATE
                 </th>
-                <th style={{ padding: "0.75rem 0.5rem", textAlign: "right" }}>
-                  Reg. Rate
+                <th
+                  style={{
+                    border: "1.5px solid #000000",
+                    padding: "4px 8px",
+                    width: "45px",
+                    textAlign: "center",
+                    fontWeight: 800,
+                    fontSize: "12px",
+                  }}
+                >
+                  #
                 </th>
-                <th style={{ padding: "0.75rem 0.5rem", textAlign: "right" }}>
-                  OT Hours
-                </th>
-                <th style={{ padding: "0.75rem 0.5rem", textAlign: "right" }}>
-                  OT Rate
-                </th>
-                <th style={{ padding: "0.75rem 0.5rem", textAlign: "right" }}>
-                  Amount
+                <th
+                  style={{
+                    border: "1.5px solid #000000",
+                    padding: "4px 8px",
+                    width: "100px",
+                    textAlign: "right",
+                    fontWeight: 800,
+                    fontSize: "12px",
+                  }}
+                >
+                  AMOUNT
                 </th>
               </tr>
             </thead>
             <tbody>
-              {invoice.items?.map((it, idx) => (
-                <tr key={idx} style={{ borderBottom: "1px solid #e2e8f0" }}>
-                  <td style={{ padding: "0.85rem 0.5rem" }}>
-                    <div style={{ fontWeight: 600, color: "#0f172a" }}>
-                      {it.workerName}
-                    </div>
-                    <div style={{ fontSize: "0.8rem", color: "#64748b" }}>
-                      {it.role} {it.description ? `• ${it.description}` : ""}
-                    </div>
-                  </td>
-                  <td style={{ padding: "0.85rem 0.5rem", textAlign: "right" }}>
-                    {it.regularHours} hrs
-                  </td>
-                  <td style={{ padding: "0.85rem 0.5rem", textAlign: "right" }}>
-                    {formatCurrency(it.regularRate)}
-                  </td>
-                  <td style={{ padding: "0.85rem 0.5rem", textAlign: "right" }}>
-                    {it.overtimeHours ? `${it.overtimeHours} hrs` : "-"}
-                  </td>
-                  <td style={{ padding: "0.85rem 0.5rem", textAlign: "right" }}>
-                    {it.overtimeHours ? formatCurrency(it.overtimeRate) : "-"}
-                  </td>
+              {/* Existing items */}
+              {invoice.items?.map((it, idx) => {
+                const visitDateFormatted = it.visitDate
+                  ? new Date(it.visitDate).toLocaleDateString("en-US", {
+                      month: "2-digit",
+                      day: "2-digit",
+                    })
+                  : "";
+                const displayPatientLine = `${(it.patientName || it.description || "").toUpperCase()}${
+                  visitDateFormatted ? ` ${visitDateFormatted}` : ""
+                }`;
+
+                return (
+                  <tr key={idx} style={{ height: "22px" }}>
+                    <td
+                      style={{
+                        border: "1.5px solid #000000",
+                        padding: "2px 8px",
+                        textAlign: "left",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {displayPatientLine}
+                    </td>
+                    <td
+                      style={{
+                        border: "1.5px solid #000000",
+                        padding: "2px 8px",
+                        textAlign: "right",
+                      }}
+                    >
+                      {(Number(it.regularRate) || 0).toFixed(2)}
+                    </td>
+                    <td
+                      style={{
+                        border: "1.5px solid #000000",
+                        padding: "2px 8px",
+                        textAlign: "center",
+                      }}
+                    >
+                      {it.regularHours || 1}
+                    </td>
+                    <td
+                      style={{
+                        border: "1.5px solid #000000",
+                        padding: "2px 8px",
+                        textAlign: "right",
+                      }}
+                    >
+                      {(Number(it.amount) || 0).toFixed(2)}
+                    </td>
+                  </tr>
+                );
+              })}
+
+              {/* Blank filler rows to match exact ledger layout (minimum 25 rows) */}
+              {Array.from({
+                length: Math.max(0, 24 - (invoice.items?.length || 0)),
+              }).map((_, emptyIdx) => (
+                <tr key={`empty-${emptyIdx}`} style={{ height: "22px" }}>
+                  <td style={{ border: "1.5px solid #000000", padding: "2px 8px" }}>&nbsp;</td>
+                  <td style={{ border: "1.5px solid #000000", padding: "2px 8px" }}>&nbsp;</td>
+                  <td style={{ border: "1.5px solid #000000", padding: "2px 8px" }}>&nbsp;</td>
                   <td
                     style={{
-                      padding: "0.85rem 0.5rem",
-                      textAlign: "right",
-                      fontWeight: 700,
-                      color: "#0f172a",
+                      border: "1.5px solid #000000",
+                      padding: "2px 8px",
+                      textAlign: "center",
+                      color: "#000000",
                     }}
                   >
-                    {formatCurrency(it.amount)}
+                    -
                   </td>
                 </tr>
               ))}
+
+              {/* TOTAL ROW */}
+              <tr style={{ height: "26px", fontWeight: 800 }}>
+                <td
+                  style={{
+                    border: "1.5px solid #000000",
+                    padding: "4px 8px",
+                    textAlign: "center",
+                    fontSize: "12px",
+                  }}
+                >
+                  TOTAL
+                </td>
+                <td style={{ border: "1.5px solid #000000", padding: "4px 8px" }}>&nbsp;</td>
+                <td
+                  style={{
+                    border: "1.5px solid #000000",
+                    padding: "4px 8px",
+                    textAlign: "center",
+                    fontSize: "12px",
+                  }}
+                >
+                  {invoice.items?.reduce(
+                    (acc, it) => acc + (Number(it.regularHours) || 1),
+                    0
+                  ) || 0}
+                </td>
+                <td
+                  style={{
+                    border: "1.5px solid #000000",
+                    padding: "4px 8px",
+                    textAlign: "right",
+                    fontSize: "12px",
+                  }}
+                >
+                  {new Intl.NumberFormat("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }).format(invoice.totalAmount || 0)}
+                </td>
+              </tr>
             </tbody>
           </table>
-        </div>
-
-        {/* Financial Summary & Notes */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1.2fr 1fr",
-            gap: "2.5rem",
-            alignItems: "flex-start",
-          }}
-        >
-          {/* Notes & Terms */}
-          <div>
-            <div
-              style={{
-                fontSize: "0.75rem",
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-                fontWeight: 700,
-                color: "#64748b",
-                marginBottom: "0.4rem",
-              }}
-            >
-              Notes & Terms:
-            </div>
-            <p
-              style={{
-                fontSize: "0.875rem",
-                color: "#475569",
-                lineHeight: 1.6,
-                whiteSpace: "pre-line",
-              }}
-            >
-              {invoice.notes ||
-                "Thank you for your business. Please submit payment via wire transfer or ACH before the due date."}
-            </p>
-          </div>
-
-          {/* Subtotals & Total */}
-          <div
-            style={{
-              backgroundColor: "#f8fafc",
-              padding: "1.25rem 1.5rem",
-              borderRadius: "8px",
-              border: "1px solid #e2e8f0",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginBottom: "0.5rem",
-                fontSize: "0.95rem",
-                color: "#475569",
-              }}
-            >
-              <span>Hours Subtotal:</span>
-              <span style={{ fontWeight: 600, color: "#0f172a" }}>
-                {formatCurrency(invoice.subtotal)}
-              </span>
-            </div>
-
-            {invoice.taxRate > 0 && (
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: "0.5rem",
-                  fontSize: "0.95rem",
-                  color: "#475569",
-                }}
-              >
-                <span>Tax ({invoice.taxRate}%):</span>
-                <span style={{ fontWeight: 600, color: "#0f172a" }}>
-                  {formatCurrency(invoice.taxAmount)}
-                </span>
-              </div>
-            )}
-
-            <div
-              style={{
-                borderTop: "2px solid #cbd5e1",
-                paddingTop: "0.75rem",
-                marginTop: "0.5rem",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "baseline",
-              }}
-            >
-              <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "#0f172a" }}>
-                Total Due:
-              </span>
-              <span
-                style={{
-                  fontSize: "1.65rem",
-                  fontWeight: 800,
-                  color: "#2563eb",
-                  fontFamily: "var(--font-heading)",
-                }}
-              >
-                {formatCurrency(invoice.totalAmount)}
-              </span>
-            </div>
-          </div>
         </div>
       </div>
     </div>
