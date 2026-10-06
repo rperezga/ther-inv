@@ -108,26 +108,6 @@ export default function LoginPage() {
           </div>
         )}
 
-        {seedStatus && (
-          <div
-            style={{
-              backgroundColor: "var(--primary-subtle)",
-              color: "var(--primary)",
-              border: "1px solid var(--primary-border)",
-              borderRadius: "var(--radius-md)",
-              padding: "0.75rem 1rem",
-              marginBottom: "1.25rem",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              fontSize: "0.875rem",
-            }}
-          >
-            <Sparkles size={18} />
-            <span>{seedStatus}</span>
-          </div>
-        )}
-
         <form onSubmit={handleLogin}>
           <div className="form-group">
             <label className="form-label" htmlFor="email-input">
