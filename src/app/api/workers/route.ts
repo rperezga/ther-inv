@@ -54,9 +54,9 @@ export async function POST(req: NextRequest) {
     const { firstName, lastName, role, hourlyRate, phone, email, ssnLast4, status, notes } =
       body;
 
-    if (!firstName || !lastName || !role || hourlyRate === undefined) {
+    if (!firstName?.trim() || !lastName?.trim() || !role?.trim()) {
       return NextResponse.json(
-        { error: "First name, last name, role, and hourly rate are required" },
+        { error: "First name, last name, and role/specialty are required" },
         { status: 400 }
       );
     }
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       role: role.trim(),
-      hourlyRate: Number(hourlyRate),
+      hourlyRate: Number(hourlyRate) || 0,
       phone: phone?.trim() || "",
       email: email?.trim() || "",
       ssnLast4: ssnLast4?.trim() || "",

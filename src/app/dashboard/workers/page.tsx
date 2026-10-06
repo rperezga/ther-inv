@@ -9,19 +9,27 @@ import {
   Trash2,
   Phone,
   Mail,
-  DollarSign,
   Briefcase,
-  CheckCircle,
   X,
   AlertCircle,
+  Plus,
 } from "lucide-react";
 import { IWorker } from "@/lib/types";
+
+const DEFAULT_ROLES = [
+  "Physical Therapy (PT)",
+  "Physical Therapy Assistant (PTA)",
+];
 
 export default function WorkersPage() {
   const [workers, setWorkers] = useState<IWorker[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+
+  // Role Management
+  const [availableRoles, setAvailableRoles] = useState<string[]>(DEFAULT_ROLES);
+  const [isAddingNewRole, setIsAddingNewRole] = useState(false);
+  const [customRoleInput, setCustomRoleInput] = useState("");
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -31,27 +39,47 @@ export default function WorkersPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [role, setRole] = useState("");
-  const [hourlyRate, setHourlyRate] = useState<number | string>(35);
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-  const [ssnLast4, setSsnLast4] = useState("");
-  const [status, setStatus] = useState<"active" | "inactive">("active");
   const [notes, setNotes] = useState("");
 
   const [saving, setSaving] = useState(false);
   const [modalError, setModalError] = useState("");
 
+  // Load custom roles from localStorage and initialize
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("therinv_custom_roles");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setAvailableRoles(Array.from(new Set([...DEFAULT_ROLES, ...parsed])));
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load custom roles:", err);
+    }
+  }, []);
+
   const fetchWorkers = async () => {
     setLoading(true);
     try {
       const url = new URL("/api/workers", window.location.origin);
-      if (statusFilter !== "all") url.searchParams.set("status", statusFilter);
       if (search) url.searchParams.set("search", search);
 
       const res = await fetch(url.toString());
       const data = await res.json();
       if (res.ok) {
-        setWorkers(data.workers || []);
+        const list: IWorker[] = data.workers || [];
+        setWorkers(list);
+
+        // Merge any existing roles from workers into available roles
+        const existingRoles = list.map((w) => w.role).filter(Boolean);
+        if (existingRoles.length > 0) {
+          setAvailableRoles((prev) =>
+            Array.from(new Set([...DEFAULT_ROLES, ...prev, ...existingRoles]))
+          );
+        }
       }
     } catch (err) {
       console.error(err);
@@ -62,7 +90,7 @@ export default function WorkersPage() {
 
   useEffect(() => {
     fetchWorkers();
-  }, [statusFilter]);
+  }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,12 +102,11 @@ export default function WorkersPage() {
     setFirstName("");
     setLastName("");
     setRole("");
-    setHourlyRate(35);
     setPhone("");
     setEmail("");
-    setSsnLast4("");
-    setStatus("active");
     setNotes("");
+    setIsAddingNewRole(false);
+    setCustomRoleInput("");
     setModalError("");
     setIsModalOpen(true);
   };
@@ -89,14 +116,50 @@ export default function WorkersPage() {
     setFirstName(worker.firstName);
     setLastName(worker.lastName);
     setRole(worker.role);
-    setHourlyRate(worker.hourlyRate);
     setPhone(worker.phone || "");
     setEmail(worker.email || "");
-    setSsnLast4(worker.ssnLast4 || "");
-    setStatus(worker.status);
     setNotes(worker.notes || "");
+    setIsAddingNewRole(false);
+    setCustomRoleInput("");
     setModalError("");
+
+    // Ensure worker's role is in available list
+    if (worker.role && !availableRoles.includes(worker.role)) {
+      setAvailableRoles((prev) => [...prev, worker.role]);
+    }
+
     setIsModalOpen(true);
+  };
+
+  const handleRoleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    if (val === "__ADD_NEW__") {
+      setIsAddingNewRole(true);
+      setCustomRoleInput("");
+    } else {
+      setRole(val);
+      setIsAddingNewRole(false);
+    }
+  };
+
+  const handleAddNewRole = () => {
+    const trimmed = customRoleInput.trim();
+    if (!trimmed) return;
+
+    setAvailableRoles((prev) => {
+      const updated = Array.from(new Set([...prev, trimmed]));
+      try {
+        const customOnly = updated.filter((r) => !DEFAULT_ROLES.includes(r));
+        localStorage.setItem("therinv_custom_roles", JSON.stringify(customOnly));
+      } catch (err) {
+        console.error("Failed to save custom roles:", err);
+      }
+      return updated;
+    });
+
+    setRole(trimmed);
+    setIsAddingNewRole(false);
+    setCustomRoleInput("");
   };
 
   const handleSaveWorker = async (e: React.FormEvent) => {
@@ -112,15 +175,14 @@ export default function WorkersPage() {
 
     try {
       const payload = {
-        firstName,
-        lastName,
-        role,
-        hourlyRate: Number(hourlyRate),
-        phone,
-        email,
-        ssnLast4,
-        status,
-        notes,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        role: role.trim(),
+        hourlyRate: editingWorker ? editingWorker.hourlyRate : 0,
+        phone: phone.trim(),
+        email: email.trim(),
+        status: "active",
+        notes: notes.trim(),
       };
 
       const url = editingWorker ? `/api/workers/${editingWorker._id}` : "/api/workers";
@@ -135,13 +197,13 @@ export default function WorkersPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Failed to save worker");
+        throw new Error(data.error || "Failed to save staff member");
       }
 
       setIsModalOpen(false);
       fetchWorkers();
     } catch (err: any) {
-      setModalError(err.message || "Failed to process worker");
+      setModalError(err.message || "Failed to process staff member");
     } finally {
       setSaving(false);
     }
@@ -157,18 +219,14 @@ export default function WorkersPage() {
       if (res.ok) {
         setWorkers((prev) => prev.filter((w) => w._id !== id));
       } else {
-        alert("Failed to delete worker");
+        alert("Failed to delete staff member");
       }
     } catch {
       alert("Connection error");
     }
   };
 
-  const activeCount = workers.filter((w) => w.status === "active").length;
-  const avgRate =
-    workers.length > 0
-      ? workers.reduce((acc, curr) => acc + (curr.hourlyRate || 0), 0) / workers.length
-      : 0;
+  const uniqueRolesCount = Array.from(new Set(workers.map((w) => w.role))).length;
 
   return (
     <div>
@@ -213,7 +271,7 @@ export default function WorkersPage() {
       >
         <div className="card" style={{ padding: "1rem 1.25rem" }}>
           <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", fontWeight: 600 }}>
-            Total Staff
+            Total Staff Members
           </div>
           <div style={{ fontSize: "1.5rem", fontWeight: 800, marginTop: "0.25rem" }}>
             {workers.length}
@@ -222,7 +280,7 @@ export default function WorkersPage() {
 
         <div className="card" style={{ padding: "1rem 1.25rem" }}>
           <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", fontWeight: 600 }}>
-            Active for Billing
+            Active Roster
           </div>
           <div
             style={{
@@ -232,13 +290,13 @@ export default function WorkersPage() {
               marginTop: "0.25rem",
             }}
           >
-            {activeCount}
+            {workers.filter((w) => w.status === "active").length}
           </div>
         </div>
 
         <div className="card" style={{ padding: "1rem 1.25rem" }}>
           <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", fontWeight: 600 }}>
-            Average Rate ($/hr)
+            Specialties Covered
           </div>
           <div
             style={{
@@ -248,12 +306,12 @@ export default function WorkersPage() {
               marginTop: "0.25rem",
             }}
           >
-            ${avgRate.toFixed(2)}/h
+            {uniqueRolesCount}
           </div>
         </div>
       </div>
 
-      {/* Search & Filters */}
+      {/* Search Bar */}
       <div
         className="card"
         style={{
@@ -266,30 +324,13 @@ export default function WorkersPage() {
           gap: "1rem",
         }}
       >
-        <div style={{ display: "flex", gap: "0.5rem" }}>
-          <button
-            onClick={() => setStatusFilter("all")}
-            className={`btn btn-sm ${statusFilter === "all" ? "btn-primary" : "btn-secondary"}`}
-          >
-            All ({workers.length})
-          </button>
-          <button
-            onClick={() => setStatusFilter("active")}
-            className={`btn btn-sm ${statusFilter === "active" ? "btn-primary" : "btn-secondary"}`}
-          >
-            Active
-          </button>
-          <button
-            onClick={() => setStatusFilter("inactive")}
-            className={`btn btn-sm ${statusFilter === "inactive" ? "btn-primary" : "btn-secondary"}`}
-          >
-            Inactive
-          </button>
+        <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-secondary)" }}>
+          {workers.length} {workers.length === 1 ? "Member Registered" : "Members Registered"}
         </div>
 
         <form
           onSubmit={handleSearchSubmit}
-          style={{ display: "flex", gap: "0.5rem", minWidth: "260px" }}
+          style={{ display: "flex", gap: "0.5rem", minWidth: "280px" }}
         >
           <div style={{ position: "relative", flex: 1 }}>
             <input
@@ -341,11 +382,9 @@ export default function WorkersPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Staff Name</th>
-                  <th>Role / Specialty</th>
-                  <th>Standard Rate</th>
-                  <th>Contact Info</th>
-                  <th>Status</th>
+                  <th>Staff Member</th>
+                  <th>Role / Clinical Specialty</th>
+                  <th>Contact Information</th>
                   <th>Notes</th>
                   <th style={{ textAlign: "right" }}>Actions</th>
                 </tr>
@@ -354,42 +393,32 @@ export default function WorkersPage() {
                 {workers.map((w) => (
                   <tr key={w._id}>
                     <td>
-                      <div style={{ fontWeight: 700, color: "var(--text-primary)" }}>
+                      <div style={{ fontWeight: 700, color: "var(--text-primary)", fontSize: "0.95rem" }}>
                         {w.firstName} {w.lastName}
                       </div>
-                      {w.ssnLast4 && (
-                        <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                          SSN: ***-**-{w.ssnLast4}
-                        </div>
-                      )}
                     </td>
                     <td>
                       <div
                         style={{
                           display: "inline-flex",
                           alignItems: "center",
-                          gap: "0.35rem",
+                          gap: "0.4rem",
                           backgroundColor: "var(--primary-subtle)",
                           color: "var(--primary)",
-                          padding: "0.2rem 0.55rem",
-                          borderRadius: "4px",
+                          padding: "0.25rem 0.65rem",
+                          borderRadius: "6px",
                           fontWeight: 600,
-                          fontSize: "0.825rem",
+                          fontSize: "0.85rem",
                         }}
                       >
-                        <Briefcase size={13} />
+                        <Briefcase size={14} />
                         <span>{w.role}</span>
                       </div>
                     </td>
                     <td>
-                      <span style={{ fontWeight: 700, fontSize: "0.95rem" }}>
-                        ${w.hourlyRate}/h
-                      </span>
-                    </td>
-                    <td>
                       <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
                         {w.phone && (
-                          <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
                             <Phone size={13} color="var(--text-muted)" /> {w.phone}
                           </div>
                         )}
@@ -398,8 +427,8 @@ export default function WorkersPage() {
                             style={{
                               display: "flex",
                               alignItems: "center",
-                              gap: "0.35rem",
-                              marginTop: "2px",
+                              gap: "0.4rem",
+                              marginTop: "3px",
                             }}
                           >
                             <Mail size={13} color="var(--text-muted)" /> {w.email}
@@ -408,17 +437,10 @@ export default function WorkersPage() {
                         {!w.phone && !w.email && <span style={{ color: "var(--text-muted)" }}>-</span>}
                       </div>
                     </td>
-                    <td>
-                      {w.status === "active" ? (
-                        <span className="badge badge-active">Active</span>
-                      ) : (
-                        <span className="badge badge-inactive">Inactive</span>
-                      )}
-                    </td>
-                    <td style={{ maxWidth: "200px" }}>
+                    <td style={{ maxWidth: "260px" }}>
                       <span
                         style={{
-                          fontSize: "0.8rem",
+                          fontSize: "0.85rem",
                           color: "var(--text-muted)",
                           display: "block",
                           whiteSpace: "nowrap",
@@ -471,21 +493,27 @@ export default function WorkersPage() {
       {/* Add / Edit Worker Modal */}
       {isModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-content">
+          <div className="modal-content" style={{ maxWidth: "520px" }}>
             <div className="modal-header">
-              <h3 style={{ fontSize: "1.2rem" }}>
-                {editingWorker ? "Edit Staff Member" : "New Agency Staff Member"}
-              </h3>
+              <div>
+                <h3 style={{ fontSize: "1.25rem", fontWeight: 700 }}>
+                  {editingWorker ? "Edit Staff Member" : "New Agency Staff Member"}
+                </h3>
+                <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginTop: "2px" }}>
+                  Enter staff details for the agency active roster
+                </p>
+              </div>
               <button
                 onClick={() => setIsModalOpen(false)}
                 style={{ color: "var(--text-muted)" }}
+                aria-label="Close modal"
               >
                 <X size={20} />
               </button>
             </div>
 
             <form onSubmit={handleSaveWorker}>
-              <div className="modal-body">
+              <div className="modal-body" style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
                 {modalError && (
                   <div
                     style={{
@@ -494,14 +522,18 @@ export default function WorkersPage() {
                       border: "1px solid var(--danger-border)",
                       borderRadius: "var(--radius-md)",
                       padding: "0.65rem 1rem",
-                      marginBottom: "1rem",
                       fontSize: "0.85rem",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
                     }}
                   >
-                    {modalError}
+                    <AlertCircle size={16} />
+                    <span>{modalError}</span>
                   </div>
                 )}
 
+                {/* Row 1: First Name & Last Name */}
                 <div
                   style={{
                     display: "grid",
@@ -509,7 +541,7 @@ export default function WorkersPage() {
                     gap: "1rem",
                   }}
                 >
-                  <div className="form-group">
+                  <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label">First Name *</label>
                     <input
                       type="text"
@@ -521,7 +553,7 @@ export default function WorkersPage() {
                     />
                   </div>
 
-                  <div className="form-group">
+                  <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label">Last Name *</label>
                     <input
                       type="text"
@@ -534,40 +566,88 @@ export default function WorkersPage() {
                   </div>
                 </div>
 
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1.3fr 1fr",
-                    gap: "1rem",
-                  }}
-                >
-                  <div className="form-group">
-                    <label className="form-label">Role / Clinical Specialty *</label>
-                    <input
-                      type="text"
-                      required
-                      className="form-input"
-                      placeholder="e.g. Registered Nurse (RN), PT, CNA"
-                      value={role}
-                      onChange={(e) => setRole(e.target.value)}
-                    />
-                  </div>
+                {/* Row 2: Role / Clinical Specialty Dropdown */}
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Role / Clinical Specialty *</label>
+                  <select
+                    className="form-select"
+                    required
+                    value={isAddingNewRole ? "__ADD_NEW__" : role}
+                    onChange={handleRoleSelectChange}
+                  >
+                    <option value="" disabled>
+                      Select a role / clinical specialty...
+                    </option>
+                    {availableRoles.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                    <option value="__ADD_NEW__">✨ + Add New Role...</option>
+                  </select>
 
-                  <div className="form-group">
-                    <label className="form-label">Standard Hourly Rate ($/hr) *</label>
-                    <input
-                      type="number"
-                      required
-                      min="0"
-                      step="1"
-                      className="form-input"
-                      placeholder="45"
-                      value={hourlyRate}
-                      onChange={(e) => setHourlyRate(e.target.value)}
-                    />
-                  </div>
+                  {/* Inline Add New Role Box */}
+                  {isAddingNewRole && (
+                    <div
+                      style={{
+                        marginTop: "0.75rem",
+                        padding: "0.85rem 1rem",
+                        backgroundColor: "var(--primary-subtle)",
+                        border: "1px solid var(--primary-border)",
+                        borderRadius: "var(--radius-md)",
+                      }}
+                    >
+                      <label
+                        style={{
+                          fontSize: "0.8rem",
+                          fontWeight: 700,
+                          color: "var(--primary)",
+                          display: "block",
+                          marginBottom: "0.4rem",
+                        }}
+                      >
+                        Enter New Role or Specialty Name
+                      </label>
+                      <div style={{ display: "flex", gap: "0.5rem" }}>
+                        <input
+                          type="text"
+                          autoFocus
+                          className="form-input"
+                          placeholder="e.g. Occupational Therapy (OT)"
+                          value={customRoleInput}
+                          onChange={(e) => setCustomRoleInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleAddNewRole();
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddNewRole}
+                          disabled={!customRoleInput.trim()}
+                          className="btn btn-primary btn-sm"
+                          style={{ whiteSpace: "nowrap" }}
+                        >
+                          <Plus size={14} /> Add
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsAddingNewRole(false);
+                            setCustomRoleInput("");
+                          }}
+                          className="btn btn-secondary btn-sm"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
+                {/* Row 3: Phone Number & Email Address */}
                 <div
                   style={{
                     display: "grid",
@@ -575,7 +655,7 @@ export default function WorkersPage() {
                     gap: "1rem",
                   }}
                 >
-                  <div className="form-group">
+                  <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label">Phone Number</label>
                     <input
                       type="text"
@@ -586,63 +666,32 @@ export default function WorkersPage() {
                     />
                   </div>
 
-                  <div className="form-group">
+                  <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label">Email Address</label>
                     <input
                       type="email"
                       className="form-input"
-                      placeholder="worker@email.com"
+                      placeholder="staff@agency.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />
                   </div>
                 </div>
 
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "1rem",
-                  }}
-                >
-                  <div className="form-group">
-                    <label className="form-label">Last 4 SSN Digits</label>
-                    <input
-                      type="text"
-                      maxLength={4}
-                      className="form-input"
-                      placeholder="1234"
-                      value={ssnLast4}
-                      onChange={(e) => setSsnLast4(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Agency Status</label>
-                    <select
-                      className="form-select"
-                      value={status}
-                      onChange={(e) => setStatus(e.target.value as "active" | "inactive")}
-                    >
-                      <option value="active">Active (Available)</option>
-                      <option value="inactive">Inactive</option>
-                    </select>
-                  </div>
-                </div>
-
+                {/* Row 4: Notes & Preferences */}
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label">Notes & Preferences</label>
                   <textarea
                     className="form-textarea"
-                    rows={2}
-                    placeholder="Shift availability, certifications, license details..."
+                    rows={3}
+                    placeholder="Certifications, shift availability, license details..."
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                   />
                 </div>
               </div>
 
-              <div className="modal-footer">
+              <div className="modal-footer" style={{ marginTop: "1.25rem" }}>
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
@@ -651,7 +700,11 @@ export default function WorkersPage() {
                   Cancel
                 </button>
                 <button type="submit" disabled={saving} className="btn btn-primary">
-                  {saving ? "Saving..." : editingWorker ? "Save Changes" : "Create Staff Member"}
+                  {saving
+                    ? "Saving..."
+                    : editingWorker
+                    ? "Save Changes"
+                    : "Create Staff Member"}
                 </button>
               </div>
             </form>

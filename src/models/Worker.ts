@@ -19,7 +19,7 @@ const WorkerSchema = new Schema<IWorkerDocument>(
     firstName: { type: String, required: true, trim: true },
     lastName: { type: String, required: true, trim: true },
     role: { type: String, required: true, trim: true },
-    hourlyRate: { type: Number, required: true, min: 0, default: 25 },
+    hourlyRate: { type: Number, default: 0, min: 0 },
     phone: { type: String, trim: true },
     email: { type: String, trim: true, lowercase: true },
     ssnLast4: { type: String, trim: true },
