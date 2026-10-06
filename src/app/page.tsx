@@ -205,14 +205,6 @@ export default function HomePage() {
             >
               Access Portal <ArrowRight size={18} />
             </Link>
-            <Link
-              href="/login?demo=1"
-              id="hero-demo-btn"
-              className="btn btn-secondary btn-lg"
-              style={{ padding: "0.9rem 2rem", fontSize: "1.05rem" }}
-            >
-              Quick Demo
-            </Link>
           </div>
 
           {/* Value Props */}
@@ -308,21 +300,12 @@ export default function HomePage() {
           borderTop: "1px solid var(--border-color)",
           backgroundColor: "#ffffff",
           padding: "1.5rem 2rem",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "1rem",
+          textAlign: "center",
           fontSize: "0.85rem",
           color: "var(--text-muted)",
         }}
       >
         <div>THER-INV © {new Date().getFullYear()} — All rights reserved.</div>
-        <div style={{ display: "flex", gap: "1.5rem" }}>
-          <span>Private & Secure</span>
-          <span>Deployed on Kali Linux</span>
-          <span>MongoDB Powered</span>
-        </div>
       </footer>
     </div>
   );
