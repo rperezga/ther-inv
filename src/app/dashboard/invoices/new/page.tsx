@@ -10,17 +10,14 @@ import {
   Sparkles,
   Camera,
   Upload,
+  ClipboardPaste,
   Plus,
   Trash2,
   Save,
   CheckCircle2,
   AlertCircle,
-  HelpCircle,
   Key,
-  Eye,
   RefreshCw,
-  Clock,
-  ArrowRight,
 } from "lucide-react";
 import { IWorker, IAgencyAssignment } from "@/lib/types";
 
@@ -33,15 +30,23 @@ const AGENCIES = [
   "USAD",
 ];
 
-const AVAILABLE_SERVICES = [
-  "SOC",
-  "ReCert",
-  "ReEval",
-  "Eval",
-  "Disch",
-  "Missed Visit",
-  "Special Rate",
-  "NoBill",
+// 8 Service definitions with short abbreviations for compact 1-click button row
+export interface ServiceButtonDef {
+  id: string;
+  abbr: string;
+  fullName: string;
+  isSpecial?: boolean;
+}
+
+const SERVICE_BUTTONS: ServiceButtonDef[] = [
+  { id: "SOC", abbr: "SOC", fullName: "Start of Care" },
+  { id: "ReCert", abbr: "ReC", fullName: "Re-Certification" },
+  { id: "ReEval", abbr: "ReEv", fullName: "Re-Evaluation" },
+  { id: "Eval", abbr: "Eval", fullName: "Evaluation" },
+  { id: "Disch", abbr: "Disc", fullName: "Discharge" },
+  { id: "Missed Visit", abbr: "MV", fullName: "Missed Visit" },
+  { id: "Special Rate", abbr: "SR", fullName: "Special Rate", isSpecial: true },
+  { id: "NoBill", abbr: "NoB", fullName: "No Billable" },
 ];
 
 export interface ExtractedVisitRow {
@@ -58,7 +63,7 @@ export default function CreateInvoicePage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Core Selections: Agent & Agency
+  // Core selections: Agent & Agency
   const [workers, setWorkers] = useState<IWorker[]>([]);
   const [selectedWorkerId, setSelectedWorkerId] = useState<string>("");
   const [selectedAgency, setSelectedAgency] = useState<string>(AGENCIES[1]); // Default ALC
@@ -84,7 +89,7 @@ export default function CreateInvoicePage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  // Load active workers and set default weekly dates
+  // Load active workers and default weekly dates
   useEffect(() => {
     const today = new Date();
     const dayOfWeek = today.getDay();
@@ -141,7 +146,6 @@ export default function CreateInvoicePage() {
     return srv ? Math.round(Number(srv.rate) || 0) : 0;
   };
 
-  // When worker or agency changes, re-evaluate default rates for rows that haven't been manually altered
   const updateRatesForCurrentSelection = (newWorkerId: string, newAgency: string) => {
     const targetWorker = workers.find((w) => w._id === newWorkerId);
     setVisits((prev) =>
@@ -162,7 +166,7 @@ export default function CreateInvoicePage() {
     updateRatesForCurrentSelection(selectedWorkerId, agency);
   };
 
-  // Image Upload / Screen Capture
+  // Image Upload handler
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -176,7 +180,7 @@ export default function CreateInvoicePage() {
     reader.readAsDataURL(file);
   };
 
-  // Clipboard Paste Support (User can press Ctrl+V directly to paste screenshot)
+  // Clipboard Paste (Ctrl+V) handler
   const handlePaste = (e: React.ClipboardEvent) => {
     const items = e.clipboardData.items;
     for (let i = 0; i < items.length; i++) {
@@ -196,7 +200,38 @@ export default function CreateInvoicePage() {
     }
   };
 
-  // Send screenshot to AI Vision API
+  // Dedicated button to paste directly from navigator clipboard
+  const handlePasteFromClipboardButton = async () => {
+    try {
+      if (!navigator.clipboard?.read) {
+        alert("Clipboard API is not supported in this browser. Please press Ctrl+V directly.");
+        return;
+      }
+
+      const clipboardItems = await navigator.clipboard.read();
+      for (const item of clipboardItems) {
+        const imageType = item.types.find((t) => t.startsWith("image/"));
+        if (imageType) {
+          const blob = await item.getType(imageType);
+          const reader = new FileReader();
+          reader.onload = () => {
+            const b64 = reader.result as string;
+            setPreviewImage(b64);
+            processImageWithAI(b64);
+          };
+          reader.readAsDataURL(blob);
+          return;
+        }
+      }
+      alert("No image found in clipboard. Please copy/screenshot an image first and try again, or press Ctrl+V.");
+    } catch (err: any) {
+      console.warn("Clipboard read error:", err);
+      // Fallback instruction for user
+      alert("Please press Ctrl+V anywhere on the page to paste your screenshot.");
+    }
+  };
+
+  // Process image with AI Vision
   const processImageWithAI = async (base64Img: string) => {
     setAnalyzingImage(true);
     setAiError("");
@@ -252,12 +287,11 @@ export default function CreateInvoicePage() {
       if (extracted.records && Array.isArray(extracted.records)) {
         const newRows: ExtractedVisitRow[] = extracted.records.map(
           (rec: any, idx: number) => {
-            // Service matching: check if SR or special code
             let service = rec.suggestedService || "SOC";
             if (rec.notes?.includes("SR") || rec.patientName?.includes("(SR)")) {
               service = "Special Rate";
             }
-            if (!AVAILABLE_SERVICES.includes(service)) {
+            if (!SERVICE_BUTTONS.some((s) => s.id === service)) {
               service = "SOC";
             }
 
@@ -265,7 +299,7 @@ export default function CreateInvoicePage() {
 
             return {
               id: `row-${Date.now()}-${idx}`,
-              patientName: rec.patientName ? rec.patientName.replace(/\(SR\)/i, "").trim() : `Patient ${idx + 1}`,
+              patientName: rec.patientName ? rec.patientName.replace(/\(SR\)/i, "").trim() : "",
               visitDate: rec.visitDate || new Date().toISOString().split("T")[0],
               serviceType: service,
               rate: currentRate,
@@ -285,7 +319,7 @@ export default function CreateInvoicePage() {
     }
   };
 
-  // Add Manual Row
+  // Add Manual Row (empty string for patientName, placeholder "Patient Name")
   const handleAddRow = () => {
     const defaultSrv = "SOC";
     const defaultRate = getRateForService(selectedWorker, selectedAgency, defaultSrv);
@@ -294,7 +328,7 @@ export default function CreateInvoicePage() {
       ...prev,
       {
         id: `manual-${Date.now()}`,
-        patientName: "",
+        patientName: "", // Empty so no sample person name appears
         visitDate: periodStart || new Date().toISOString().split("T")[0],
         serviceType: defaultSrv,
         rate: defaultRate,
@@ -314,7 +348,7 @@ export default function CreateInvoicePage() {
         if (row.id !== id) return row;
         const updated = { ...row, [field]: value };
 
-        // If service type changed, automatically recalculate configured rate
+        // When serviceType changes, update rate automatically from configuration
         if (field === "serviceType") {
           updated.rate = getRateForService(selectedWorker, selectedAgency, value);
         }
@@ -370,7 +404,6 @@ export default function CreateInvoicePage() {
     setSubmitError("");
 
     try {
-      // Build Invoice items
       const itemsPayload = selectedVisits.map((v) => ({
         workerId: selectedWorker._id,
         workerName: `${selectedWorker.firstName} ${selectedWorker.lastName}`,
@@ -378,7 +411,7 @@ export default function CreateInvoicePage() {
         patientName: v.patientName.trim(),
         visitDate: v.visitDate,
         serviceType: v.serviceType,
-        regularHours: 1, // 1 visit
+        regularHours: 1,
         regularRate: Math.round(Number(v.rate) || 0),
         overtimeHours: 0,
         overtimeRate: 0,
@@ -408,7 +441,6 @@ export default function CreateInvoicePage() {
         throw new Error(data.error || "Failed to create invoice");
       }
 
-      // Redirect directly to generated invoice view
       router.push(`/dashboard/invoices/${data.invoice._id}`);
     } catch (err: any) {
       setSubmitError(err.message || "Failed to generate invoice");
@@ -434,33 +466,33 @@ export default function CreateInvoicePage() {
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
-          gap: "1rem",
-          marginBottom: "0.85rem",
+          gap: "0.75rem",
+          marginBottom: "0.6rem",
           flexShrink: 0,
         }}
       >
         <div>
           <h1
             style={{
-              fontSize: "1.45rem",
+              fontSize: "1.35rem",
               fontWeight: 800,
               display: "flex",
               alignItems: "center",
-              gap: "0.5rem",
+              gap: "0.45rem",
               margin: 0,
             }}
           >
-            <FileText size={24} color="var(--primary)" />
+            <FileText size={22} color="var(--primary)" />
             Create Weekly Agency Invoice
           </h1>
-          <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", margin: "2px 0 0 0" }}>
+          <p style={{ color: "var(--text-secondary)", fontSize: "0.82rem", margin: "2px 0 0 0" }}>
             Generate invoices per agent and per agency with automated AI extraction from weekly visit sheets.
           </p>
         </div>
 
         {/* Action Controls */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          {/* AI Screenshot Trigger Button */}
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          {/* File input (hidden) */}
           <input
             type="file"
             ref={fileInputRef}
@@ -468,13 +500,35 @@ export default function CreateInvoicePage() {
             accept="image/*"
             style={{ display: "none" }}
           />
+
+          {/* Paste Clipboard Image Button */}
+          <button
+            type="button"
+            onClick={handlePasteFromClipboardButton}
+            disabled={analyzingImage}
+            className="btn btn-secondary btn-sm"
+            style={{
+              gap: "0.4rem",
+              fontSize: "0.82rem",
+              padding: "0.35rem 0.75rem",
+              fontWeight: 700,
+            }}
+            title="Paste image directly from clipboard"
+          >
+            <ClipboardPaste size={14} />
+            <span>Paste from Clipboard</span>
+          </button>
+
+          {/* Upload / Screenshot Button */}
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={analyzingImage}
             className="btn btn-secondary btn-sm"
             style={{
-              gap: "0.45rem",
+              gap: "0.4rem",
+              fontSize: "0.82rem",
+              padding: "0.35rem 0.75rem",
               backgroundColor: "#f0f7ff",
               borderColor: "var(--primary-border)",
               color: "var(--primary)",
@@ -484,13 +538,13 @@ export default function CreateInvoicePage() {
           >
             {analyzingImage ? (
               <>
-                <RefreshCw size={15} className="spin" />
+                <RefreshCw size={14} className="spin" />
                 <span>Extracting with AI...</span>
               </>
             ) : (
               <>
-                <Camera size={15} />
-                <span>Upload / Screenshot Sheet</span>
+                <Camera size={14} />
+                <span>Upload Sheet</span>
               </>
             )}
           </button>
@@ -500,13 +554,13 @@ export default function CreateInvoicePage() {
             onClick={handleGenerateInvoice}
             disabled={submitting || visits.length === 0}
             className="btn btn-primary btn-sm"
-            style={{ minWidth: "150px" }}
+            style={{ minWidth: "140px", fontSize: "0.82rem", padding: "0.4rem 0.85rem" }}
           >
             {submitting ? (
               <span>Generating...</span>
             ) : (
               <>
-                <Save size={16} />
+                <Save size={15} />
                 <span>Generate Invoice</span>
               </>
             )}
@@ -522,17 +576,17 @@ export default function CreateInvoicePage() {
             color: "var(--danger)",
             border: "1px solid var(--danger-border)",
             borderRadius: "6px",
-            padding: "0.5rem 0.85rem",
-            marginBottom: "0.75rem",
-            fontSize: "0.82rem",
+            padding: "0.45rem 0.75rem",
+            marginBottom: "0.5rem",
+            fontSize: "0.8rem",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             flexShrink: 0,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <AlertCircle size={16} />
+          <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
+            <AlertCircle size={15} />
             <span>{aiError}</span>
           </div>
           <button
@@ -558,93 +612,95 @@ export default function CreateInvoicePage() {
             color: "var(--danger)",
             border: "1px solid var(--danger-border)",
             borderRadius: "6px",
-            padding: "0.5rem 0.85rem",
-            marginBottom: "0.75rem",
-            fontSize: "0.82rem",
+            padding: "0.45rem 0.75rem",
+            marginBottom: "0.5rem",
+            fontSize: "0.8rem",
             display: "flex",
             alignItems: "center",
-            gap: "0.5rem",
+            gap: "0.45rem",
             flexShrink: 0,
           }}
         >
-          <AlertCircle size={16} />
+          <AlertCircle size={15} />
           <span>{submitError}</span>
         </div>
       )}
 
-      {/* Optional API Key Input Modal / Strip */}
       {showKeyInput && (
         <div
           className="card"
           style={{
-            padding: "0.6rem 1rem",
-            marginBottom: "0.75rem",
+            padding: "0.5rem 0.85rem",
+            marginBottom: "0.5rem",
             backgroundColor: "#fffbeb",
             borderColor: "var(--warning-border)",
             flexShrink: 0,
             display: "flex",
             alignItems: "center",
-            gap: "0.75rem",
+            gap: "0.6rem",
             flexWrap: "wrap",
           }}
         >
-          <Key size={16} color="var(--warning)" />
-          <span style={{ fontSize: "0.82rem", fontWeight: 600 }}>OpenAI API Key:</span>
+          <Key size={15} color="var(--warning)" />
+          <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>OpenAI API Key:</span>
           <input
             type="password"
             placeholder="sk-proj-..."
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
             className="form-input"
-            style={{ flex: 1, height: "30px", fontSize: "0.82rem", minWidth: "220px" }}
+            style={{ flex: 1, height: "30px", fontSize: "0.8rem", minWidth: "220px", padding: "0.2rem 0.5rem" }}
           />
-          <button onClick={handleSaveApiKey} className="btn btn-primary btn-sm" style={{ padding: "0.3rem 0.75rem" }}>
+          <button onClick={handleSaveApiKey} className="btn btn-primary btn-sm" style={{ padding: "0.25rem 0.65rem", fontSize: "0.78rem" }}>
             Save Key & Run
           </button>
           <button
             onClick={() => setShowKeyInput(false)}
             className="btn btn-secondary btn-sm"
-            style={{ padding: "0.3rem 0.5rem" }}
+            style={{ padding: "0.25rem 0.5rem", fontSize: "0.78rem" }}
           >
             Cancel
           </button>
         </div>
       )}
 
-      {/* Main Container: Split View (Controls + Table) */}
+      {/* Main Container */}
       <div
         style={{
           display: "flex",
           flexDirection: "column",
           flex: 1,
           minHeight: 0,
-          gap: "0.75rem",
+          gap: "0.6rem",
           overflow: "hidden",
         }}
       >
-        {/* Parameters Filter Strip: Agent, Agency, Dates, Summary Totals */}
+        {/* Parameters Filter Strip: Agent, Agency, Dates, Summary Totals (No text cut-off) */}
         <div
           className="card"
           style={{
-            padding: "0.75rem 1rem",
+            padding: "0.65rem 0.85rem",
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr)) 160px",
-            gap: "0.85rem",
+            gridTemplateColumns: "1.4fr 1.2fr 1fr 1fr 160px",
+            gap: "0.65rem",
             alignItems: "end",
             flexShrink: 0,
             backgroundColor: "#ffffff",
           }}
         >
           {/* Agent Selection */}
-          <div>
+          <div style={{ minWidth: 0 }}>
             <label
               style={{
-                fontSize: "0.72rem",
+                fontSize: "0.7rem",
                 fontWeight: 700,
                 color: "var(--text-secondary)",
                 display: "block",
-                marginBottom: "0.25rem",
+                marginBottom: "0.2rem",
                 textTransform: "uppercase",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
               }}
             >
               1. Clinical Agent *
@@ -653,7 +709,14 @@ export default function CreateInvoicePage() {
               className="form-select"
               value={selectedWorkerId}
               onChange={(e) => handleWorkerChange(e.target.value)}
-              style={{ height: "34px", fontSize: "0.85rem", fontWeight: 600 }}
+              style={{
+                height: "36px",
+                fontSize: "0.82rem",
+                fontWeight: 600,
+                padding: "0.3rem 0.6rem",
+                width: "100%",
+                lineHeight: "normal",
+              }}
             >
               {workers.map((w) => (
                 <option key={w._id} value={w._id}>
@@ -664,15 +727,18 @@ export default function CreateInvoicePage() {
           </div>
 
           {/* Agency Selection */}
-          <div>
+          <div style={{ minWidth: 0 }}>
             <label
               style={{
-                fontSize: "0.72rem",
+                fontSize: "0.7rem",
                 fontWeight: 700,
                 color: "var(--text-secondary)",
                 display: "block",
-                marginBottom: "0.25rem",
+                marginBottom: "0.2rem",
                 textTransform: "uppercase",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
               }}
             >
               2. Partner Agency *
@@ -681,7 +747,15 @@ export default function CreateInvoicePage() {
               className="form-select"
               value={selectedAgency}
               onChange={(e) => handleAgencyChange(e.target.value)}
-              style={{ height: "34px", fontSize: "0.85rem", fontWeight: 700, color: "var(--primary)" }}
+              style={{
+                height: "36px",
+                fontSize: "0.82rem",
+                fontWeight: 700,
+                color: "var(--primary)",
+                padding: "0.3rem 0.6rem",
+                width: "100%",
+                lineHeight: "normal",
+              }}
             >
               {AGENCIES.map((agency) => (
                 <option key={agency} value={agency}>
@@ -692,15 +766,16 @@ export default function CreateInvoicePage() {
           </div>
 
           {/* Week Start */}
-          <div>
+          <div style={{ minWidth: 0 }}>
             <label
               style={{
-                fontSize: "0.72rem",
+                fontSize: "0.7rem",
                 fontWeight: 700,
                 color: "var(--text-secondary)",
                 display: "block",
-                marginBottom: "0.25rem",
+                marginBottom: "0.2rem",
                 textTransform: "uppercase",
+                whiteSpace: "nowrap",
               }}
             >
               Week Start Date *
@@ -710,20 +785,27 @@ export default function CreateInvoicePage() {
               value={periodStart}
               onChange={(e) => setPeriodStart(e.target.value)}
               className="form-input"
-              style={{ height: "34px", fontSize: "0.82rem" }}
+              style={{
+                height: "36px",
+                fontSize: "0.8rem",
+                padding: "0.3rem 0.5rem",
+                width: "100%",
+                lineHeight: "normal",
+              }}
             />
           </div>
 
           {/* Week End */}
-          <div>
+          <div style={{ minWidth: 0 }}>
             <label
               style={{
-                fontSize: "0.72rem",
+                fontSize: "0.7rem",
                 fontWeight: 700,
                 color: "var(--text-secondary)",
                 display: "block",
-                marginBottom: "0.25rem",
+                marginBottom: "0.2rem",
                 textTransform: "uppercase",
+                whiteSpace: "nowrap",
               }}
             >
               Week End Date *
@@ -733,7 +815,13 @@ export default function CreateInvoicePage() {
               value={periodEnd}
               onChange={(e) => setPeriodEnd(e.target.value)}
               className="form-input"
-              style={{ height: "34px", fontSize: "0.82rem" }}
+              style={{
+                height: "36px",
+                fontSize: "0.8rem",
+                padding: "0.3rem 0.5rem",
+                width: "100%",
+                lineHeight: "normal",
+              }}
             />
           </div>
 
@@ -743,20 +831,24 @@ export default function CreateInvoicePage() {
               backgroundColor: "var(--bg-subtle)",
               border: "1px solid var(--border-color)",
               borderRadius: "6px",
-              padding: "0.35rem 0.75rem",
+              padding: "0.35rem 0.65rem",
               textAlign: "right",
+              height: "36px",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
             }}
           >
-            <div style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>
-              Total Invoice ({totalVisitsCount} visits)
+            <div style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>
+              Total ({totalVisitsCount} visits)
             </div>
-            <div style={{ fontSize: "1.2rem", fontWeight: 800, color: "var(--primary)" }}>
+            <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "var(--primary)", lineHeight: 1.1 }}>
               ${invoiceSubtotal.toLocaleString()}
             </div>
           </div>
         </div>
 
-        {/* Extracted Visits Interactive Table (Fits remaining viewport height, table body scrolls) */}
+        {/* Extracted Visits Interactive Table */}
         <div
           className="card"
           style={{
@@ -771,7 +863,7 @@ export default function CreateInvoicePage() {
           {/* Table Header Controls */}
           <div
             style={{
-              padding: "0.65rem 1rem",
+              padding: "0.55rem 0.85rem",
               borderBottom: "1px solid var(--border-color)",
               backgroundColor: "var(--bg-subtle)",
               display: "flex",
@@ -780,28 +872,28 @@ export default function CreateInvoicePage() {
               flexShrink: 0,
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-              <span style={{ fontWeight: 800, fontSize: "0.92rem", color: "var(--text-primary)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+              <span style={{ fontWeight: 800, fontSize: "0.88rem", color: "var(--text-primary)" }}>
                 Patient Visits ({visits.length})
               </span>
-              <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-                Review, adjust names/dates, and pick the service to assign rates automatically
+              <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                Click service buttons to assign rates immediately
               </span>
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
               <button
                 type="button"
                 onClick={handleAddRow}
                 className="btn btn-secondary btn-sm"
-                style={{ fontSize: "0.78rem", padding: "0.3rem 0.65rem" }}
+                style={{ fontSize: "0.75rem", padding: "0.25rem 0.55rem" }}
               >
-                <Plus size={14} /> Add Row
+                <Plus size={13} /> Add Row
               </button>
             </div>
           </div>
 
-          {/* Table Body Area */}
+          {/* Table Body */}
           <div
             className="table-container"
             style={{
@@ -814,7 +906,7 @@ export default function CreateInvoicePage() {
             {visits.length === 0 ? (
               <div
                 style={{
-                  padding: "3.5rem 1.5rem",
+                  padding: "3rem 1.5rem",
                   textAlign: "center",
                   display: "flex",
                   flexDirection: "column",
@@ -822,27 +914,34 @@ export default function CreateInvoicePage() {
                   justifyContent: "center",
                 }}
               >
-                <Camera size={40} style={{ opacity: 0.35, marginBottom: "0.75rem" }} />
-                <p style={{ fontWeight: 700, fontSize: "1.05rem", color: "var(--text-primary)" }}>
+                <Camera size={38} style={{ opacity: 0.35, marginBottom: "0.65rem" }} />
+                <p style={{ fontWeight: 700, fontSize: "1rem", color: "var(--text-primary)" }}>
                   No visit records loaded yet
                 </p>
-                <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", maxWidth: "440px", marginTop: "0.25rem" }}>
-                  Click <strong>&quot;Upload / Screenshot Sheet&quot;</strong> or press <strong>Ctrl+V</strong> to paste a screenshot of the patient summary sheet. The AI will extract patient names and visit dates directly into this table.
+                <p style={{ color: "var(--text-muted)", fontSize: "0.82rem", maxWidth: "460px", marginTop: "0.2rem" }}>
+                  Click <strong>&quot;Paste from Clipboard&quot;</strong>, press <strong>Ctrl+V</strong>, or choose <strong>&quot;Upload Sheet&quot;</strong> to extract the patient names and visit dates automatically.
                 </p>
-                <div style={{ marginTop: "1rem", display: "flex", gap: "0.5rem" }}>
+                <div style={{ marginTop: "0.85rem", display: "flex", gap: "0.45rem" }}>
+                  <button
+                    type="button"
+                    onClick={handlePasteFromClipboardButton}
+                    className="btn btn-primary btn-sm"
+                  >
+                    <ClipboardPaste size={14} /> Paste from Clipboard
+                  </button>
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="btn btn-primary btn-sm"
+                    className="btn btn-secondary btn-sm"
                   >
-                    <Upload size={14} /> Choose Screenshot / Photo
+                    <Upload size={14} /> Upload Sheet
                   </button>
                   <button
                     type="button"
                     onClick={handleAddRow}
                     className="btn btn-secondary btn-sm"
                   >
-                    <Plus size={14} /> Add Manual Row
+                    <Plus size={14} /> Add Row
                   </button>
                 </div>
               </div>
@@ -850,24 +949,24 @@ export default function CreateInvoicePage() {
               <table className="data-table" style={{ width: "100%" }}>
                 <thead style={{ position: "sticky", top: 0, zIndex: 10, background: "#f8fafc" }}>
                   <tr>
-                    <th style={{ width: "40px", textAlign: "center", padding: "0.6rem 0.5rem" }}>
+                    <th style={{ width: "35px", textAlign: "center", padding: "0.5rem 0.4rem" }}>
                       <input
                         type="checkbox"
                         checked={visits.length > 0 && visits.every((r) => r.selected)}
                         onChange={(e) => handleToggleSelectAll(e.target.checked)}
                       />
                     </th>
-                    <th style={{ width: "45px", padding: "0.6rem 0.5rem" }}>#</th>
-                    <th style={{ minWidth: "200px", padding: "0.6rem 0.75rem" }}>Patient Name</th>
-                    <th style={{ width: "140px", padding: "0.6rem 0.75rem" }}>Visit Date</th>
-                    <th style={{ width: "170px", padding: "0.6rem 0.75rem" }}>Service Code</th>
-                    <th style={{ width: "120px", textAlign: "right", padding: "0.6rem 0.75rem" }}>
+                    <th style={{ width: "35px", padding: "0.5rem 0.4rem" }}>#</th>
+                    <th style={{ width: "210px", padding: "0.5rem 0.6rem" }}>Patient Name</th>
+                    <th style={{ width: "110px", padding: "0.5rem 0.5rem" }}>Visit Date</th>
+                    <th style={{ padding: "0.5rem 0.6rem" }}>Service Code</th>
+                    <th style={{ width: "95px", textAlign: "right", padding: "0.5rem 0.6rem" }}>
                       Rate ($)
                     </th>
-                    <th style={{ width: "120px", textAlign: "right", padding: "0.6rem 0.75rem" }}>
+                    <th style={{ width: "85px", textAlign: "right", padding: "0.5rem 0.6rem" }}>
                       Subtotal
                     </th>
-                    <th style={{ width: "50px", textAlign: "center", padding: "0.6rem 0.5rem" }}></th>
+                    <th style={{ width: "40px", textAlign: "center", padding: "0.5rem 0.4rem" }}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -880,7 +979,7 @@ export default function CreateInvoicePage() {
                       }}
                     >
                       {/* Checkbox */}
-                      <td style={{ textAlign: "center", padding: "0.4rem 0.5rem" }}>
+                      <td style={{ textAlign: "center", padding: "0.35rem 0.4rem" }}>
                         <input
                           type="checkbox"
                           checked={row.selected}
@@ -889,29 +988,30 @@ export default function CreateInvoicePage() {
                       </td>
 
                       {/* Row Index */}
-                      <td style={{ fontSize: "0.8rem", color: "var(--text-muted)", padding: "0.4rem 0.5rem" }}>
+                      <td style={{ fontSize: "0.78rem", color: "var(--text-muted)", padding: "0.35rem 0.4rem" }}>
                         {idx + 1}
                       </td>
 
-                      {/* Patient Name Input */}
-                      <td style={{ padding: "0.35rem 0.75rem" }}>
+                      {/* Compact Patient Name Input */}
+                      <td style={{ padding: "0.3rem 0.5rem" }}>
                         <input
                           type="text"
                           value={row.patientName}
                           onChange={(e) => handleUpdateRow(row.id, "patientName", e.target.value)}
-                          placeholder="e.g. Jose Cano"
+                          placeholder="Patient Name"
                           className="form-input"
                           style={{
-                            height: "32px",
-                            fontSize: "0.85rem",
+                            height: "30px",
+                            fontSize: "0.82rem",
                             fontWeight: 700,
-                            padding: "0.2rem 0.5rem",
+                            padding: "0.15rem 0.45rem",
+                            width: "100%",
                           }}
                         />
                       </td>
 
                       {/* Visit Date Input */}
-                      <td style={{ padding: "0.35rem 0.75rem" }}>
+                      <td style={{ padding: "0.3rem 0.45rem" }}>
                         <input
                           type="text"
                           value={row.visitDate}
@@ -919,47 +1019,79 @@ export default function CreateInvoicePage() {
                           placeholder="9-2-26"
                           className="form-input"
                           style={{
-                            height: "32px",
-                            fontSize: "0.82rem",
-                            padding: "0.2rem 0.5rem",
+                            height: "30px",
+                            fontSize: "0.8rem",
+                            padding: "0.15rem 0.45rem",
+                            width: "100%",
                           }}
                         />
                       </td>
 
-                      {/* Service Dropdown */}
-                      <td style={{ padding: "0.35rem 0.75rem" }}>
-                        <select
-                          value={row.serviceType}
-                          onChange={(e) => handleUpdateRow(row.id, "serviceType", e.target.value)}
-                          className="form-select"
+                      {/* 8 Clickable Service Buttons Row (Replaces dropdown) */}
+                      <td style={{ padding: "0.3rem 0.5rem" }}>
+                        <div
                           style={{
-                            height: "32px",
-                            fontSize: "0.82rem",
-                            fontWeight: 700,
-                            padding: "0.2rem 0.5rem",
-                            color: row.serviceType === "Special Rate" ? "#b45309" : "var(--text-primary)",
+                            display: "inline-flex",
+                            gap: "0.25rem",
+                            alignItems: "center",
+                            flexWrap: "nowrap",
                           }}
                         >
-                          {AVAILABLE_SERVICES.map((srv) => (
-                            <option key={srv} value={srv}>
-                              {srv}
-                            </option>
-                          ))}
-                        </select>
+                          {SERVICE_BUTTONS.map((btn) => {
+                            const isSelectedService = row.serviceType === btn.id;
+
+                            // Special color for SR (Special Rate)
+                            let activeBg = "var(--primary)";
+                            let activeBorder = "var(--primary)";
+                            if (btn.isSpecial) {
+                              activeBg = "#b45309"; // amber-700
+                              activeBorder = "#b45309";
+                            } else if (btn.id === "NoBill") {
+                              activeBg = "#475569"; // slate-600
+                              activeBorder = "#475569";
+                            }
+
+                            return (
+                              <button
+                                key={btn.id}
+                                type="button"
+                                onClick={() => handleUpdateRow(row.id, "serviceType", btn.id)}
+                                title={`${btn.fullName} (${btn.id})`}
+                                style={{
+                                  border: isSelectedService
+                                    ? `1.5px solid ${activeBorder}`
+                                    : "1px solid var(--border-color)",
+                                  backgroundColor: isSelectedService ? activeBg : "#ffffff",
+                                  color: isSelectedService ? "#ffffff" : "var(--text-primary)",
+                                  fontSize: "0.72rem",
+                                  fontWeight: isSelectedService ? 800 : 600,
+                                  padding: "0.15rem 0.38rem",
+                                  borderRadius: "4px",
+                                  cursor: "pointer",
+                                  lineHeight: 1.2,
+                                  transition: "all 0.1s ease",
+                                }}
+                              >
+                                {btn.abbr}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </td>
 
-                      {/* Rate Input (Closed whole integer) */}
-                      <td style={{ padding: "0.35rem 0.75rem", textAlign: "right" }}>
-                        <div style={{ position: "relative", display: "inline-block", width: "90px" }}>
+                      {/* Closed Rate Input */}
+                      <td style={{ padding: "0.3rem 0.5rem", textAlign: "right" }}>
+                        <div style={{ position: "relative", display: "inline-block", width: "75px" }}>
                           <span
                             style={{
                               position: "absolute",
-                              left: "0.45rem",
+                              left: "0.35rem",
                               top: "50%",
                               transform: "translateY(-50%)",
-                              fontSize: "0.8rem",
+                              fontSize: "0.75rem",
                               color: "var(--text-muted)",
                               fontWeight: 700,
+                              pointerEvents: "none",
                             }}
                           >
                             $
@@ -974,24 +1106,25 @@ export default function CreateInvoicePage() {
                             }}
                             className="form-input"
                             style={{
-                              height: "32px",
-                              fontSize: "0.85rem",
-                              fontWeight: 700,
+                              height: "30px",
+                              fontSize: "0.82rem",
+                              fontWeight: 800,
                               textAlign: "right",
-                              paddingLeft: "1.2rem",
-                              paddingRight: "0.45rem",
+                              paddingLeft: "0.95rem",
+                              paddingRight: "0.35rem",
+                              width: "100%",
                             }}
                           />
                         </div>
                       </td>
 
                       {/* Subtotal */}
-                      <td style={{ padding: "0.35rem 0.75rem", textAlign: "right", fontWeight: 700, fontSize: "0.88rem" }}>
+                      <td style={{ padding: "0.3rem 0.5rem", textAlign: "right", fontWeight: 800, fontSize: "0.85rem", color: "var(--text-primary)" }}>
                         ${row.selected ? (Number(row.rate) || 0) : 0}
                       </td>
 
                       {/* Delete */}
-                      <td style={{ textAlign: "center", padding: "0.35rem 0.5rem" }}>
+                      <td style={{ textAlign: "center", padding: "0.3rem 0.4rem" }}>
                         <button
                           type="button"
                           onClick={() => handleDeleteRow(row.id)}
@@ -1004,7 +1137,7 @@ export default function CreateInvoicePage() {
                           }}
                           title="Remove row"
                         >
-                          <Trash2 size={15} />
+                          <Trash2 size={14} />
                         </button>
                       </td>
                     </tr>
@@ -1014,11 +1147,11 @@ export default function CreateInvoicePage() {
             )}
           </div>
 
-          {/* Table Footer with Summary */}
+          {/* Table Footer */}
           {visits.length > 0 && (
             <div
               style={{
-                padding: "0.6rem 1rem",
+                padding: "0.5rem 0.85rem",
                 borderTop: "1px solid var(--border-color)",
                 backgroundColor: "var(--bg-subtle)",
                 display: "flex",
@@ -1027,12 +1160,12 @@ export default function CreateInvoicePage() {
                 flexShrink: 0,
               }}
             >
-              <div style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+              <div style={{ fontSize: "0.78rem", color: "var(--text-secondary)" }}>
                 Selected for Invoice: <strong>{totalVisitsCount}</strong> of {visits.length} visits
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                <div style={{ fontSize: "0.92rem", fontWeight: 800 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                <div style={{ fontSize: "0.88rem", fontWeight: 800 }}>
                   Subtotal: <span style={{ color: "var(--primary)" }}>${invoiceSubtotal.toLocaleString()}</span>
                 </div>
               </div>
