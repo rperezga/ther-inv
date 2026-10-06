@@ -229,65 +229,67 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Demo Fast Access Box */}
-        <div
-          style={{
-            marginTop: "1.75rem",
-            paddingTop: "1.5rem",
-            borderTop: "1px dashed var(--border-color)",
-          }}
-        >
-          <p
+        {/* Demo Fast Access Box (Visible only in local development) */}
+        {process.env.NODE_ENV === "development" && (
+          <div
             style={{
-              fontSize: "0.75rem",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              color: "var(--text-muted)",
-              marginBottom: "0.75rem",
-              textAlign: "center",
+              marginTop: "1.75rem",
+              paddingTop: "1.5rem",
+              borderTop: "1px dashed var(--border-color)",
             }}
           >
-            Quick Access / Demo Accounts
-          </p>
-
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button
-              type="button"
-              id="fill-therina-btn"
-              onClick={() => fillCredentials("therina@agency.com", "therina123456")}
-              className="btn btn-secondary btn-sm"
-              style={{ flex: 1, fontSize: "0.8rem", padding: "0.5rem" }}
-            >
-              👩‍⚕️ Therina (Manager)
-            </button>
-            <button
-              type="button"
-              id="fill-admin-btn"
-              onClick={() => fillCredentials("roger@admin.com", "admin123456")}
-              className="btn btn-secondary btn-sm"
-              style={{ flex: 1, fontSize: "0.8rem", padding: "0.5rem" }}
-            >
-              👑 Roger (Admin)
-            </button>
-          </div>
-
-          <div style={{ textAlign: "center", marginTop: "1rem" }}>
-            <button
-              type="button"
-              id="seed-demo-btn"
-              onClick={handleQuickSeed}
+            <p
               style={{
-                fontSize: "0.8rem",
-                color: "var(--primary)",
-                fontWeight: 600,
-                textDecoration: "underline",
+                fontSize: "0.75rem",
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                color: "var(--text-muted)",
+                marginBottom: "0.75rem",
+                textAlign: "center",
               }}
             >
-              Fresh database? Load sample data
-            </button>
+              Quick Access / Demo Accounts (Dev Only)
+            </p>
+
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <button
+                type="button"
+                id="fill-therina-btn"
+                onClick={() => fillCredentials("therina@agency.com", "therina123456")}
+                className="btn btn-secondary btn-sm"
+                style={{ flex: 1, fontSize: "0.8rem", padding: "0.5rem" }}
+              >
+                👩‍⚕️ Therina (Manager)
+              </button>
+              <button
+                type="button"
+                id="fill-admin-btn"
+                onClick={() => fillCredentials("roger@admin.com", "admin123456")}
+                className="btn btn-secondary btn-sm"
+                style={{ flex: 1, fontSize: "0.8rem", padding: "0.5rem" }}
+              >
+                👑 Roger (Admin)
+              </button>
+            </div>
+
+            <div style={{ textAlign: "center", marginTop: "1rem" }}>
+              <button
+                type="button"
+                id="seed-demo-btn"
+                onClick={handleQuickSeed}
+                style={{
+                  fontSize: "0.8rem",
+                  color: "var(--primary)",
+                  fontWeight: 600,
+                  textDecoration: "underline",
+                }}
+              >
+                Fresh database? Load sample data
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Register invitation footnote */}
         <div
