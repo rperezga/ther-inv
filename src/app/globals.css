@@ -562,7 +562,7 @@ input, select, textarea {
 /* Print Optimization for Invoices (Pixel-Perfect Letter Paper PDF Generation) */
 @page {
   size: letter portrait;
-  margin: 0.7in 1.15in;
+  margin: 0; /* Removing page margin eliminates browser default header (date/title) and footer (URL/page numbers) */
 }
 
 @media print {
@@ -601,9 +601,10 @@ input, select, textarea {
   .print-invoice-sheet {
     box-shadow: none !important;
     border: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
+    padding: 0.6in 1.15in !important; /* Elegant Letter paper margins without browser header/footer */
+    margin: 0 auto !important;
     width: 100% !important;
     max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 }
