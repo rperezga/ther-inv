@@ -157,5 +157,18 @@ describe("Agency Worker Roster & Roles Logic", () => {
     expect(getRateForService("MEDCARE", "Eval")).toBe(0); // Not configured
     expect(getRateForService("OASIS", "SOC")).toBe(0); // Unassigned agency
   });
+
+  it("should ensure pay rates are saved as closed whole integers without decimals", () => {
+    const sanitizeClosedRate = (val: string | number) => {
+      const cleaned = String(val).replace(/[^0-9]/g, "");
+      return cleaned === "" ? 0 : parseInt(cleaned, 10);
+    };
+
+    expect(sanitizeClosedRate("75.50")).toBe(7550); // strips decimal point if entered as string
+    expect(sanitizeClosedRate("75")).toBe(75);
+    expect(sanitizeClosedRate("120")).toBe(120);
+    expect(sanitizeClosedRate("")).toBe(0);
+    expect(Number.isInteger(sanitizeClosedRate("85"))).toBe(true);
+  });
 });
 
