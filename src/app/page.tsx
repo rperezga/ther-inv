@@ -13,7 +13,7 @@ export default function HomePage() {
     fetch("/api/auth/me")
       .then((res) => {
         if (res.ok) {
-          router.replace("/dashboard");
+          router.replace("/dashboard/invoices");
         } else {
           setChecking(false);
         }

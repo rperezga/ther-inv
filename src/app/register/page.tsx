@@ -89,7 +89,7 @@ function RegisterContent() {
         throw new Error(data.error || "Failed to complete registration");
       }
 
-      router.push("/dashboard");
+      router.push("/dashboard/invoices");
     } catch (err: any) {
       setError(err.message || "Registration failed");
     } finally {

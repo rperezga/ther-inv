@@ -30,7 +30,7 @@ export default function LoginPage() {
         throw new Error(data.error || "Invalid credentials");
       }
 
-      router.push("/dashboard");
+      router.push("/dashboard/invoices");
     } catch (err: any) {
       setError(err.message || "Failed to connect to server");
     } finally {
