@@ -113,6 +113,14 @@ input, select, textarea {
   margin: 0 auto;
 }
 
+.content-body-full {
+  flex: 1;
+  padding: 1.5rem 2rem;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+}
+
 /* Header */
 .top-header {
   height: var(--header-height);
@@ -522,7 +530,8 @@ input, select, textarea {
     transform: translateX(0);
   }
 
-  .content-body {
+  .content-body,
+  .content-body-full {
     padding: 1.25rem;
     padding-bottom: 5.5rem; /* Room for mobile nav */
   }

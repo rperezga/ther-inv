@@ -21,6 +21,60 @@ const DEFAULT_ROLES = [
   "Physical Therapy Assistant (PTA)",
 ];
 
+function getRoleAbbreviation(roleStr: string): string {
+  if (!roleStr) return "";
+  const match = roleStr.match(/\(([^)]+)\)/);
+  if (match) return match[1].trim();
+
+  const lower = roleStr.toLowerCase().trim();
+  if (lower === "physical therapy assistant" || lower === "pta") return "PTA";
+  if (lower === "physical therapy" || lower === "physical therapist" || lower === "pt") return "PT";
+  if (lower === "occupational therapy assistant" || lower === "ota") return "OTA";
+  if (lower === "occupational therapy" || lower === "occupational therapist" || lower === "ot") return "OT";
+  if (lower === "speech language pathologist" || lower === "slp") return "SLP";
+  if (lower === "certified nursing assistant" || lower === "cna") return "CNA";
+  if (lower === "registered nurse" || lower === "rn") return "RN";
+
+  return roleStr.trim();
+}
+
+function getRoleBadgeStyle(roleStr: string): { bg: string; color: string; border: string } {
+  const abbr = getRoleAbbreviation(roleStr).toUpperCase();
+  if (abbr === "PT") {
+    return {
+      bg: "#eff6ff", // blue-50
+      color: "#1d4ed8", // blue-700
+      border: "#bfdbfe", // blue-200
+    };
+  }
+  if (abbr === "PTA") {
+    return {
+      bg: "#ecfdf5", // emerald-50
+      color: "#047857", // emerald-700
+      border: "#a7f3d0", // emerald-200
+    };
+  }
+  if (abbr === "OT" || abbr === "OTA") {
+    return {
+      bg: "#fef3c7", // amber-50
+      color: "#b45309", // amber-700
+      border: "#fde68a", // amber-200
+    };
+  }
+  if (abbr === "SLP") {
+    return {
+      bg: "#faf5ff", // purple-50
+      color: "#7e22ce", // purple-700
+      border: "#e9d5ff", // purple-200
+    };
+  }
+  return {
+    bg: "#f1f5f9", // slate-100
+    color: "#334155", // slate-700
+    border: "#cbd5e1", // slate-300
+  };
+}
+
 export default function WorkersPage() {
   const [workers, setWorkers] = useState<IWorker[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,11 +115,12 @@ export default function WorkersPage() {
     }
   }, []);
 
-  const fetchWorkers = async () => {
+  const fetchWorkers = async (queryOverride?: string) => {
     setLoading(true);
     try {
       const url = new URL("/api/workers", window.location.origin);
-      if (search) url.searchParams.set("search", search);
+      const queryText = queryOverride !== undefined ? queryOverride : search;
+      if (queryText) url.searchParams.set("search", queryText);
 
       const res = await fetch(url.toString());
       const data = await res.json();
@@ -92,9 +147,10 @@ export default function WorkersPage() {
     fetchWorkers();
   }, []);
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    fetchWorkers();
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setSearch(val);
+    fetchWorkers(val);
   };
 
   const openCreateModal = () => {
@@ -201,7 +257,7 @@ export default function WorkersPage() {
       }
 
       setIsModalOpen(false);
-      fetchWorkers();
+      fetchWorkers(search);
     } catch (err: any) {
       setModalError(err.message || "Failed to process staff member");
     } finally {
@@ -226,10 +282,8 @@ export default function WorkersPage() {
     }
   };
 
-  const uniqueRolesCount = Array.from(new Set(workers.map((w) => w.role))).length;
-
   return (
-    <div>
+    <div style={{ width: "100%" }}>
       {/* Header */}
       <div
         style={{
@@ -238,7 +292,7 @@ export default function WorkersPage() {
           alignItems: "center",
           flexWrap: "wrap",
           gap: "1rem",
-          marginBottom: "1.75rem",
+          marginBottom: "1.25rem",
         }}
       >
         <div>
@@ -260,63 +314,12 @@ export default function WorkersPage() {
         </button>
       </div>
 
-      {/* Mini Stats Banner */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: "1rem",
-          marginBottom: "1.5rem",
-        }}
-      >
-        <div className="card" style={{ padding: "1rem 1.25rem" }}>
-          <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", fontWeight: 600 }}>
-            Total Staff Members
-          </div>
-          <div style={{ fontSize: "1.5rem", fontWeight: 800, marginTop: "0.25rem" }}>
-            {workers.length}
-          </div>
-        </div>
-
-        <div className="card" style={{ padding: "1rem 1.25rem" }}>
-          <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", fontWeight: 600 }}>
-            Active Roster
-          </div>
-          <div
-            style={{
-              fontSize: "1.5rem",
-              fontWeight: 800,
-              color: "var(--success)",
-              marginTop: "0.25rem",
-            }}
-          >
-            {workers.filter((w) => w.status === "active").length}
-          </div>
-        </div>
-
-        <div className="card" style={{ padding: "1rem 1.25rem" }}>
-          <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", fontWeight: 600 }}>
-            Specialties Covered
-          </div>
-          <div
-            style={{
-              fontSize: "1.5rem",
-              fontWeight: 800,
-              color: "var(--primary)",
-              marginTop: "0.25rem",
-            }}
-          >
-            {uniqueRolesCount}
-          </div>
-        </div>
-      </div>
-
-      {/* Search Bar */}
+      {/* Real-time Search Bar */}
       <div
         className="card"
         style={{
-          marginBottom: "1.5rem",
-          padding: "1rem 1.25rem",
+          marginBottom: "1.25rem",
+          padding: "0.85rem 1.25rem",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -328,38 +331,32 @@ export default function WorkersPage() {
           {workers.length} {workers.length === 1 ? "Member Registered" : "Members Registered"}
         </div>
 
-        <form
-          onSubmit={handleSearchSubmit}
-          style={{ display: "flex", gap: "0.5rem", minWidth: "280px" }}
-        >
-          <div style={{ position: "relative", flex: 1 }}>
-            <input
-              type="text"
-              className="form-input"
-              placeholder="Search by name or specialty..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{ paddingLeft: "2.2rem" }}
-            />
-            <Search
-              size={16}
-              style={{
-                position: "absolute",
-                left: "0.75rem",
-                top: "50%",
-                transform: "translateY(-50%)",
-                color: "var(--text-muted)",
-              }}
-            />
-          </div>
-          <button type="submit" className="btn btn-secondary btn-sm">
-            Search
-          </button>
-        </form>
+        <div style={{ position: "relative", minWidth: "320px", flex: "1 1 320px", maxWidth: "480px" }}>
+          <input
+            type="text"
+            className="form-input"
+            placeholder="Search by name, role, phone or email..."
+            value={search}
+            onChange={handleSearchChange}
+            style={{ paddingLeft: "2.3rem", width: "100%" }}
+            id="worker-search-input"
+          />
+          <Search
+            size={16}
+            style={{
+              position: "absolute",
+              left: "0.85rem",
+              top: "50%",
+              transform: "translateY(-50%)",
+              color: "var(--text-muted)",
+              pointerEvents: "none",
+            }}
+          />
+        </div>
       </div>
 
       {/* Workers Table */}
-      <div className="card" style={{ padding: 0 }}>
+      <div className="card" style={{ padding: 0, overflow: "hidden" }}>
         {loading ? (
           <div style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>
             Loading staff directory...
@@ -368,122 +365,133 @@ export default function WorkersPage() {
           <div style={{ padding: "3.5rem 1.5rem", textAlign: "center" }}>
             <Users size={44} style={{ opacity: 0.35, marginBottom: "0.75rem" }} />
             <p style={{ fontWeight: 600, fontSize: "1.1rem" }}>
-              No staff members found
+              {search ? "No staff members match your search" : "No staff members found"}
             </p>
             <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "1.25rem" }}>
-              Add agency personnel so you can assign them to weekly client invoices.
+              {search
+                ? "Try searching with a different name, specialty, phone or email."
+                : "Add agency personnel so you can assign them to weekly client invoices."}
             </p>
-            <button onClick={openCreateModal} className="btn btn-primary btn-sm">
-              <UserPlus size={16} /> Add Staff Member
-            </button>
+            {!search && (
+              <button onClick={openCreateModal} className="btn btn-primary btn-sm">
+                <UserPlus size={16} /> Add Staff Member
+              </button>
+            )}
           </div>
         ) : (
           <div className="table-container" style={{ border: "none" }}>
-            <table className="data-table">
+            <table className="data-table" style={{ width: "100%" }}>
               <thead>
                 <tr>
                   <th>Staff Member</th>
-                  <th>Role / Clinical Specialty</th>
-                  <th>Contact Information</th>
+                  <th>Role</th>
+                  <th>Phone</th>
+                  <th>Email</th>
                   <th>Notes</th>
                   <th style={{ textAlign: "right" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {workers.map((w) => (
-                  <tr key={w._id}>
-                    <td>
-                      <div style={{ fontWeight: 700, color: "var(--text-primary)", fontSize: "0.95rem" }}>
-                        {w.firstName} {w.lastName}
-                      </div>
-                    </td>
-                    <td>
-                      <div
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "0.4rem",
-                          backgroundColor: "var(--primary-subtle)",
-                          color: "var(--primary)",
-                          padding: "0.25rem 0.65rem",
-                          borderRadius: "6px",
-                          fontWeight: 600,
-                          fontSize: "0.85rem",
-                        }}
-                      >
-                        <Briefcase size={14} />
-                        <span>{w.role}</span>
-                      </div>
-                    </td>
-                    <td>
-                      <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                        {w.phone && (
-                          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                            <Phone size={13} color="var(--text-muted)" /> {w.phone}
-                          </div>
-                        )}
-                        {w.email && (
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "0.4rem",
-                              marginTop: "3px",
-                            }}
-                          >
-                            <Mail size={13} color="var(--text-muted)" /> {w.email}
-                          </div>
-                        )}
-                        {!w.phone && !w.email && <span style={{ color: "var(--text-muted)" }}>-</span>}
-                      </div>
-                    </td>
-                    <td style={{ maxWidth: "260px" }}>
-                      <span
-                        style={{
-                          fontSize: "0.85rem",
-                          color: "var(--text-muted)",
-                          display: "block",
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }}
-                      >
-                        {w.notes || "-"}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: "right" }}>
-                      <div
-                        style={{
-                          display: "inline-flex",
-                          gap: "0.4rem",
-                          justifyContent: "flex-end",
-                        }}
-                      >
-                        <button
-                          onClick={() => openEditModal(w)}
-                          className="btn btn-secondary btn-sm"
-                          title="Edit Staff Member"
-                        >
-                          <Edit2 size={14} />
-                        </button>
-                        <button
-                          onClick={() =>
-                            handleDeleteWorker(w._id!, `${w.firstName} ${w.lastName}`)
-                          }
-                          className="btn btn-sm"
+                {workers.map((w) => {
+                  const badgeStyle = getRoleBadgeStyle(w.role);
+                  const abbr = getRoleAbbreviation(w.role);
+
+                  return (
+                    <tr key={w._id}>
+                      <td>
+                        <div style={{ fontWeight: 700, color: "var(--text-primary)", fontSize: "0.95rem" }}>
+                          {w.firstName} {w.lastName}
+                        </div>
+                      </td>
+                      <td>
+                        <div
+                          title={w.role}
                           style={{
-                            color: "var(--danger)",
-                            border: "1px solid var(--danger-border)",
-                            backgroundColor: "var(--danger-subtle)",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "0.35rem",
+                            backgroundColor: badgeStyle.bg,
+                            color: badgeStyle.color,
+                            border: `1px solid ${badgeStyle.border}`,
+                            padding: "0.25rem 0.65rem",
+                            borderRadius: "6px",
+                            fontWeight: 700,
+                            fontSize: "0.82rem",
+                            letterSpacing: "0.02em",
                           }}
-                          title="Delete Staff Member"
                         >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          <Briefcase size={13} />
+                          <span>{abbr}</span>
+                        </div>
+                      </td>
+                      <td>
+                        {w.phone ? (
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                            <Phone size={13} color="var(--text-muted)" />
+                            <span>{w.phone}</span>
+                          </div>
+                        ) : (
+                          <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>-</span>
+                        )}
+                      </td>
+                      <td>
+                        {w.email ? (
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                            <Mail size={13} color="var(--text-muted)" />
+                            <span>{w.email}</span>
+                          </div>
+                        ) : (
+                          <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>-</span>
+                        )}
+                      </td>
+                      <td style={{ maxWidth: "260px" }}>
+                        <span
+                          style={{
+                            fontSize: "0.85rem",
+                            color: "var(--text-muted)",
+                            display: "block",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {w.notes || "-"}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: "right" }}>
+                        <div
+                          style={{
+                            display: "inline-flex",
+                            gap: "0.4rem",
+                            justifyContent: "flex-end",
+                          }}
+                        >
+                          <button
+                            onClick={() => openEditModal(w)}
+                            className="btn btn-secondary btn-sm"
+                            title="Edit Staff Member"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleDeleteWorker(w._id!, `${w.firstName} ${w.lastName}`)
+                            }
+                            className="btn btn-sm"
+                            style={{
+                              color: "var(--danger)",
+                              border: "1px solid var(--danger-border)",
+                              backgroundColor: "var(--danger-subtle)",
+                            }}
+                            title="Delete Staff Member"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

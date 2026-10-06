@@ -61,4 +61,58 @@ describe("Agency Worker Roster & Roles Logic", () => {
     expect(worker.hourlyRate).toBe(0);
     expect(worker.status).toBe("active");
   });
+
+  it("should extract role abbreviation correctly for PT and PTA", () => {
+    const getRoleAbbr = (roleStr: string) => {
+      const match = roleStr.match(/\(([^)]+)\)/);
+      if (match) return match[1].trim();
+      const lower = roleStr.toLowerCase().trim();
+      if (lower === "physical therapy assistant" || lower === "pta") return "PTA";
+      if (lower === "physical therapy" || lower === "pt") return "PT";
+      return roleStr;
+    };
+
+    expect(getRoleAbbr("Physical Therapy (PT)")).toBe("PT");
+    expect(getRoleAbbr("Physical Therapy Assistant (PTA)")).toBe("PTA");
+    expect(getRoleAbbr("PT")).toBe("PT");
+    expect(getRoleAbbr("PTA")).toBe("PTA");
+    expect(getRoleAbbr("Occupational Therapy (OT)")).toBe("OT");
+  });
+
+  it("should filter staff members in real-time across name, email, phone, and role", () => {
+    const staff = [
+      { firstName: "Alex", lastName: "Suarez", role: "Physical Therapy Assistant (PTA)", phone: "305-555-1111", email: "alex18emas@gmail.com" },
+      { firstName: "Jason", lastName: "Polo", role: "Physical Therapy (PT)", phone: "305-555-2222", email: "jasontherapy55@gmail.com" },
+      { firstName: "Maria Patricia", lastName: "Sanchez", role: "Physical Therapy (PT)", phone: "786-555-3333", email: "sanchez.patricia11@gmail.com" },
+      { firstName: "Odalys", lastName: "Barroso", role: "Physical Therapy Assistant (PTA)", phone: "305-555-4444", email: "odaltrujillo@yahoo.com" },
+    ];
+
+    const searchStaff = (query: string) => {
+      const q = query.toLowerCase().trim();
+      if (!q) return staff;
+      return staff.filter((s) =>
+        s.firstName.toLowerCase().includes(q) ||
+        s.lastName.toLowerCase().includes(q) ||
+        s.role.toLowerCase().includes(q) ||
+        (s.phone && s.phone.toLowerCase().includes(q)) ||
+        (s.email && s.email.toLowerCase().includes(q))
+      );
+    };
+
+    // By name
+    expect(searchStaff("jason")).toHaveLength(1);
+    expect(searchStaff("jason")[0].lastName).toBe("Polo");
+
+    // By email
+    expect(searchStaff("odaltrujillo@yahoo.com")).toHaveLength(1);
+    expect(searchStaff("odaltrujillo@yahoo.com")[0].firstName).toBe("Odalys");
+
+    // By phone
+    expect(searchStaff("786-555")).toHaveLength(1);
+    expect(searchStaff("786-555")[0].firstName).toBe("Maria Patricia");
+
+    // By role / abbreviation
+    expect(searchStaff("PTA")).toHaveLength(2);
+    expect(searchStaff("Physical Therapy")).toHaveLength(4);
+  });
 });

@@ -331,7 +331,9 @@ export default function DashboardLayout({
         </header>
 
         {/* Content Body */}
-        <main className="content-body">{children}</main>
+        <main className={pathname === "/dashboard/workers" ? "content-body-full" : "content-body"}>
+          {children}
+        </main>
 
         {/* Mobile Navigation Bottom Bar */}
         <nav className="mobile-nav-bar">
