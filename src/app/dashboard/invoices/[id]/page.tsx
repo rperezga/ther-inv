@@ -117,7 +117,7 @@ export default function InvoiceDetailPage({
   }
 
   return (
-    <div style={{ maxWidth: "980px", margin: "0 auto" }}>
+    <div style={{ maxWidth: "8.5in", margin: "0 auto" }}>
       {/* Action Header - Hidden during print */}
       <div
         className="no-print"
@@ -193,7 +193,7 @@ export default function InvoiceDetailPage({
       <div
         className="card print-invoice-sheet"
         style={{
-          padding: "3rem 3.5rem",
+          padding: "2.75rem 3.25rem",
           backgroundColor: "#ffffff",
           borderRadius: "var(--radius-lg)",
           boxShadow: "var(--shadow-md)",
@@ -308,22 +308,50 @@ export default function InvoiceDetailPage({
                 <th
                   style={{
                     border: "1.5px solid #000000",
-                    padding: "4px 8px",
+                    padding: "5px 8px",
                     textAlign: "left",
                     fontWeight: 800,
-                    fontSize: "12px",
+                    fontSize: "11px",
+                    letterSpacing: "0.03em",
                   }}
                 >
-                  &nbsp;
+                  PATIENT NAME
                 </th>
                 <th
                   style={{
                     border: "1.5px solid #000000",
-                    padding: "4px 8px",
-                    width: "90px",
+                    padding: "5px 8px",
+                    width: "70px",
                     textAlign: "center",
                     fontWeight: 800,
-                    fontSize: "12px",
+                    fontSize: "11px",
+                    letterSpacing: "0.03em",
+                  }}
+                >
+                  DATE
+                </th>
+                <th
+                  style={{
+                    border: "1.5px solid #000000",
+                    padding: "5px 8px",
+                    width: "110px",
+                    textAlign: "left",
+                    fontWeight: 800,
+                    fontSize: "11px",
+                    letterSpacing: "0.03em",
+                  }}
+                >
+                  SERVICE
+                </th>
+                <th
+                  style={{
+                    border: "1.5px solid #000000",
+                    padding: "5px 8px",
+                    width: "75px",
+                    textAlign: "right",
+                    fontWeight: 800,
+                    fontSize: "11px",
+                    letterSpacing: "0.03em",
                   }}
                 >
                   RATE
@@ -331,23 +359,25 @@ export default function InvoiceDetailPage({
                 <th
                   style={{
                     border: "1.5px solid #000000",
-                    padding: "4px 8px",
+                    padding: "5px 8px",
                     width: "45px",
                     textAlign: "center",
                     fontWeight: 800,
-                    fontSize: "12px",
+                    fontSize: "11px",
+                    letterSpacing: "0.03em",
                   }}
                 >
-                  #
+                  QTY
                 </th>
                 <th
                   style={{
                     border: "1.5px solid #000000",
-                    padding: "4px 8px",
-                    width: "100px",
+                    padding: "5px 8px",
+                    width: "85px",
                     textAlign: "right",
                     fontWeight: 800,
-                    fontSize: "12px",
+                    fontSize: "11px",
+                    letterSpacing: "0.03em",
                   }}
                 >
                   AMOUNT
@@ -362,10 +392,23 @@ export default function InvoiceDetailPage({
                       month: "2-digit",
                       day: "2-digit",
                     })
-                  : "";
-                const displayPatientLine = `${(it.patientName || it.description || "").toUpperCase()}${
-                  visitDateFormatted ? ` ${visitDateFormatted}` : ""
-                }`;
+                  : "-";
+
+                // Clean patient name - strip out "PATIENT:" or service prefixes if stored in description
+                let rawPatient = it.patientName || "";
+                if (!rawPatient && it.description) {
+                  const parts = it.description.split(/PATIENT:\s*/i);
+                  rawPatient = parts.length > 1 ? parts[1] : it.description;
+                }
+                rawPatient = rawPatient.replace(/^PATIENT:\s*/i, "").trim().toUpperCase();
+
+                // Extract service code
+                let rawService = it.serviceType || "";
+                if (!rawService && it.description) {
+                  const match = it.description.match(/^([A-Za-z0-9\s]+?)\s*-\s*Patient/i);
+                  if (match && match[1]) rawService = match[1].trim();
+                }
+                const displayService = (rawService || "SOC").toUpperCase();
 
                 return (
                   <tr key={idx} style={{ height: "22px" }}>
@@ -377,7 +420,27 @@ export default function InvoiceDetailPage({
                         textTransform: "uppercase",
                       }}
                     >
-                      {displayPatientLine}
+                      {rawPatient}
+                    </td>
+                    <td
+                      style={{
+                        border: "1.5px solid #000000",
+                        padding: "2px 8px",
+                        textAlign: "center",
+                        fontSize: "11px",
+                      }}
+                    >
+                      {visitDateFormatted}
+                    </td>
+                    <td
+                      style={{
+                        border: "1.5px solid #000000",
+                        padding: "2px 8px",
+                        textAlign: "left",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {displayService}
                     </td>
                     <td
                       style={{
@@ -418,6 +481,8 @@ export default function InvoiceDetailPage({
                   <td style={{ border: "1.5px solid #000000", padding: "2px 8px" }}>&nbsp;</td>
                   <td style={{ border: "1.5px solid #000000", padding: "2px 8px" }}>&nbsp;</td>
                   <td style={{ border: "1.5px solid #000000", padding: "2px 8px" }}>&nbsp;</td>
+                  <td style={{ border: "1.5px solid #000000", padding: "2px 8px" }}>&nbsp;</td>
+                  <td style={{ border: "1.5px solid #000000", padding: "2px 8px" }}>&nbsp;</td>
                   <td
                     style={{
                       border: "1.5px solid #000000",
@@ -443,6 +508,8 @@ export default function InvoiceDetailPage({
                 >
                   TOTAL
                 </td>
+                <td style={{ border: "1.5px solid #000000", padding: "4px 8px" }}>&nbsp;</td>
+                <td style={{ border: "1.5px solid #000000", padding: "4px 8px" }}>&nbsp;</td>
                 <td style={{ border: "1.5px solid #000000", padding: "4px 8px" }}>&nbsp;</td>
                 <td
                   style={{

@@ -559,11 +559,21 @@ input, select, textarea {
   }
 }
 
-/* Print Optimization for Invoices (Pixel-Perfect PDF Generation) */
+/* Print Optimization for Invoices (Pixel-Perfect Letter Paper PDF Generation) */
+@page {
+  size: letter portrait;
+  margin: 0.65in 0.75in;
+}
+
 @media print {
-  body {
+  html, body {
     background: #ffffff !important;
     color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 12px !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   .sidebar,
@@ -573,12 +583,16 @@ input, select, textarea {
     display: none !important;
   }
 
+  .app-container,
   .main-content {
     margin: 0 !important;
     padding: 0 !important;
+    display: block !important;
+    width: 100% !important;
   }
 
-  .content-body {
+  .content-body,
+  .content-body-full {
     max-width: 100% !important;
     padding: 0 !important;
     margin: 0 !important;
@@ -588,6 +602,8 @@ input, select, textarea {
     box-shadow: none !important;
     border: none !important;
     padding: 0 !important;
+    margin: 0 !important;
     width: 100% !important;
+    max-width: 100% !important;
   }
 }
