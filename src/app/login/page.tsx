@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Lock, Mail, AlertCircle, ArrowRight, ShieldCheck, Sparkles } from "lucide-react";
+import { Lock, Mail, AlertCircle, ArrowRight } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -11,7 +11,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [seedStatus, setSeedStatus] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,29 +36,6 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleQuickSeed = async () => {
-    setSeedStatus("Initializing sample data...");
-    try {
-      const res = await fetch("/api/seed", { method: "POST" });
-      const data = await res.json();
-      if (res.ok) {
-        setSeedStatus("Data initialized! You can now log in as Roger or Therina.");
-        setEmail("therina@agency.com");
-        setPassword("therina123456");
-      } else {
-        setSeedStatus(data.error || "Initialization failed");
-      }
-    } catch {
-      setSeedStatus("Connection error");
-    }
-  };
-
-  const fillCredentials = (userEmail: string, userPass: string) => {
-    setEmail(userEmail);
-    setPassword(userPass);
-    setError("");
   };
 
   return (
@@ -228,68 +204,6 @@ export default function LoginPage() {
             {!loading && <ArrowRight size={18} />}
           </button>
         </form>
-
-        {/* Demo Fast Access Box (Visible only in local development) */}
-        {process.env.NODE_ENV === "development" && (
-          <div
-            style={{
-              marginTop: "1.75rem",
-              paddingTop: "1.5rem",
-              borderTop: "1px dashed var(--border-color)",
-            }}
-          >
-            <p
-              style={{
-                fontSize: "0.75rem",
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                color: "var(--text-muted)",
-                marginBottom: "0.75rem",
-                textAlign: "center",
-              }}
-            >
-              Quick Access / Demo Accounts (Dev Only)
-            </p>
-
-            <div style={{ display: "flex", gap: "0.5rem" }}>
-              <button
-                type="button"
-                id="fill-therina-btn"
-                onClick={() => fillCredentials("therina@agency.com", "therina123456")}
-                className="btn btn-secondary btn-sm"
-                style={{ flex: 1, fontSize: "0.8rem", padding: "0.5rem" }}
-              >
-                👩‍⚕️ Therina (Manager)
-              </button>
-              <button
-                type="button"
-                id="fill-admin-btn"
-                onClick={() => fillCredentials("roger@admin.com", "admin123456")}
-                className="btn btn-secondary btn-sm"
-                style={{ flex: 1, fontSize: "0.8rem", padding: "0.5rem" }}
-              >
-                👑 Roger (Admin)
-              </button>
-            </div>
-
-            <div style={{ textAlign: "center", marginTop: "1rem" }}>
-              <button
-                type="button"
-                id="seed-demo-btn"
-                onClick={handleQuickSeed}
-                style={{
-                  fontSize: "0.8rem",
-                  color: "var(--primary)",
-                  fontWeight: 600,
-                  textDecoration: "underline",
-                }}
-              >
-                Fresh database? Load sample data
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Register invitation footnote */}
         <div
