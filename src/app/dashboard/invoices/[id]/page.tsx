@@ -38,7 +38,17 @@ export default function InvoiceDetailPage({
         return res.json();
       })
       .then((data) => {
-        if (data.invoice) setInvoice(data.invoice);
+        if (data.invoice) {
+          setInvoice(data.invoice);
+          if (typeof window !== "undefined") {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get("print") === "true") {
+              setTimeout(() => {
+                window.print();
+              }, 400);
+            }
+          }
+        }
       })
       .catch((err) => {
         console.error(err);

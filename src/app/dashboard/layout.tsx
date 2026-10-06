@@ -98,10 +98,10 @@ export default function DashboardLayout({
 
   const navItems = [
     {
-      label: "Create Invoice",
-      href: "/dashboard/invoices/new",
-      icon: PlusCircle,
-      active: pathname === "/dashboard/invoices/new" || pathname === "/dashboard/invoices" || pathname === "/dashboard",
+      label: "Invoices",
+      href: "/dashboard/invoices",
+      icon: FileText,
+      active: pathname.startsWith("/dashboard/invoices") || pathname === "/dashboard",
       hidden: user?.role === "viewer",
     },
     {
@@ -303,7 +303,7 @@ export default function DashboardLayout({
                 className="btn btn-primary btn-sm"
               >
                 <PlusCircle size={16} />
-                <span className="btn-responsive-text">New Invoice</span>
+                <span className="btn-responsive-text">New Weekly Invoice</span>
               </Link>
             )}
 
@@ -343,10 +343,10 @@ export default function DashboardLayout({
         <nav className="mobile-nav-bar">
           {user?.role !== "viewer" && (
             <Link
-              href="/dashboard/invoices/new"
-              className={`mobile-nav-btn ${pathname === "/dashboard/invoices/new" || pathname === "/dashboard" ? "active" : ""}`}
+              href="/dashboard/invoices"
+              className={`mobile-nav-btn ${pathname.startsWith("/dashboard/invoices") || pathname === "/dashboard" ? "active" : ""}`}
             >
-              <PlusCircle size={20} />
+              <FileText size={20} />
               <span>Invoices</span>
             </Link>
           )}
