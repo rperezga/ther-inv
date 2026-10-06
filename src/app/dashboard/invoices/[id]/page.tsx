@@ -117,7 +117,7 @@ export default function InvoiceDetailPage({
   }
 
   return (
-    <div style={{ maxWidth: "8.5in", margin: "0 auto" }}>
+    <div style={{ maxWidth: "800px", margin: "0 auto" }}>
       {/* Action Header - Hidden during print */}
       <div
         className="no-print"
@@ -193,7 +193,7 @@ export default function InvoiceDetailPage({
       <div
         className="card print-invoice-sheet"
         style={{
-          padding: "2.75rem 3.25rem",
+          padding: "2.75rem 4.5rem",
           backgroundColor: "#ffffff",
           borderRadius: "var(--radius-lg)",
           boxShadow: "var(--shadow-md)",
@@ -387,12 +387,27 @@ export default function InvoiceDetailPage({
             <tbody>
               {/* Existing items */}
               {invoice.items?.map((it, idx) => {
-                const visitDateFormatted = it.visitDate
-                  ? new Date(it.visitDate).toLocaleDateString("en-US", {
+                // Format date cleanly (e.g. 09/28 or 9-28-26)
+                let visitDateFormatted = "-";
+                if (it.visitDate) {
+                  const parsed = new Date(it.visitDate);
+                  if (!isNaN(parsed.getTime())) {
+                    visitDateFormatted = parsed.toLocaleDateString("en-US", {
                       month: "2-digit",
                       day: "2-digit",
-                    })
-                  : "-";
+                    });
+                  } else {
+                    visitDateFormatted = String(it.visitDate).replace(/^[A-Za-z]+,\s*/, "").slice(0, 5);
+                  }
+                } else if (invoice.periodStart) {
+                  const pDate = new Date(invoice.periodStart);
+                  if (!isNaN(pDate.getTime())) {
+                    visitDateFormatted = pDate.toLocaleDateString("en-US", {
+                      month: "2-digit",
+                      day: "2-digit",
+                    });
+                  }
+                }
 
                 // Clean patient name - strip out "PATIENT:" or service prefixes if stored in description
                 let rawPatient = it.patientName || "";

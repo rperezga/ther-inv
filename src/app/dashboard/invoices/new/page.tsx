@@ -212,15 +212,46 @@ export default function CreateInvoicePage() {
               if (inv.items[0]?.workerId) {
                 setSelectedWorkerId(String(inv.items[0].workerId));
               }
-              const loadedVisits: ExtractedVisitRow[] = inv.items.map((it: any, idx: number) => ({
-                id: `loaded-${Date.now()}-${idx}`,
-                patientName: it.patientName || "",
-                visitDate: it.visitDate || "",
-                serviceType: it.serviceType || "SOC",
-                rate: Math.round(Number(it.regularRate || it.amount) || 0),
-                selected: true,
-                notes: it.description || "",
-              }));
+              const loadedVisits: ExtractedVisitRow[] = inv.items.map((it: any, idx: number) => {
+                let pName = it.patientName || "";
+                let sType = it.serviceType || "";
+                let vDate = it.visitDate || "";
+
+                // Fallback extraction from description (e.g. "SOC - Patient: ELSA SAUMA" or "SPECIAL RATE - PATIENT: JOSE MITRANI")
+                if (!pName && it.description) {
+                  const pMatch = it.description.match(/Patient:\s*([^\•\n]+)/i);
+                  if (pMatch && pMatch[1]) {
+                    pName = pMatch[1].trim();
+                  } else {
+                    pName = it.description.replace(/^([A-Za-z0-9\s]+?)\s*-\s*/i, "").trim();
+                  }
+                }
+
+                if (!sType && it.description) {
+                  const sMatch = it.description.match(/^([A-Za-z0-9\s]+?)\s*-\s*Patient/i);
+                  if (sMatch && sMatch[1]) {
+                    sType = sMatch[1].trim();
+                  }
+                }
+
+                // If date was not directly stored, fallback to periodStart
+                if (!vDate && inv.periodStart) {
+                  const d = new Date(inv.periodStart);
+                  if (!isNaN(d.getTime())) {
+                    vDate = `${d.getMonth() + 1}-${d.getDate()}-${String(d.getFullYear()).slice(-2)}`;
+                  }
+                }
+
+                return {
+                  id: `loaded-${Date.now()}-${idx}`,
+                  patientName: pName,
+                  visitDate: vDate,
+                  serviceType: sType || "SOC",
+                  rate: Math.round(Number(it.regularRate || it.amount) || 0),
+                  selected: true,
+                  notes: it.description || "",
+                };
+              });
               setVisits(loadedVisits);
             }
           }

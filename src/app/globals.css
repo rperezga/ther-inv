@@ -562,7 +562,7 @@ input, select, textarea {
 /* Print Optimization for Invoices (Pixel-Perfect Letter Paper PDF Generation) */
 @page {
   size: letter portrait;
-  margin: 0.65in 0.75in;
+  margin: 0.7in 1.15in;
 }
 
 @media print {
