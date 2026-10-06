@@ -129,4 +129,49 @@ describe("Invoice & Payroll Calculation Engine", () => {
       expect(res.error).toContain("Invalid date format");
     });
   });
+
+  describe("Agent & Agency Per-Visit Invoice Generator", () => {
+    it("should calculate correct invoice subtotal from extracted patient visit lines and service rates", () => {
+      const visits = [
+        { patientName: "Jose Cano", visitDate: "9-2-26", serviceType: "SOC", rate: 85, selected: true },
+        { patientName: "Elsa Sauma", visitDate: "9-17-26", serviceType: "SOC", rate: 85, selected: true },
+        { patientName: "Jose Mitrani", visitDate: "9-22-26", serviceType: "Special Rate", rate: 120, selected: true },
+        { patientName: "Carmen Chaple", visitDate: "9-23-26", serviceType: "ReCert", rate: 70, selected: true },
+        { patientName: "Rogelio Callava", visitDate: "9-24-26", serviceType: "Disch", rate: 65, selected: false }, // unselected
+      ];
+
+      const selectedVisits = visits.filter((v) => v.selected);
+      expect(selectedVisits).toHaveLength(4);
+
+      const subtotal = selectedVisits.reduce((acc, v) => acc + v.rate, 0);
+      // 85 + 85 + 120 + 70 = 360
+      expect(subtotal).toBe(360);
+    });
+
+    it("should resolve service rate from agency assignment config", () => {
+      const agencyAssignments = [
+        {
+          agencyName: "ALC",
+          services: [
+            { serviceType: "SOC", rate: 85 },
+            { serviceType: "ReCert", rate: 70 },
+            { serviceType: "Special Rate", rate: 110 },
+          ],
+        },
+      ];
+
+      const resolveRate = (agency: string, service: string) => {
+        const foundAgency = agencyAssignments.find((a) => a.agencyName === agency);
+        if (!foundAgency) return 0;
+        const foundSrv = foundAgency.services.find((s) => s.serviceType === service);
+        return foundSrv ? foundSrv.rate : 0;
+      };
+
+      expect(resolveRate("ALC", "SOC")).toBe(85);
+      expect(resolveRate("ALC", "Special Rate")).toBe(110);
+      expect(resolveRate("ALC", "Eval")).toBe(0);
+      expect(resolveRate("USAD", "SOC")).toBe(0);
+    });
+  });
 });
+

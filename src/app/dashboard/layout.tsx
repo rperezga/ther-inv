@@ -98,22 +98,10 @@ export default function DashboardLayout({
 
   const navItems = [
     {
-      label: "Overview",
-      href: "/dashboard",
-      icon: LayoutDashboard,
-      active: pathname === "/dashboard",
-    },
-    {
-      label: "Weekly Invoices",
-      href: "/dashboard/invoices",
-      icon: FileText,
-      active: pathname === "/dashboard/invoices",
-    },
-    {
       label: "Create Invoice",
       href: "/dashboard/invoices/new",
       icon: PlusCircle,
-      active: pathname === "/dashboard/invoices/new",
+      active: pathname === "/dashboard/invoices/new" || pathname === "/dashboard/invoices" || pathname === "/dashboard",
       hidden: user?.role === "viewer",
     },
     {
@@ -341,7 +329,9 @@ export default function DashboardLayout({
         {/* Content Body */}
         <main
           className={
-            pathname === "/dashboard/workers" || pathname === "/dashboard/assignments"
+            pathname === "/dashboard/workers" ||
+            pathname === "/dashboard/assignments" ||
+            pathname === "/dashboard/invoices/new"
               ? "content-body-full"
               : "content-body"
           }
@@ -351,27 +341,13 @@ export default function DashboardLayout({
 
         {/* Mobile Navigation Bottom Bar */}
         <nav className="mobile-nav-bar">
-          <Link
-            href="/dashboard"
-            className={`mobile-nav-btn ${pathname === "/dashboard" ? "active" : ""}`}
-          >
-            <LayoutDashboard size={20} />
-            <span>Home</span>
-          </Link>
-          <Link
-            href="/dashboard/invoices"
-            className={`mobile-nav-btn ${pathname === "/dashboard/invoices" ? "active" : ""}`}
-          >
-            <FileText size={20} />
-            <span>Invoices</span>
-          </Link>
           {user?.role !== "viewer" && (
             <Link
               href="/dashboard/invoices/new"
-              className={`mobile-nav-btn ${pathname === "/dashboard/invoices/new" ? "active" : ""}`}
+              className={`mobile-nav-btn ${pathname === "/dashboard/invoices/new" || pathname === "/dashboard" ? "active" : ""}`}
             >
               <PlusCircle size={20} />
-              <span>Create</span>
+              <span>Invoices</span>
             </Link>
           )}
           <Link
@@ -381,6 +357,15 @@ export default function DashboardLayout({
             <Users size={20} />
             <span>Staff</span>
           </Link>
+          {user?.role !== "viewer" && (
+            <Link
+              href="/dashboard/assignments"
+              className={`mobile-nav-btn ${pathname === "/dashboard/assignments" ? "active" : ""}`}
+            >
+              <Building2 size={20} />
+              <span>Agencies</span>
+            </Link>
+          )}
           {user?.role !== "viewer" && (
             <Link
               href="/dashboard/invitations"

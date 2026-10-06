@@ -4,6 +4,9 @@ export interface IInvoiceItemDoc {
   workerId?: mongoose.Types.ObjectId;
   workerName: string;
   role: string;
+  patientName?: string;
+  visitDate?: string;
+  serviceType?: string;
   regularHours: number;
   regularRate: number;
   overtimeHours: number;
@@ -38,6 +41,9 @@ const InvoiceItemSchema = new Schema<IInvoiceItemDoc>(
     workerId: { type: Schema.Types.ObjectId, ref: "Worker" },
     workerName: { type: String, required: true },
     role: { type: String, required: true },
+    patientName: { type: String, trim: true },
+    visitDate: { type: String, trim: true },
+    serviceType: { type: String, trim: true },
     regularHours: { type: Number, required: true, default: 0, min: 0 },
     regularRate: { type: Number, required: true, default: 0, min: 0 },
     overtimeHours: { type: Number, default: 0, min: 0 },

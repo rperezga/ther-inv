@@ -42,6 +42,9 @@ export interface IInvoiceItem {
   workerId?: string;
   workerName: string;
   role: string;
+  patientName?: string;
+  visitDate?: string;
+  serviceType?: string;
   regularHours: number;
   regularRate: number;
   overtimeHours: number;
