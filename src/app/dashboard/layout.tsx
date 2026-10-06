@@ -331,6 +331,7 @@ export default function DashboardLayout({
           className={
             pathname === "/dashboard/workers" ||
             pathname === "/dashboard/assignments" ||
+            pathname === "/dashboard/invoices" ||
             pathname === "/dashboard/invoices/new"
               ? "content-body-full"
               : "content-body"
