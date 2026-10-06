@@ -39,6 +39,7 @@ const SERVICE_DEFINITIONS: ServiceDefinition[] = [
   { id: "Eval", label: "Eval", description: "Initial Evaluation (Evaluación)", isBillable: true },
   { id: "Disch", label: "Disch", description: "Discharge (Alta)", isBillable: true },
   { id: "Missed Visit", label: "Missed Visit", description: "Visita perdida / No concretada", isBillable: true },
+  { id: "Special Rate", label: "Special Rate", description: "Custom agreed special visit rate", isBillable: true },
   { id: "NoBill", label: "NoBill", description: "Non-billable administrative service", isBillable: false },
 ];
 

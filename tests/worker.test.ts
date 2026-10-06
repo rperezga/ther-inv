@@ -118,10 +118,11 @@ describe("Agency Worker Roster & Roles Logic", () => {
 
   it("should configure agency assignments with per-service rates for staff members", () => {
     const AGENCIES = ["A&A HEALTH SERVICE", "ALC", "INNOVATION", "MEDCARE", "OASIS", "USAD"];
-    const SERVICES = ["SOC", "ReCert", "ReEval", "Eval", "Disch", "NoBill", "Missed Visit"];
+    const SERVICES = ["SOC", "ReCert", "ReEval", "Eval", "Disch", "NoBill", "Missed Visit", "Special Rate"];
 
     expect(AGENCIES).toHaveLength(6);
     expect(SERVICES).toContain("Missed Visit");
+    expect(SERVICES).toContain("Special Rate");
     expect(SERVICES).toContain("SOC");
     expect(SERVICES).toContain("ReCert");
 
