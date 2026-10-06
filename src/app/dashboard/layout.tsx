@@ -14,6 +14,7 @@ import {
   X,
   Shield,
   UserCheck,
+  Building2,
 } from "lucide-react";
 import { IUser } from "@/lib/types";
 
@@ -120,6 +121,13 @@ export default function DashboardLayout({
       href: "/dashboard/workers",
       icon: Users,
       active: pathname === "/dashboard/workers",
+    },
+    {
+      label: "Agency Assignments",
+      href: "/dashboard/assignments",
+      icon: Building2,
+      active: pathname === "/dashboard/assignments",
+      hidden: user?.role === "viewer",
     },
     {
       label: "Team & Invites",
@@ -331,7 +339,13 @@ export default function DashboardLayout({
         </header>
 
         {/* Content Body */}
-        <main className={pathname === "/dashboard/workers" ? "content-body-full" : "content-body"}>
+        <main
+          className={
+            pathname === "/dashboard/workers" || pathname === "/dashboard/assignments"
+              ? "content-body-full"
+              : "content-body"
+          }
+        >
           {children}
         </main>
 

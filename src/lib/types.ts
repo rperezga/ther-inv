@@ -12,17 +12,28 @@ export interface IUser {
   updatedAt?: string | Date;
 }
 
+export interface IServiceRate {
+  serviceType: string;
+  rate: number;
+}
+
+export interface IAgencyAssignment {
+  agencyName: string;
+  services: IServiceRate[];
+}
+
 export interface IWorker {
   _id?: string;
   firstName: string;
   lastName: string;
-  role: string; // e.g. "Registered Nurse (RN)", "Physical Therapist", "CNA", "Administrative"
+  role: string; // e.g. "Physical Therapy (PT)", "Physical Therapy Assistant (PTA)"
   hourlyRate: number;
   phone?: string;
   email?: string;
   ssnLast4?: string;
   status: "active" | "inactive";
   notes?: string;
+  agencyAssignments?: IAgencyAssignment[];
   createdAt?: string | Date;
   updatedAt?: string | Date;
 }

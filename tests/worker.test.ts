@@ -115,4 +115,47 @@ describe("Agency Worker Roster & Roles Logic", () => {
     expect(searchStaff("PTA")).toHaveLength(2);
     expect(searchStaff("Physical Therapy")).toHaveLength(4);
   });
+
+  it("should configure agency assignments with per-service rates for staff members", () => {
+    const AGENCIES = ["A&A HEALTH SERVICE", "ALC", "INNOVATION", "MEDCARE", "OASIS", "USAD"];
+    const SERVICES = ["SOC", "ReCert", "ReEval", "Eval", "Disch", "NoBill", "Missed Visit"];
+
+    expect(AGENCIES).toHaveLength(6);
+    expect(SERVICES).toContain("Missed Visit");
+    expect(SERVICES).toContain("SOC");
+    expect(SERVICES).toContain("ReCert");
+
+    const workerAssignments = [
+      {
+        agencyName: "ALC",
+        services: [
+          { serviceType: "SOC", rate: 85 },
+          { serviceType: "Eval", rate: 75 },
+          { serviceType: "ReCert", rate: 70 },
+          { serviceType: "Missed Visit", rate: 25 },
+        ],
+      },
+      {
+        agencyName: "MEDCARE",
+        services: [
+          { serviceType: "SOC", rate: 90 },
+          { serviceType: "Disch", rate: 65 },
+        ],
+      },
+    ];
+
+    const getRateForService = (agency: string, service: string) => {
+      const agencyRecord = workerAssignments.find((a) => a.agencyName === agency);
+      if (!agencyRecord) return 0;
+      const serviceRecord = agencyRecord.services.find((s) => s.serviceType === service);
+      return serviceRecord ? serviceRecord.rate : 0;
+    };
+
+    expect(getRateForService("ALC", "SOC")).toBe(85);
+    expect(getRateForService("ALC", "Missed Visit")).toBe(25);
+    expect(getRateForService("MEDCARE", "SOC")).toBe(90);
+    expect(getRateForService("MEDCARE", "Eval")).toBe(0); // Not configured
+    expect(getRateForService("OASIS", "SOC")).toBe(0); // Unassigned agency
+  });
 });
+

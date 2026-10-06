@@ -1,5 +1,15 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
+export interface IServiceRate {
+  serviceType: string; // "SOC", "ReCert", "ReEval", "Eval", "Disch", "NoBill", "Missed Visit"
+  rate: number;
+}
+
+export interface IAgencyAssignment {
+  agencyName: string; // e.g. "A&A HEALTH SERVICE", "ALC", "INNOVATION", "MEDCARE", "OASIS", "USAD"
+  services: IServiceRate[];
+}
+
 export interface IWorkerDocument extends Document {
   firstName: string;
   lastName: string;
@@ -10,9 +20,26 @@ export interface IWorkerDocument extends Document {
   ssnLast4?: string;
   status: "active" | "inactive";
   notes?: string;
+  agencyAssignments?: IAgencyAssignment[];
   createdAt: Date;
   updatedAt: Date;
 }
+
+const ServiceRateSchema = new Schema(
+  {
+    serviceType: { type: String, required: true, trim: true },
+    rate: { type: Number, default: 0, min: 0 },
+  },
+  { _id: false }
+);
+
+const AgencyAssignmentSchema = new Schema(
+  {
+    agencyName: { type: String, required: true, trim: true },
+    services: [ServiceRateSchema],
+  },
+  { _id: false }
+);
 
 const WorkerSchema = new Schema<IWorkerDocument>(
   {
@@ -29,6 +56,7 @@ const WorkerSchema = new Schema<IWorkerDocument>(
       default: "active",
     },
     notes: { type: String, trim: true },
+    agencyAssignments: [AgencyAssignmentSchema],
   },
   { timestamps: true }
 );

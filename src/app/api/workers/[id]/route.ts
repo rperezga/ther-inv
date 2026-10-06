@@ -61,6 +61,7 @@ export async function PUT(
         ssnLast4: body.ssnLast4?.trim(),
         status: body.status,
         notes: body.notes?.trim(),
+        ...(body.agencyAssignments !== undefined && { agencyAssignments: body.agencyAssignments }),
       },
       { new: true, runValidators: true }
     );
