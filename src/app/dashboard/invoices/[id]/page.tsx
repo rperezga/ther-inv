@@ -15,6 +15,7 @@ import {
   Calendar,
   DollarSign,
   Download,
+  Edit2,
 } from "lucide-react";
 import { IInvoice } from "@/lib/types";
 
@@ -151,6 +152,21 @@ export default function InvoiceDetailPage({
               <option value="cancelled">Cancelled</option>
             </select>
           </div>
+
+          <Link
+            href={`/dashboard/invoices/new?edit=${invoice._id}`}
+            className="btn btn-secondary btn-sm"
+            style={{
+              gap: "0.4rem",
+              color: "var(--primary)",
+              borderColor: "var(--primary-border)",
+              backgroundColor: "#f0f7ff",
+              fontWeight: 600,
+            }}
+          >
+            <Edit2 size={15} />
+            <span>Edit Invoice / Visits</span>
+          </Link>
 
           <button
             onClick={handlePrint}

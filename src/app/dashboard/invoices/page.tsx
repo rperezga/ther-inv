@@ -11,6 +11,7 @@ import {
   Eye,
   Calendar,
   AlertCircle,
+  Edit2,
 } from "lucide-react";
 import { IInvoice } from "@/lib/types";
 
@@ -277,6 +278,18 @@ export default function InvoicesListPage() {
                           justifyContent: "flex-end",
                         }}
                       >
+                        <Link
+                          href={`/dashboard/invoices/new?edit=${inv._id}`}
+                          className="btn btn-secondary btn-sm"
+                          style={{
+                            color: "var(--primary)",
+                            borderColor: "var(--primary-border)",
+                            backgroundColor: "#f0f7ff",
+                          }}
+                          title="Edit Invoice / Visits"
+                        >
+                          <Edit2 size={14} />
+                        </Link>
                         <Link
                           href={`/dashboard/invoices/${inv._id}`}
                           className="btn btn-secondary btn-sm"

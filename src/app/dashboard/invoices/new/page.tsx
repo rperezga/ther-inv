@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   FileText,
   Building2,
@@ -18,6 +18,7 @@ import {
   AlertCircle,
   Key,
   RefreshCw,
+  BookmarkCheck,
 } from "lucide-react";
 import { IWorker, IAgencyAssignment } from "@/lib/types";
 
@@ -30,7 +31,7 @@ const AGENCIES = [
   "USAD",
 ];
 
-// 8 Service definitions with short abbreviations for compact 1-click button row
+// 8 Service definitions with clear readable abbreviations for 1-click button row
 export interface ServiceButtonDef {
   id: string;
   abbr: string;
@@ -40,13 +41,13 @@ export interface ServiceButtonDef {
 
 const SERVICE_BUTTONS: ServiceButtonDef[] = [
   { id: "SOC", abbr: "SOC", fullName: "Start of Care" },
-  { id: "ReCert", abbr: "ReC", fullName: "Re-Certification" },
-  { id: "ReEval", abbr: "ReEv", fullName: "Re-Evaluation" },
+  { id: "ReCert", abbr: "Re-Cert", fullName: "Re-Certification" },
+  { id: "ReEval", abbr: "Re-Eval", fullName: "Re-Evaluation" },
   { id: "Eval", abbr: "Eval", fullName: "Evaluation" },
-  { id: "Disch", abbr: "Disc", fullName: "Discharge" },
-  { id: "Missed Visit", abbr: "MV", fullName: "Missed Visit" },
-  { id: "Special Rate", abbr: "SR", fullName: "Special Rate", isSpecial: true },
-  { id: "NoBill", abbr: "NoB", fullName: "No Billable" },
+  { id: "Disch", abbr: "Disch", fullName: "Discharge" },
+  { id: "Missed Visit", abbr: "Missed Visit", fullName: "Missed Visit" },
+  { id: "Special Rate", abbr: "Special Rate", fullName: "Special Rate", isSpecial: true },
+  { id: "NoBill", abbr: "No Bill", fullName: "No Billable" },
 ];
 
 export interface ExtractedVisitRow {
@@ -61,6 +62,8 @@ export interface ExtractedVisitRow {
 
 export default function CreateInvoicePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("edit"); // If editing an existing draft/invoice
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Core selections: Agent & Agency
@@ -85,11 +88,68 @@ export default function CreateInvoicePage() {
   const [apiKey, setApiKey] = useState("");
   const [showKeyInput, setShowKeyInput] = useState(false);
 
-  // Submitting Invoice
+  // Submitting / Saving state
   const [submitting, setSubmitting] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [saveSuccessMsg, setSaveSuccessMsg] = useState("");
   const [submitError, setSubmitError] = useState("");
 
-  // Load active workers and default weekly dates
+  // References to keep latest worker and agency available synchronously
+  const selectedWorkerRef = useRef<IWorker | undefined>(undefined);
+  const selectedAgencyRef = useRef<string>(selectedAgency);
+
+  // Helper to test if a worker has configured rates (at least 1 service with rate > 0)
+  const workerHasConfiguredRates = (w: IWorker): boolean => {
+    if (!w.agencyAssignments || !Array.isArray(w.agencyAssignments)) return false;
+    return w.agencyAssignments.some(
+      (assign) =>
+        Array.isArray(assign.services) &&
+        assign.services.some((s) => Number(s.rate) > 0)
+    );
+  };
+
+  // Filtered workers: only those who have rates added
+  const workersWithRates = workers.filter(workerHasConfiguredRates);
+
+  const selectedWorker = workers.find((w) => w._id === selectedWorkerId);
+  selectedWorkerRef.current = selectedWorker;
+  selectedAgencyRef.current = selectedAgency;
+
+  // Helper to resolve rate from worker's configured agency assignments
+  const getRateForService = (
+    worker: IWorker | undefined,
+    agencyName: string,
+    service: string
+  ): number => {
+    if (!worker || !worker.agencyAssignments) return 0;
+    const assignment = worker.agencyAssignments.find((a) => a.agencyName === agencyName);
+    if (!assignment || !assignment.services) return 0;
+    const srv = assignment.services.find((s) => s.serviceType === service);
+    return srv ? Math.round(Number(srv.rate) || 0) : 0;
+  };
+
+  // Automatically recalculate rates for all rows when agent or agency changes
+  const updateRatesForCurrentSelection = (newWorkerId: string, newAgency: string) => {
+    const targetWorker = workers.find((w) => w._id === newWorkerId);
+    setVisits((prev) =>
+      prev.map((row) => ({
+        ...row,
+        rate: getRateForService(targetWorker, newAgency, row.serviceType),
+      }))
+    );
+  };
+
+  const handleWorkerChange = (wId: string) => {
+    setSelectedWorkerId(wId);
+    updateRatesForCurrentSelection(wId, selectedAgency);
+  };
+
+  const handleAgencyChange = (agency: string) => {
+    setSelectedAgency(agency);
+    updateRatesForCurrentSelection(selectedWorkerId, agency);
+  };
+
+  // Load active workers and default weekly dates or existing invoice if editId is provided
   useEffect(() => {
     const today = new Date();
     const dayOfWeek = today.getDay();
@@ -122,49 +182,52 @@ export default function CreateInvoicePage() {
         if (data.workers) {
           const list: IWorker[] = data.workers;
           setWorkers(list);
-          if (list.length > 0) {
+          const eligible = list.filter((w) =>
+            w.agencyAssignments?.some((a) => a.services?.some((s) => Number(s.rate) > 0))
+          );
+          if (eligible.length > 0) {
+            setSelectedWorkerId(eligible[0]._id!);
+          } else if (list.length > 0) {
             setSelectedWorkerId(list[0]._id!);
           }
         }
       })
       .catch((err) => console.error("Error loading workers:", err))
       .finally(() => setLoadingWorkers(false));
-  }, []);
 
-  const selectedWorker = workers.find((w) => w._id === selectedWorkerId);
+    // If editId is provided, load existing invoice to edit
+    if (editId) {
+      fetch(`/api/invoices/${editId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.invoice) {
+            const inv = data.invoice;
+            if (inv.clientName) setSelectedAgency(inv.clientName);
+            if (inv.periodStart) setPeriodStart(new Date(inv.periodStart).toISOString().split("T")[0]);
+            if (inv.periodEnd) setPeriodEnd(new Date(inv.periodEnd).toISOString().split("T")[0]);
+            if (inv.invoiceDate) setInvoiceDate(new Date(inv.invoiceDate).toISOString().split("T")[0]);
+            if (inv.dueDate) setDueDate(new Date(inv.dueDate).toISOString().split("T")[0]);
 
-  // Helper to resolve rate from worker's configured agency assignments
-  const getRateForService = (
-    worker: IWorker | undefined,
-    agencyName: string,
-    service: string
-  ): number => {
-    if (!worker || !worker.agencyAssignments) return 0;
-    const assignment = worker.agencyAssignments.find((a) => a.agencyName === agencyName);
-    if (!assignment || !assignment.services) return 0;
-    const srv = assignment.services.find((s) => s.serviceType === service);
-    return srv ? Math.round(Number(srv.rate) || 0) : 0;
-  };
-
-  const updateRatesForCurrentSelection = (newWorkerId: string, newAgency: string) => {
-    const targetWorker = workers.find((w) => w._id === newWorkerId);
-    setVisits((prev) =>
-      prev.map((row) => ({
-        ...row,
-        rate: getRateForService(targetWorker, newAgency, row.serviceType),
-      }))
-    );
-  };
-
-  const handleWorkerChange = (wId: string) => {
-    setSelectedWorkerId(wId);
-    updateRatesForCurrentSelection(wId, selectedAgency);
-  };
-
-  const handleAgencyChange = (agency: string) => {
-    setSelectedAgency(agency);
-    updateRatesForCurrentSelection(selectedWorkerId, agency);
-  };
+            if (inv.items && Array.isArray(inv.items) && inv.items.length > 0) {
+              if (inv.items[0]?.workerId) {
+                setSelectedWorkerId(String(inv.items[0].workerId));
+              }
+              const loadedVisits: ExtractedVisitRow[] = inv.items.map((it: any, idx: number) => ({
+                id: `loaded-${Date.now()}-${idx}`,
+                patientName: it.patientName || "",
+                visitDate: it.visitDate || "",
+                serviceType: it.serviceType || "SOC",
+                rate: Math.round(Number(it.regularRate || it.amount) || 0),
+                selected: true,
+                notes: it.description || "",
+              }));
+              setVisits(loadedVisits);
+            }
+          }
+        })
+        .catch((err) => console.error("Error loading invoice for edit:", err));
+    }
+  }, [editId]);
 
   // Image Upload handler
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -226,7 +289,6 @@ export default function CreateInvoicePage() {
       alert("No image found in clipboard. Please copy/screenshot an image first and try again, or press Ctrl+V.");
     } catch (err: any) {
       console.warn("Clipboard read error:", err);
-      // Fallback instruction for user
       alert("Please press Ctrl+V anywhere on the page to paste your screenshot.");
     }
   };
@@ -258,6 +320,7 @@ export default function CreateInvoicePage() {
       const extracted = data.data;
 
       // Match agency if detected
+      let resolvedAgency = selectedAgency;
       if (extracted.agencyName) {
         const foundAgency = AGENCIES.find(
           (a) =>
@@ -265,11 +328,13 @@ export default function CreateInvoicePage() {
             extracted.agencyName.toLowerCase().includes(a.toLowerCase())
         );
         if (foundAgency) {
+          resolvedAgency = foundAgency;
           setSelectedAgency(foundAgency);
         }
       }
 
       // Match worker if detected in OCR
+      let resolvedWorker = selectedWorkerRef.current;
       if (extracted.staffName) {
         const foundWorker = workers.find(
           (w) =>
@@ -279,11 +344,12 @@ export default function CreateInvoicePage() {
             extracted.staffName.toLowerCase().includes(w.firstName.toLowerCase())
         );
         if (foundWorker) {
+          resolvedWorker = foundWorker;
           setSelectedWorkerId(foundWorker._id!);
         }
       }
 
-      // Convert extracted rows to table rows
+      // Convert extracted rows to table rows with rates automatically populated
       if (extracted.records && Array.isArray(extracted.records)) {
         const newRows: ExtractedVisitRow[] = extracted.records.map(
           (rec: any, idx: number) => {
@@ -295,7 +361,7 @@ export default function CreateInvoicePage() {
               service = "SOC";
             }
 
-            const currentRate = getRateForService(selectedWorker, selectedAgency, service);
+            const currentRate = getRateForService(resolvedWorker, resolvedAgency, service);
 
             return {
               id: `row-${Date.now()}-${idx}`,
@@ -385,7 +451,84 @@ export default function CreateInvoicePage() {
   const totalVisitsCount = selectedVisits.length;
   const invoiceSubtotal = selectedVisits.reduce((acc, v) => acc + (Number(v.rate) || 0), 0);
 
-  // Submit and Create Invoice
+  // Helper to construct items payload
+  const buildItemsPayload = () => {
+    return selectedVisits.map((v) => ({
+      workerId: selectedWorker?._id,
+      workerName: selectedWorker ? `${selectedWorker.firstName} ${selectedWorker.lastName}` : "Worker",
+      role: selectedWorker?.role || "Staff",
+      patientName: v.patientName.trim(),
+      visitDate: v.visitDate,
+      serviceType: v.serviceType,
+      regularHours: 1,
+      regularRate: Math.round(Number(v.rate) || 0),
+      overtimeHours: 0,
+      overtimeRate: 0,
+      description: `${v.serviceType} - Patient: ${v.patientName.trim()}`,
+      amount: Math.round(Number(v.rate) || 0),
+    }));
+  };
+
+  // Save as Draft (without generating final invoice, lets user come back to edit)
+  const handleSaveDraft = async () => {
+    if (!selectedWorker) {
+      setSubmitError("Please select a clinical agent");
+      return;
+    }
+    if (!selectedAgency) {
+      setSubmitError("Please select a partner agency");
+      return;
+    }
+    if (selectedVisits.length === 0) {
+      setSubmitError("Please enter at least one patient visit to save the draft");
+      return;
+    }
+
+    setSavingDraft(true);
+    setSubmitError("");
+    setSaveSuccessMsg("");
+
+    try {
+      const payload = {
+        clientName: selectedAgency,
+        periodStart,
+        periodEnd,
+        invoiceDate,
+        dueDate,
+        items: buildItemsPayload(),
+        status: "draft",
+        notes: `Draft invoice for ${selectedAgency} • Therapist: ${selectedWorker.firstName} ${selectedWorker.lastName} (${selectedWorker.role}) • Total visits: ${totalVisitsCount}`,
+      };
+
+      const url = editId ? `/api/invoices/${editId}` : "/api/invoices";
+      const method = editId ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to save draft invoice");
+      }
+
+      setSaveSuccessMsg("Draft invoice saved successfully! You can continue editing or return at any time.");
+      setTimeout(() => setSaveSuccessMsg(""), 4000);
+
+      // If created new, update URL to edit mode without full reload
+      if (!editId && data.invoice?._id) {
+        router.replace(`/dashboard/invoices/new?edit=${data.invoice._id}`);
+      }
+    } catch (err: any) {
+      setSubmitError(err.message || "Failed to save draft");
+    } finally {
+      setSavingDraft(false);
+    }
+  };
+
+  // Submit and Create / Update Final Invoice
   const handleGenerateInvoice = async () => {
     if (!selectedWorker) {
       setSubmitError("Please select an agent / staff member");
@@ -404,34 +547,22 @@ export default function CreateInvoicePage() {
     setSubmitError("");
 
     try {
-      const itemsPayload = selectedVisits.map((v) => ({
-        workerId: selectedWorker._id,
-        workerName: `${selectedWorker.firstName} ${selectedWorker.lastName}`,
-        role: selectedWorker.role,
-        patientName: v.patientName.trim(),
-        visitDate: v.visitDate,
-        serviceType: v.serviceType,
-        regularHours: 1,
-        regularRate: Math.round(Number(v.rate) || 0),
-        overtimeHours: 0,
-        overtimeRate: 0,
-        description: `${v.serviceType} - Patient: ${v.patientName.trim()}`,
-        amount: Math.round(Number(v.rate) || 0),
-      }));
-
       const payload = {
         clientName: selectedAgency,
         periodStart,
         periodEnd,
         invoiceDate,
         dueDate,
-        items: itemsPayload,
-        status: "draft",
+        items: buildItemsPayload(),
+        status: "pending", // Issued/Pending invoice
         notes: `Weekly agency visit invoice for ${selectedAgency} • Therapist: ${selectedWorker.firstName} ${selectedWorker.lastName} (${selectedWorker.role}) • Total visits: ${totalVisitsCount}`,
       };
 
-      const res = await fetch("/api/invoices", {
-        method: "POST",
+      const url = editId ? `/api/invoices/${editId}` : "/api/invoices";
+      const method = editId ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
@@ -441,7 +572,8 @@ export default function CreateInvoicePage() {
         throw new Error(data.error || "Failed to create invoice");
       }
 
-      router.push(`/dashboard/invoices/${data.invoice._id}`);
+      const targetId = editId || data.invoice?._id;
+      router.push(`/dashboard/invoices/${targetId}`);
     } catch (err: any) {
       setSubmitError(err.message || "Failed to generate invoice");
       setSubmitting(false);
@@ -549,6 +681,35 @@ export default function CreateInvoicePage() {
             )}
           </button>
 
+          {/* Save Draft Button (does not finalize invoice, allows returning to edit) */}
+          <button
+            type="button"
+            onClick={handleSaveDraft}
+            disabled={savingDraft || visits.length === 0}
+            className="btn btn-secondary btn-sm"
+            style={{
+              gap: "0.4rem",
+              fontSize: "0.82rem",
+              padding: "0.38rem 0.8rem",
+              fontWeight: 700,
+              backgroundColor: "#f8fafc",
+              borderColor: "#cbd5e1",
+            }}
+            title="Save changes as a draft without generating final invoice so you can return to edit anytime"
+          >
+            {savingDraft ? (
+              <>
+                <RefreshCw size={14} className="spin" />
+                <span>Saving Draft...</span>
+              </>
+            ) : (
+              <>
+                <BookmarkCheck size={15} color="var(--primary)" />
+                <span>Save Draft</span>
+              </>
+            )}
+          </button>
+
           {/* Generate Invoice Final Button */}
           <button
             onClick={handleGenerateInvoice}
@@ -561,12 +722,35 @@ export default function CreateInvoicePage() {
             ) : (
               <>
                 <Save size={15} />
-                <span>Generate Invoice</span>
+                <span>{editId ? "Update & Issue" : "Generate Invoice"}</span>
               </>
             )}
           </button>
         </div>
       </div>
+
+      {/* Draft Save Success Notification */}
+      {saveSuccessMsg && (
+        <div
+          style={{
+            backgroundColor: "#f0fdf4",
+            color: "#166534",
+            border: "1px solid #bbf7d0",
+            borderRadius: "6px",
+            padding: "0.45rem 0.75rem",
+            marginBottom: "0.5rem",
+            fontSize: "0.82rem",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.45rem",
+            fontWeight: 600,
+            flexShrink: 0,
+          }}
+        >
+          <CheckCircle2 size={16} color="#16a34a" />
+          <span>{saveSuccessMsg}</span>
+        </div>
+      )}
 
       {/* Notifications / Alerts */}
       {aiError && (
@@ -718,11 +902,15 @@ export default function CreateInvoicePage() {
                 lineHeight: "normal",
               }}
             >
-              {workers.map((w) => (
-                <option key={w._id} value={w._id}>
-                  {w.firstName} {w.lastName} ({w.role})
-                </option>
-              ))}
+              {workersWithRates.length === 0 ? (
+                <option value="">No agents with configured rates</option>
+              ) : (
+                workersWithRates.map((w) => (
+                  <option key={w._id} value={w._id}>
+                    {w.firstName} {w.lastName} ({w.role})
+                  </option>
+                ))
+              )}
             </select>
           </div>
 
@@ -1063,13 +1251,14 @@ export default function CreateInvoicePage() {
                                     : "1px solid var(--border-color)",
                                   backgroundColor: isSelectedService ? activeBg : "#ffffff",
                                   color: isSelectedService ? "#ffffff" : "var(--text-primary)",
-                                  fontSize: "0.72rem",
+                                  fontSize: "0.78rem",
                                   fontWeight: isSelectedService ? 800 : 600,
-                                  padding: "0.15rem 0.38rem",
-                                  borderRadius: "4px",
+                                  padding: "0.22rem 0.55rem",
+                                  borderRadius: "5px",
                                   cursor: "pointer",
-                                  lineHeight: 1.2,
+                                  lineHeight: 1.25,
                                   transition: "all 0.1s ease",
+                                  whiteSpace: "nowrap",
                                 }}
                               >
                                 {btn.abbr}
