@@ -9,6 +9,8 @@ import {
   isPtaRole,
   getServicesForRole,
   generateUniqueInitials,
+  normalizeDateToMMDDYY,
+  toInputDateFormat,
 } from "../src/lib/calculations";
 
 describe("Invoice & Payroll Calculation Engine", () => {
@@ -274,6 +276,22 @@ describe("Invoice & Payroll Calculation Engine", () => {
       const existing = ["AM"]; // taken by Alex Martin
       // Alex Miller: M(1) I(2) -> AI
       expect(generateUniqueInitials("Alex", "Miller", existing)).toBe("AI");
+    });
+  });
+
+  describe("Date Normalization & Formats", () => {
+    it("should standardize diverse date formats to MM/DD/YY", () => {
+      expect(normalizeDateToMMDDYY("9/15/26")).toBe("09/15/26");
+      expect(normalizeDateToMMDDYY("9/24/26")).toBe("09/24/26");
+      expect(normalizeDateToMMDDYY("2026-09-28")).toBe("09/28/26");
+      expect(normalizeDateToMMDDYY("09-28-2026")).toBe("09/28/26");
+      expect(normalizeDateToMMDDYY("9-2-26")).toBe("09/02/26");
+    });
+
+    it("should convert to YYYY-MM-DD input date format", () => {
+      expect(toInputDateFormat("09/15/26")).toBe("2026-09-15");
+      expect(toInputDateFormat("2026-09-28")).toBe("2026-09-28");
+      expect(toInputDateFormat("9-2-26")).toBe("2026-09-02");
     });
   });
 });

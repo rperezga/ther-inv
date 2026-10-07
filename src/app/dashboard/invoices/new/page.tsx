@@ -23,6 +23,7 @@ import {
   FolderPlus,
 } from "lucide-react";
 import { IWorker, IAgencyAssignment, ILot } from "@/lib/types";
+import { normalizeDateToMMDDYY, toInputDateFormat } from "@/lib/calculations";
 
 const AGENCIES = [
   "A&A HEALTH SERVICE",
@@ -356,10 +357,9 @@ export default function CreateInvoicePage() {
 
                 // If date was not directly stored, fallback to periodStart
                 if (!vDate && inv.periodStart) {
-                  const d = new Date(inv.periodStart);
-                  if (!isNaN(d.getTime())) {
-                    vDate = `${d.getMonth() + 1}-${d.getDate()}-${String(d.getFullYear()).slice(-2)}`;
-                  }
+                  vDate = normalizeDateToMMDDYY(inv.periodStart);
+                } else if (vDate) {
+                  vDate = normalizeDateToMMDDYY(vDate);
                 }
 
                 return {
@@ -534,7 +534,7 @@ export default function CreateInvoicePage() {
             newRows.push({
               id: `row-${Date.now()}-${rowIdx++}`,
               patientName: cleanPatientName,
-              visitDate: d,
+              visitDate: normalizeDateToMMDDYY(d),
               serviceType: service,
               rate: currentRate,
               selected: true,
@@ -563,7 +563,7 @@ export default function CreateInvoicePage() {
       {
         id: `manual-${Date.now()}`,
         patientName: "", // Empty so no sample person name appears
-        visitDate: periodStart || new Date().toISOString().split("T")[0],
+        visitDate: normalizeDateToMMDDYY(periodStart || new Date()),
         serviceType: defaultSrv,
         rate: defaultRate,
         selected: true,
@@ -1039,8 +1039,8 @@ export default function CreateInvoicePage() {
           style={{
             padding: "0.65rem 0.85rem",
             display: "grid",
-            gridTemplateColumns: "1.2fr 1.3fr 1.1fr 1fr 1fr 150px",
-            gap: "0.6rem",
+            gridTemplateColumns: "1.4fr 1.4fr 1.1fr 1.2fr 150px",
+            gap: "0.75rem",
             alignItems: "end",
             flexShrink: 0,
             backgroundColor: "#ffffff",
@@ -1138,7 +1138,7 @@ export default function CreateInvoicePage() {
                 textOverflow: "ellipsis",
               }}
             >
-              1. Clinical Agent *
+              Clinical Agent *
             </label>
             <select
               className="form-select"
@@ -1165,7 +1165,7 @@ export default function CreateInvoicePage() {
             </select>
           </div>
 
-          {/* Agency Selection */}
+          {/* Associated Partner Agency (Derived from selected lot) */}
           <div style={{ minWidth: 0 }}>
             <label
               style={{
@@ -1180,31 +1180,32 @@ export default function CreateInvoicePage() {
                 textOverflow: "ellipsis",
               }}
             >
-              2. Partner Agency *
+              Partner Agency
             </label>
-            <select
-              className="form-select"
-              value={selectedAgency}
-              onChange={(e) => handleAgencyChange(e.target.value)}
+            <div
               style={{
                 height: "36px",
+                display: "flex",
+                alignItems: "center",
+                padding: "0 0.65rem",
+                backgroundColor: "#f1f5f9",
+                border: "1px solid var(--border-color)",
+                borderRadius: "var(--radius-sm)",
                 fontSize: "0.82rem",
-                fontWeight: 700,
+                fontWeight: 800,
                 color: "var(--primary)",
-                padding: "0.3rem 0.6rem",
-                width: "100%",
-                lineHeight: "normal",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
               }}
+              title={selectedAgency}
             >
-              {AGENCIES.map((agency) => (
-                <option key={agency} value={agency}>
-                  {agency}
-                </option>
-              ))}
-            </select>
+              <Building2 size={13} style={{ marginRight: "0.35rem", flexShrink: 0 }} />
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{selectedAgency}</span>
+            </div>
           </div>
 
-          {/* Week Start */}
+          {/* Lot Billing Cycle Period (Derived from selected lot) */}
           <div style={{ minWidth: 0 }}>
             <label
               style={{
@@ -1217,51 +1218,29 @@ export default function CreateInvoicePage() {
                 whiteSpace: "nowrap",
               }}
             >
-              Week Start Date *
+              Cycle Date Range
             </label>
-            <input
-              type="date"
-              value={periodStart}
-              onChange={(e) => setPeriodStart(e.target.value)}
-              className="form-input"
+            <div
               style={{
                 height: "36px",
+                display: "flex",
+                alignItems: "center",
+                padding: "0 0.6rem",
+                backgroundColor: "#f8fafc",
+                border: "1px solid var(--border-color)",
+                borderRadius: "var(--radius-sm)",
                 fontSize: "0.8rem",
-                padding: "0.3rem 0.5rem",
-                width: "100%",
-                lineHeight: "normal",
-              }}
-            />
-          </div>
-
-          {/* Week End */}
-          <div style={{ minWidth: 0 }}>
-            <label
-              style={{
-                fontSize: "0.7rem",
                 fontWeight: 700,
-                color: "var(--text-secondary)",
-                display: "block",
-                marginBottom: "0.2rem",
-                textTransform: "uppercase",
+                color: "#334155",
                 whiteSpace: "nowrap",
+                gap: "0.3rem",
               }}
             >
-              Week End Date *
-            </label>
-            <input
-              type="date"
-              value={periodEnd}
-              onChange={(e) => setPeriodEnd(e.target.value)}
-              className="form-input"
-              style={{
-                height: "36px",
-                fontSize: "0.8rem",
-                padding: "0.3rem 0.5rem",
-                width: "100%",
-                lineHeight: "normal",
-              }}
-            />
+              <Calendar size={13} style={{ color: "var(--primary)", flexShrink: 0 }} />
+              <span>
+                {normalizeDateToMMDDYY(periodStart)} – {normalizeDateToMMDDYY(periodEnd)}
+              </span>
+            </div>
           </div>
 
           {/* KPI Total Amount Box */}
@@ -1449,21 +1428,65 @@ export default function CreateInvoicePage() {
                         />
                       </td>
 
-                      {/* Visit Date Input */}
-                      <td style={{ padding: "0.3rem 0.45rem" }}>
-                        <input
-                          type="text"
-                          value={row.visitDate}
-                          onChange={(e) => handleUpdateRow(row.id, "visitDate", e.target.value)}
-                          placeholder="9-2-26"
-                          className="form-input"
+                      {/* Visit Date Calendar Picker */}
+                      <td style={{ padding: "0.3rem 0.45rem", minWidth: "120px" }}>
+                        <div
                           style={{
+                            position: "relative",
+                            display: "flex",
+                            alignItems: "center",
                             height: "30px",
-                            fontSize: "0.8rem",
-                            padding: "0.15rem 0.45rem",
-                            width: "100%",
+                            backgroundColor: "#ffffff",
+                            border: "1px solid var(--border-color)",
+                            borderRadius: "var(--radius-sm)",
+                            padding: "0 0.45rem",
+                            cursor: "pointer",
+                            gap: "0.35rem",
                           }}
-                        />
+                          onClick={(e) => {
+                            // Find hidden date input and trigger picker
+                            const input = (e.currentTarget.querySelector("input[type='date']") as HTMLInputElement);
+                            if (input && typeof (input as any).showPicker === "function") {
+                              try {
+                                (input as any).showPicker();
+                              } catch {
+                                input.focus();
+                              }
+                            } else if (input) {
+                              input.focus();
+                            }
+                          }}
+                        >
+                          <Calendar size={13} style={{ color: "var(--primary)", flexShrink: 0 }} />
+                          <span
+                            style={{
+                              fontSize: "0.82rem",
+                              fontWeight: 700,
+                              color: row.visitDate ? "var(--text-primary)" : "var(--text-muted)",
+                              flex: 1,
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {normalizeDateToMMDDYY(row.visitDate) || "MM/DD/YY"}
+                          </span>
+                          <input
+                            type="date"
+                            value={toInputDateFormat(row.visitDate)}
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                handleUpdateRow(row.id, "visitDate", normalizeDateToMMDDYY(e.target.value));
+                              }
+                            }}
+                            style={{
+                              position: "absolute",
+                              inset: 0,
+                              opacity: 0,
+                              width: "100%",
+                              height: "100%",
+                              cursor: "pointer",
+                            }}
+                          />
+                        </div>
                       </td>
 
                       {/* Clickable Service Buttons Row (PTA: 3 buttons, PT: 8 buttons) */}

@@ -219,3 +219,75 @@ export function isPtaRole(role?: string): boolean {
 export function getServicesForRole(role?: string): readonly string[] {
   return isPtaRole(role) ? PTA_SERVICES : PT_SERVICES;
 }
+
+/**
+ * Normalizes any date string (e.g. "9/15/26", "2026-09-28", "9-15-2026", "9/15")
+ * into a standardized MM/DD/YY format (e.g. "09/15/26").
+ */
+export function normalizeDateToMMDDYY(rawDate?: string | Date): string {
+  if (!rawDate) return "";
+  const str = String(rawDate).trim();
+  if (!str) return "";
+
+  // If already matches M/D/YY or MM/DD/YY or M-D-YY
+  const slashOrDashMatch = str.match(/^(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?$/);
+  if (slashOrDashMatch) {
+    const month = parseInt(slashOrDashMatch[1], 10);
+    const day = parseInt(slashOrDashMatch[2], 10);
+    let year = slashOrDashMatch[3] ? parseInt(slashOrDashMatch[3], 10) : new Date().getFullYear();
+    if (year < 100) year += 2000;
+    const mm = String(month).padStart(2, "0");
+    const dd = String(day).padStart(2, "0");
+    const yy = String(year).slice(-2);
+    return `${mm}/${dd}/${yy}`;
+  }
+
+  // If ISO "YYYY-MM-DD"
+  const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    const year = parseInt(isoMatch[1], 10);
+    const month = parseInt(isoMatch[2], 10);
+    const day = parseInt(isoMatch[3], 10);
+    const mm = String(month).padStart(2, "0");
+    const dd = String(day).padStart(2, "0");
+    const yy = String(year).slice(-2);
+    return `${mm}/${dd}/${yy}`;
+  }
+
+  const d = new Date(str);
+  if (!isNaN(d.getTime())) {
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const yy = String(d.getFullYear()).slice(-2);
+    return `${mm}/${dd}/${yy}`;
+  }
+
+  return str;
+}
+
+/**
+ * Converts a date string in any format (e.g. "09/15/26" or "2026-09-15") into "YYYY-MM-DD" for HTML date inputs.
+ */
+export function toInputDateFormat(dateStr?: string | Date): string {
+  if (!dateStr) return "";
+  const str = String(dateStr).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+
+  const slashMatch = str.match(/^(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?$/);
+  if (slashMatch) {
+    const month = parseInt(slashMatch[1], 10);
+    const day = parseInt(slashMatch[2], 10);
+    let year = slashMatch[3] ? parseInt(slashMatch[3], 10) : new Date().getFullYear();
+    if (year < 100) year += 2000;
+    const yyyy = String(year);
+    const mm = String(month).padStart(2, "0");
+    const dd = String(day).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  const d = new Date(str);
+  if (!isNaN(d.getTime())) {
+    return d.toISOString().split("T")[0];
+  }
+  return "";
+}

@@ -18,6 +18,7 @@ import {
   Edit2,
 } from "lucide-react";
 import { IInvoice } from "@/lib/types";
+import { normalizeDateToMMDDYY } from "@/lib/calculations";
 
 export default function InvoiceDetailPage({
   params,
@@ -387,26 +388,12 @@ export default function InvoiceDetailPage({
             <tbody>
               {/* Existing items */}
               {invoice.items?.map((it, idx) => {
-                // Format date cleanly (e.g. 09/28 or 9-28-26)
+                // Format date cleanly in standard MM/DD/YY (e.g. 09/28/26)
                 let visitDateFormatted = "-";
                 if (it.visitDate) {
-                  const parsed = new Date(it.visitDate);
-                  if (!isNaN(parsed.getTime())) {
-                    visitDateFormatted = parsed.toLocaleDateString("en-US", {
-                      month: "2-digit",
-                      day: "2-digit",
-                    });
-                  } else {
-                    visitDateFormatted = String(it.visitDate).replace(/^[A-Za-z]+,\s*/, "").slice(0, 5);
-                  }
+                  visitDateFormatted = normalizeDateToMMDDYY(it.visitDate);
                 } else if (invoice.periodStart) {
-                  const pDate = new Date(invoice.periodStart);
-                  if (!isNaN(pDate.getTime())) {
-                    visitDateFormatted = pDate.toLocaleDateString("en-US", {
-                      month: "2-digit",
-                      day: "2-digit",
-                    });
-                  }
+                  visitDateFormatted = normalizeDateToMMDDYY(invoice.periodStart);
                 }
 
                 // Clean patient name - strip out "PATIENT:" or service prefixes if stored in description
