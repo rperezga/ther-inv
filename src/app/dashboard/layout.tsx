@@ -184,7 +184,7 @@ export default function DashboardLayout({
                 textTransform: "uppercase",
               }}
             >
-              Agency Invoicing & Payroll
+              Agency Invoicing
             </span>
           </div>
           {mobileMenuOpen && (
@@ -215,63 +215,6 @@ export default function DashboardLayout({
               );
             })}
         </nav>
-
-        {/* Sidebar Footer User Info */}
-        <div
-          style={{
-            padding: "1rem 1.25rem",
-            borderTop: "1px solid var(--border-color)",
-            backgroundColor: "#f8fafc",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
-            <div
-              style={{
-                width: "38px",
-                height: "38px",
-                borderRadius: "50%",
-                backgroundColor: "var(--primary-subtle)",
-                color: "var(--primary)",
-                border: "1px solid var(--primary-border)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontWeight: 700,
-                fontSize: "0.95rem",
-              }}
-            >
-              {user?.name?.charAt(0).toUpperCase() || "U"}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div
-                style={{
-                  fontWeight: 600,
-                  fontSize: "0.875rem",
-                  color: "var(--text-primary)",
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
-                {user?.name}
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                <span className={`badge badge-role-${user?.role || "viewer"}`}>
-                  {user?.role === "admin" ? "Admin" : user?.role === "manager" ? "Manager" : "Viewer"}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <button
-            onClick={handleLogout}
-            id="sidebar-logout-btn"
-            className="btn btn-secondary btn-sm"
-            style={{ width: "100%", justifyContent: "center" }}
-          >
-            <LogOut size={15} /> Sign Out
-          </button>
-        </div>
       </aside>
 
       {/* Main Content Area */}
@@ -296,10 +239,11 @@ export default function DashboardLayout({
               style={{
                 fontSize: "0.95rem",
                 color: "var(--text-secondary)",
-                fontWeight: 500,
+                fontWeight: 600,
+                letterSpacing: "0.01em",
               }}
             >
-              Weekly Invoicing & Payroll
+              Weekly Invoicing
             </span>
           </div>
 
@@ -315,6 +259,7 @@ export default function DashboardLayout({
               </Link>
             )}
 
+            {/* User Profile Chip with Role */}
             <div
               style={{
                 display: "flex",
@@ -326,11 +271,47 @@ export default function DashboardLayout({
                 border: "1px solid var(--border-color)",
               }}
             >
-              <UserCheck size={16} color="var(--primary)" />
+              <div
+                style={{
+                  width: "24px",
+                  height: "24px",
+                  borderRadius: "50%",
+                  backgroundColor: "var(--primary-subtle)",
+                  color: "var(--primary)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: 700,
+                  fontSize: "0.75rem",
+                }}
+              >
+                {user?.name?.charAt(0).toUpperCase() || "U"}
+              </div>
               <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>
-                {user?.name?.split(" ")[0]}
+                {user?.name}
+              </span>
+              <span className={`badge badge-role-${user?.role || "viewer"}`} style={{ fontSize: "0.68rem", padding: "0.15rem 0.45rem" }}>
+                {user?.role === "admin" ? "Admin" : user?.role === "manager" ? "Manager" : "Viewer"}
               </span>
             </div>
+
+            {/* Topbar Sign Out Button */}
+            <button
+              onClick={handleLogout}
+              id="header-logout-btn"
+              className="btn btn-secondary btn-sm"
+              style={{
+                padding: "0.4rem 0.75rem",
+                fontSize: "0.82rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.35rem",
+              }}
+              title="Sign Out"
+            >
+              <LogOut size={14} />
+              <span className="btn-responsive-text">Sign Out</span>
+            </button>
           </div>
         </header>
 

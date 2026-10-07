@@ -2,9 +2,9 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "THER-INV | Agency Invoicing & Payroll System",
+  title: "THER-INV | Agency Invoicing System",
   description:
-    "Modern, private, and secure weekly invoicing and payroll management platform for agency healthcare staff.",
+    "Modern, private, and secure weekly invoicing management platform for agency healthcare staff.",
 };
 
 export const viewport: Viewport = {

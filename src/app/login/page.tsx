@@ -84,7 +84,7 @@ export default function LoginPage() {
             Welcome to THER-INV
           </h1>
           <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-            Sign in to manage agency weekly invoices and payroll
+            Sign in to manage agency weekly invoices
           </p>
         </div>
 

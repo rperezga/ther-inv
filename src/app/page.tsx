@@ -121,7 +121,7 @@ export default function HomePage() {
                 marginTop: "-3px",
               }}
             >
-              Agency Invoicing & Payroll
+              Agency Invoicing
             </span>
           </div>
         </div>
@@ -171,7 +171,7 @@ export default function HomePage() {
               color: "var(--text-primary)",
             }}
           >
-            Weekly Invoicing & Payroll for Agencies
+            Weekly Invoicing for Agencies
           </h1>
 
           <p
