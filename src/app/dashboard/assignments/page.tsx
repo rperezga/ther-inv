@@ -686,14 +686,13 @@ export default function AgencyAssignmentsPage() {
                   </div>
                 </div>
 
-                <div className="table-container" style={{ border: "none", flex: 1, overflow: "hidden" }}>
-                  <table className="data-table" style={{ width: "100%", height: "100%" }}>
+                <div className="table-container" style={{ border: "none", flex: 1, overflowY: "auto" }}>
+                  <table className="data-table" style={{ width: "100%", height: "auto" }}>
                     <thead>
                       <tr>
-                        <th style={{ width: "140px", padding: "0.6rem 1rem" }}>Service Code</th>
-                        <th style={{ padding: "0.6rem 1rem" }}>Service Description</th>
-                        <th style={{ width: "120px", padding: "0.6rem 1rem" }}>Type</th>
-                        <th style={{ width: "200px", textAlign: "right", padding: "0.6rem 1.25rem" }}>
+                        <th style={{ width: "160px", padding: "0.55rem 1rem" }}>Service Code</th>
+                        <th style={{ padding: "0.55rem 1rem" }}>Service Description</th>
+                        <th style={{ width: "200px", textAlign: "right", padding: "0.55rem 1.25rem" }}>
                           Pay Rate ($ / Visit)
                         </th>
                       </tr>
@@ -710,7 +709,7 @@ export default function AgencyAssignmentsPage() {
                               backgroundColor: isConfigured ? "#fcfdff" : "transparent",
                             }}
                           >
-                            <td style={{ padding: "0.55rem 1rem" }}>
+                            <td style={{ padding: "0.45rem 1rem" }}>
                               <span
                                 style={{
                                   fontWeight: 800,
@@ -724,44 +723,13 @@ export default function AgencyAssignmentsPage() {
                               </span>
                             </td>
 
-                            <td style={{ padding: "0.55rem 1rem" }}>
+                            <td style={{ padding: "0.45rem 1rem" }}>
                               <span style={{ fontSize: "0.83rem", color: "var(--text-secondary)" }}>
                                 {service.description}
                               </span>
                             </td>
 
-                            <td style={{ padding: "0.55rem 1rem" }}>
-                              {service.isBillable ? (
-                                <span
-                                  style={{
-                                    fontSize: "0.72rem",
-                                    fontWeight: 700,
-                                    padding: "0.15rem 0.45rem",
-                                    borderRadius: "4px",
-                                    backgroundColor: "var(--primary-subtle)",
-                                    color: "var(--primary)",
-                                    border: "1px solid var(--primary-border)",
-                                  }}
-                                >
-                                  Billable
-                                </span>
-                              ) : (
-                                <span
-                                  style={{
-                                    fontSize: "0.72rem",
-                                    fontWeight: 600,
-                                    padding: "0.15rem 0.45rem",
-                                    borderRadius: "4px",
-                                    backgroundColor: "var(--bg-subtle)",
-                                    color: "var(--text-muted)",
-                                  }}
-                                >
-                                  No Billable
-                                </span>
-                              )}
-                            </td>
-
-                            <td style={{ padding: "0.45rem 1.25rem", textAlign: "right" }}>
+                            <td style={{ padding: "0.35rem 1.25rem", textAlign: "right" }}>
                               <div
                                 style={{
                                   display: "inline-flex",

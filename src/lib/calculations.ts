@@ -129,6 +129,52 @@ export function getAgentInitials(nameOrFirst: string, lastName?: string): string
 }
 
 /**
+ * Computes unique 2-letter initials for an agent given existing assigned initials.
+ * If the standard initials (First letter + First letter of Last Name) already exist:
+ * It tries:
+ * 1. First letter of First Name + 2nd letter of Last Name
+ * 2. First letter of First Name + 3rd letter of Last Name
+ * 3. Continues with subsequent letters of Last Name, then letters of First Name, or numbers.
+ */
+export function generateUniqueInitials(
+  firstName: string,
+  lastName: string,
+  existingInitials: string[] = []
+): string {
+  const existingSet = new Set(existingInitials.map((i) => i.toUpperCase()));
+  const fClean = (firstName || "").replace(/[^A-Za-z]/g, "").toUpperCase();
+  const lClean = (lastName || "").replace(/[^A-Za-z]/g, "").toUpperCase();
+
+  const f0 = fClean.charAt(0) || "X";
+
+  // 1. Primary: First letter of First Name + 1st letter of Last Name
+  if (lClean.length >= 1) {
+    const cand = `${f0}${lClean.charAt(0)}`;
+    if (!existingSet.has(cand)) return cand;
+  }
+
+  // 2. Collision resolution: First letter + 2nd letter of Last Name, then 3rd, 4th, etc.
+  for (let i = 1; i < lClean.length; i++) {
+    const cand = `${f0}${lClean.charAt(i)}`;
+    if (!existingSet.has(cand)) return cand;
+  }
+
+  // 3. If still collision, try 2nd letter of First Name + 1st letter of Last Name
+  for (let i = 1; i < fClean.length; i++) {
+    const cand = `${fClean.charAt(i)}${lClean.charAt(0) || "X"}`;
+    if (!existingSet.has(cand)) return cand;
+  }
+
+  // 4. Fallback with digits
+  for (let num = 2; num <= 9; num++) {
+    const cand = `${f0}${num}`;
+    if (!existingSet.has(cand)) return cand;
+  }
+
+  return `${f0}Z`;
+}
+
+/**
  * Generates structured invoice nomenclature:
  * INV-<AGENT INITIALS>-<YEAR>-<LOT#>-<INCREMENTAL UID>
  * e.g. INV-CR-2026-LOT01-0001

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { Worker } from "@/models/Worker";
 import { verifyUserHasRole } from "@/lib/auth";
+import { generateUniqueInitials } from "@/lib/calculations";
 
 export async function GET(req: NextRequest) {
   try {
@@ -30,10 +31,37 @@ export async function GET(req: NextRequest) {
         { role: { $regex: search, $options: "i" } },
         { email: { $regex: search, $options: "i" } },
         { phone: { $regex: search, $options: "i" } },
+        { initials: { $regex: search, $options: "i" } },
       ];
     }
 
-    const workers = await Worker.find(query).sort({ firstName: 1, lastName: 1 });
+    let workers = await Worker.find(query).sort({ firstName: 1, lastName: 1 });
+
+    // Check if any existing workers in database need initials backfilled
+    const missingInitials = workers.filter((w) => !w.initials);
+    if (missingInitials.length > 0) {
+      const allExisting = await Worker.find({});
+      const assignedInitials: string[] = allExisting
+        .map((w) => w.initials)
+        .filter((init): init is string => Boolean(init));
+
+      for (const w of allExisting) {
+        if (!w.initials) {
+          const uniqueInit = generateUniqueInitials(
+            w.firstName,
+            w.lastName,
+            assignedInitials
+          );
+          w.initials = uniqueInit;
+          assignedInitials.push(uniqueInit);
+          await w.save();
+        }
+      }
+
+      // Re-fetch to return fully updated records with initials
+      workers = await Worker.find(query).sort({ firstName: 1, lastName: 1 });
+    }
+
     return NextResponse.json({ workers });
   } catch (error: any) {
     console.error("Workers GET error:", error);
@@ -65,9 +93,22 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
+    // Query existing initials to ensure no duplicates
+    const existingWorkers = await Worker.find({});
+    const existingInitials = existingWorkers
+      .map((w) => w.initials)
+      .filter((i): i is string => Boolean(i));
+
+    const finalInitials = generateUniqueInitials(
+      firstName.trim(),
+      lastName.trim(),
+      existingInitials
+    );
+
     const newWorker = await Worker.create({
       firstName: firstName.trim(),
       lastName: lastName.trim(),
+      initials: finalInitials,
       role: role.trim(),
       hourlyRate: Number(hourlyRate) || 0,
       phone: phone?.trim() || "",

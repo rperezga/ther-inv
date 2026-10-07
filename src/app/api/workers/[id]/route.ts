@@ -88,7 +88,10 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const { user, errorResponse } = await verifyUserHasRole(req, ["admin"]);
+    const { user, errorResponse } = await verifyUserHasRole(req, [
+      "admin",
+      "manager",
+    ]);
     if (errorResponse) return errorResponse;
 
     await connectDB();

@@ -397,6 +397,7 @@ export default function WorkersPage() {
               <thead>
                 <tr>
                   <th>Staff Member</th>
+                  <th>Initials</th>
                   <th>Role</th>
                   <th>Phone</th>
                   <th>Email</th>
@@ -415,6 +416,23 @@ export default function WorkersPage() {
                         <div style={{ fontWeight: 700, color: "var(--text-primary)", fontSize: "0.95rem" }}>
                           {w.firstName} {w.lastName}
                         </div>
+                      </td>
+                      <td>
+                        <span
+                          style={{
+                            fontWeight: 800,
+                            fontSize: "0.82rem",
+                            letterSpacing: "0.05em",
+                            backgroundColor: "var(--primary-subtle)",
+                            color: "var(--primary)",
+                            border: "1px solid var(--primary-border)",
+                            padding: "0.2rem 0.5rem",
+                            borderRadius: "5px",
+                            display: "inline-block",
+                          }}
+                        >
+                          {w.initials || "—"}
+                        </span>
                       </td>
                       <td>
                         <div

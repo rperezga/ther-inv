@@ -13,6 +13,7 @@ export interface IAgencyAssignment {
 export interface IWorkerDocument extends Document {
   firstName: string;
   lastName: string;
+  initials?: string;
   role: string;
   hourlyRate: number;
   phone?: string;
@@ -45,6 +46,7 @@ const WorkerSchema = new Schema<IWorkerDocument>(
   {
     firstName: { type: String, required: true, trim: true },
     lastName: { type: String, required: true, trim: true },
+    initials: { type: String, trim: true, uppercase: true },
     role: { type: String, required: true, trim: true },
     hourlyRate: { type: Number, default: 0, min: 0 },
     phone: { type: String, trim: true },

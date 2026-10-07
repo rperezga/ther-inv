@@ -8,6 +8,7 @@ import {
   generateStructuredInvoiceNumber,
   isPtaRole,
   getServicesForRole,
+  generateUniqueInitials,
 } from "../src/lib/calculations";
 
 describe("Invoice & Payroll Calculation Engine", () => {
@@ -249,5 +250,32 @@ describe("Invoice & Payroll Calculation Engine", () => {
       expect(ptServices.length).toBe(8);
     });
   });
+
+  describe("Agent Initials & Collision Resolution", () => {
+    it("should generate standard initials for new agents", () => {
+      expect(generateUniqueInitials("Alex", "Martin")).toBe("AM");
+      expect(generateUniqueInitials("Odalys", "Barroso")).toBe("OB");
+    });
+
+    it("should resolve collision by using 2nd letter of last name if first is taken", () => {
+      // Alex Martin -> AM
+      // Another Alex Martin (or Alex Miller) where AM is taken -> AA (M-A)
+      const existing = ["AM"];
+      expect(generateUniqueInitials("Alex", "Martin", existing)).toBe("AA");
+    });
+
+    it("should resolve collision using 3rd letter of last name if 2nd is also taken", () => {
+      const existing = ["AM", "AA"];
+      // Alex Martin: M(1) A(2) R(3) -> AR
+      expect(generateUniqueInitials("Alex", "Martin", existing)).toBe("AR");
+    });
+
+    it("should resolve collision between Alex Martin and Alex Miller", () => {
+      const existing = ["AM"]; // taken by Alex Martin
+      // Alex Miller: M(1) I(2) -> AI
+      expect(generateUniqueInitials("Alex", "Miller", existing)).toBe("AI");
+    });
+  });
 });
+
 

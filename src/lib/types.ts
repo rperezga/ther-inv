@@ -26,6 +26,7 @@ export interface IWorker {
   _id?: string;
   firstName: string;
   lastName: string;
+  initials?: string;
   role: string; // e.g. "Physical Therapy (PT)", "Physical Therapy Assistant (PTA)"
   hourlyRate: number;
   phone?: string;
