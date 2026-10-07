@@ -109,6 +109,7 @@ export default function DashboardLayout({
       href: "/dashboard/workers",
       icon: Users,
       active: pathname === "/dashboard/workers",
+      hidden: user?.role === "viewer",
     },
     {
       label: "Agency Assignments",
@@ -123,6 +124,13 @@ export default function DashboardLayout({
       icon: UserPlus,
       active: pathname === "/dashboard/invitations",
       hidden: user?.role === "viewer",
+    },
+    {
+      label: "Viewer Portal",
+      href: "/dashboard/viewer",
+      icon: FileText,
+      active: pathname === "/dashboard/viewer",
+      hidden: user?.role !== "viewer",
     },
   ];
 
@@ -332,7 +340,9 @@ export default function DashboardLayout({
             pathname === "/dashboard/workers" ||
             pathname === "/dashboard/assignments" ||
             pathname === "/dashboard/invoices" ||
-            pathname === "/dashboard/invoices/new"
+            pathname === "/dashboard/invoices/new" ||
+            pathname === "/dashboard/invitations" ||
+            pathname === "/dashboard/viewer"
               ? "content-body-full"
               : "content-body"
           }
@@ -342,38 +352,44 @@ export default function DashboardLayout({
 
         {/* Mobile Navigation Bottom Bar */}
         <nav className="mobile-nav-bar">
-          {user?.role !== "viewer" && (
+          {user?.role !== "viewer" ? (
+            <>
+              <Link
+                href="/dashboard/invoices"
+                className={`mobile-nav-btn ${pathname.startsWith("/dashboard/invoices") || pathname === "/dashboard" ? "active" : ""}`}
+              >
+                <FileText size={20} />
+                <span>Invoices</span>
+              </Link>
+              <Link
+                href="/dashboard/workers"
+                className={`mobile-nav-btn ${pathname === "/dashboard/workers" ? "active" : ""}`}
+              >
+                <Users size={20} />
+                <span>Staff</span>
+              </Link>
+              <Link
+                href="/dashboard/assignments"
+                className={`mobile-nav-btn ${pathname === "/dashboard/assignments" ? "active" : ""}`}
+              >
+                <Building2 size={20} />
+                <span>Agencies</span>
+              </Link>
+              <Link
+                href="/dashboard/invitations"
+                className={`mobile-nav-btn ${pathname === "/dashboard/invitations" ? "active" : ""}`}
+              >
+                <UserPlus size={20} />
+                <span>Team</span>
+              </Link>
+            </>
+          ) : (
             <Link
-              href="/dashboard/invoices"
-              className={`mobile-nav-btn ${pathname.startsWith("/dashboard/invoices") || pathname === "/dashboard" ? "active" : ""}`}
+              href="/dashboard/viewer"
+              className={`mobile-nav-btn ${pathname === "/dashboard/viewer" ? "active" : ""}`}
             >
               <FileText size={20} />
-              <span>Invoices</span>
-            </Link>
-          )}
-          <Link
-            href="/dashboard/workers"
-            className={`mobile-nav-btn ${pathname === "/dashboard/workers" ? "active" : ""}`}
-          >
-            <Users size={20} />
-            <span>Staff</span>
-          </Link>
-          {user?.role !== "viewer" && (
-            <Link
-              href="/dashboard/assignments"
-              className={`mobile-nav-btn ${pathname === "/dashboard/assignments" ? "active" : ""}`}
-            >
-              <Building2 size={20} />
-              <span>Agencies</span>
-            </Link>
-          )}
-          {user?.role !== "viewer" && (
-            <Link
-              href="/dashboard/invitations"
-              className={`mobile-nav-btn ${pathname === "/dashboard/invitations" ? "active" : ""}`}
-            >
-              <UserPlus size={20} />
-              <span>Team</span>
+              <span>Viewer</span>
             </Link>
           )}
         </nav>

@@ -19,15 +19,79 @@ export async function GET(req: NextRequest) {
       .populate("invitedBy", "name email")
       .sort({ createdAt: -1 });
 
-    const users = await User.find({}, "name email role isActive createdAt").sort({
-      createdAt: -1,
-    });
+    // Exclude 'admin' (e.g. Roger Admin) from the list.
+    // Therina (manager) and all invited team members (viewer / manager) are shown.
+    const users = await User.find(
+      { role: { $ne: "admin" } },
+      "name email role isActive createdAt"
+    ).sort({ createdAt: -1 });
 
     return NextResponse.json({ invitations, users });
   } catch (error: any) {
     console.error("Invitations GET error:", error);
     return NextResponse.json(
       { error: "Failed to fetch invitations" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const { user, errorResponse } = await verifyUserHasRole(req, [
+      "admin",
+      "manager",
+    ]);
+    if (errorResponse) return errorResponse;
+
+    const body = await req.json();
+    const { userId, role } = body;
+
+    if (!userId || !role) {
+      return NextResponse.json(
+        { error: "User ID and new role are required" },
+        { status: 400 }
+      );
+    }
+
+    if (role !== "viewer" && role !== "manager") {
+      return NextResponse.json(
+        { error: "Role can only be changed to viewer or manager" },
+        { status: 400 }
+      );
+    }
+
+    await connectDB();
+
+    const targetUser = await User.findById(userId);
+    if (!targetUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Never allow demoting/modifying admin users via this endpoint
+    if (targetUser.role === "admin") {
+      return NextResponse.json(
+        { error: "Administrator roles cannot be modified here" },
+        { status: 403 }
+      );
+    }
+
+    targetUser.role = role;
+    await targetUser.save();
+
+    return NextResponse.json({
+      success: true,
+      user: {
+        _id: targetUser._id,
+        name: targetUser.name,
+        email: targetUser.email,
+        role: targetUser.role,
+      },
+    });
+  } catch (error: any) {
+    console.error("Error updating user role:", error);
+    return NextResponse.json(
+      { error: "Failed to update user role" },
       { status: 500 }
     );
   }

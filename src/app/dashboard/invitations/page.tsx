@@ -104,6 +104,26 @@ export default function InvitationsPage() {
     }
   };
 
+  const handleRoleChange = async (userId: string, newRole: "manager" | "viewer") => {
+    try {
+      const res = await fetch("/api/invitations", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, role: newRole }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Failed to update role");
+        return;
+      }
+      setUsers((prev) =>
+        prev.map((u) => (u._id === userId ? { ...u, role: newRole } : u))
+      );
+    } catch {
+      alert("Failed to update role");
+    }
+  };
+
   const formatDate = (d?: string | Date) => {
     if (!d) return "-";
     return new Date(d).toLocaleDateString("en-US", {
@@ -114,7 +134,7 @@ export default function InvitationsPage() {
   };
 
   return (
-    <div style={{ maxWidth: "1150px", margin: "0 auto" }}>
+    <div style={{ width: "100%", maxWidth: "100%", margin: "0 auto" }}>
       {/* Header */}
       <div style={{ marginBottom: "2rem" }}>
         <h1 style={{ fontSize: "1.75rem", marginBottom: "0.25rem" }}>
@@ -338,13 +358,33 @@ export default function InvitationsPage() {
                   </div>
                 </div>
 
-                <span className={`badge badge-role-${u.role}`}>
-                  {u.role === "admin"
-                    ? "Admin"
-                    : u.role === "manager"
-                    ? "Manager"
-                    : "Viewer"}
-                </span>
+                {u.name?.toLowerCase().includes("therina") ? (
+                  <span className="badge badge-role-manager">MANAGER</span>
+                ) : (
+                  <select
+                    className="form-select"
+                    style={{
+                      width: "auto",
+                      padding: "0.25rem 0.6rem",
+                      fontSize: "0.78rem",
+                      fontWeight: 600,
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      backgroundColor: u.role === "manager" ? "#f0fdf4" : "#f1f5f9",
+                      borderColor: u.role === "manager" ? "#bbf7d0" : "#cbd5e1",
+                      color: u.role === "manager" ? "#166534" : "#334155",
+                    }}
+                    value={u.role || "viewer"}
+                    onChange={(e) => {
+                      if (u._id) {
+                        handleRoleChange(u._id, e.target.value as "manager" | "viewer");
+                      }
+                    }}
+                  >
+                    <option value="viewer">VIEWER</option>
+                    <option value="manager">MANAGER</option>
+                  </select>
+                )}
               </div>
             ))}
           </div>

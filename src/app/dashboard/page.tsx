@@ -7,7 +7,16 @@ export default function DashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/dashboard/invoices");
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.user?.role === "viewer") {
+          router.replace("/dashboard/viewer");
+        } else {
+          router.replace("/dashboard/invoices");
+        }
+      })
+      .catch(() => router.replace("/login"));
   }, [router]);
 
   return (
