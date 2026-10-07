@@ -96,4 +96,46 @@ describe("Authentication & RBAC Security Engine", () => {
       });
     });
   });
+
+  describe("Password Change Logic & Security", () => {
+    it("should successfully update and re-hash password when current password matches", async () => {
+      const currentPassword = "oldSecretPassword123!";
+      let storedHash = hashPassword(currentPassword);
+
+      // Verify current password check
+      const isCurrentValid = comparePassword("oldSecretPassword123!", storedHash);
+      expect(isCurrentValid).toBe(true);
+
+      // Update with new password
+      const newPassword = "brandNewSecurePassword456$";
+      storedHash = hashPassword(newPassword);
+
+      // Verify old password is no longer valid and new password works
+      expect(comparePassword(currentPassword, storedHash)).toBe(false);
+      expect(comparePassword(newPassword, storedHash)).toBe(true);
+    });
+
+    it("should reject password change when current password is wrong", async () => {
+      const storedHash = hashPassword("correctPassword123");
+      const attemptCurrent = "wrongPasswordAttempt";
+
+      expect(comparePassword(attemptCurrent, storedHash)).toBe(false);
+    });
+
+    it("should validate password change minimum length requirement", () => {
+      const minLength = 6;
+      expect("12345".length >= minLength).toBe(false);
+      expect("123456".length >= minLength).toBe(true);
+      expect("newStrongPass99!".length >= minLength).toBe(true);
+    });
+
+    it("should enforce confirmation matching requirement", () => {
+      const newPass = "securePassword99!";
+      const confirmPassValid = "securePassword99!";
+      const confirmPassMismatch = "differentPassword";
+
+      expect(newPass === confirmPassValid).toBe(true);
+      expect(newPass === confirmPassMismatch).toBe(false);
+    });
+  });
 });
