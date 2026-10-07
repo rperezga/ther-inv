@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   FileText,
   PlusCircle,
+  Plus,
   Search,
   Filter,
   Trash2,
@@ -19,8 +20,18 @@ import {
   User,
   Send,
   Layers,
+  Building2,
 } from "lucide-react";
 import { IInvoice, ILot } from "@/lib/types";
+
+const AGENCIES = [
+  "A&A HEALTH SERVICE",
+  "ALC",
+  "INNOVATION",
+  "MEDCARE",
+  "OASIS",
+  "USAD",
+];
 
 export default function InvoicesListPage() {
   const [invoices, setInvoices] = useState<IInvoice[]>([]);
@@ -36,6 +47,14 @@ export default function InvoicesListPage() {
   // Confirmation modal for Submit action
   const [invoiceToSubmit, setInvoiceToSubmit] = useState<IInvoice | null>(null);
   const [isSubmittingConfirm, setIsSubmittingConfirm] = useState(false);
+
+  // New Lot Modal state
+  const [showNewLotModal, setShowNewLotModal] = useState(false);
+  const [newLotAgency, setNewLotAgency] = useState(AGENCIES[0]);
+  const [newLotStart, setNewLotStart] = useState("");
+  const [newLotEnd, setNewLotEnd] = useState("");
+  const [creatingLot, setCreatingLot] = useState(false);
+  const [lotModalError, setLotModalError] = useState("");
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -123,6 +142,45 @@ export default function InvoicesListPage() {
       alert("Failed to connect to server");
     } finally {
       setIsSubmittingConfirm(false);
+    }
+  };
+
+  // Create new lot from modal
+  const handleCreateNewLot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLotModalError("");
+    if (!newLotStart || !newLotEnd) {
+      setLotModalError("Please select both start and end dates.");
+      return;
+    }
+
+    setCreatingLot(true);
+    try {
+      const res = await fetch("/api/lots", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          periodStart: newLotStart,
+          periodEnd: newLotEnd,
+          agencyName: newLotAgency,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to create lot");
+      }
+
+      // Add to lots list and select it in filter
+      setLots((prev) => [data.lot, ...prev]);
+      setLotFilter(data.lot._id || "all");
+      setShowNewLotModal(false);
+      setNewLotStart("");
+      setNewLotEnd("");
+    } catch (err: any) {
+      setLotModalError(err.message || "Failed to create lot");
+    } finally {
+      setCreatingLot(false);
     }
   };
 
@@ -234,15 +292,33 @@ export default function InvoicesListPage() {
           </p>
         </div>
 
-        <Link
-          href="/dashboard/invoices/new"
-          id="invoices-create-btn"
-          className="btn btn-primary"
-          style={{ gap: "0.5rem" }}
-        >
-          <PlusCircle size={18} />
-          <span>New Weekly Invoice</span>
-        </Link>
+        <div style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
+          {currentUserRole !== "viewer" && (
+            <button
+              type="button"
+              id="invoices-create-lot-btn"
+              onClick={() => {
+                setLotModalError("");
+                setShowNewLotModal(true);
+              }}
+              className="btn btn-secondary"
+              style={{ gap: "0.45rem", fontWeight: 700 }}
+            >
+              <Plus size={16} />
+              <span>New Lot</span>
+            </button>
+          )}
+
+          <Link
+            href="/dashboard/invoices/new"
+            id="invoices-create-btn"
+            className="btn btn-primary"
+            style={{ gap: "0.5rem" }}
+          >
+            <PlusCircle size={18} />
+            <span>New Weekly Invoice</span>
+          </Link>
+        </div>
       </div>
 
       {/* Filters and Search Bar */}
@@ -297,11 +373,15 @@ export default function InvoicesListPage() {
                 }}
               >
                 <option value="all">All Billing Lots</option>
-                {lots.map((l) => (
-                  <option key={l._id} value={l._id}>
-                    {l.lotCode} {l.name ? `(${l.name})` : ""}
-                  </option>
-                ))}
+                {lots.map((l) => {
+                  const numStr = String(l.lotNumber || 1).padStart(3, "0");
+                  const agencyPart = l.agencyName ? ` • ${l.agencyName}` : "";
+                  return (
+                    <option key={l._id} value={l._id}>
+                      LOT {numStr}{agencyPart}
+                    </option>
+                  );
+                })}
               </select>
             </div>
           )}
@@ -709,6 +789,224 @@ export default function InvoicesListPage() {
                 <span>{isSubmittingConfirm ? "Submitting..." : "Confirm & Submit"}</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Create New Lot */}
+      {showNewLotModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.65)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "1rem",
+          }}
+        >
+          <div
+            className="card"
+            style={{
+              maxWidth: "460px",
+              width: "100%",
+              padding: "1.5rem",
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.2)",
+              backgroundColor: "white",
+              borderRadius: "12px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: "1.25rem",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                <div
+                  style={{
+                    width: "38px",
+                    height: "38px",
+                    borderRadius: "8px",
+                    backgroundColor: "var(--primary-subtle)",
+                    color: "var(--primary)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Layers size={18} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: "1.15rem", fontWeight: 700, margin: 0 }}>
+                    Create New Lot
+                  </h3>
+                  <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", margin: 0 }}>
+                    Set up a 3-digit billing cycle lot for partner agencies
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowNewLotModal(false)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--text-muted)",
+                  padding: "0.25rem",
+                  fontSize: "1.1rem",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {lotModalError && (
+              <div
+                style={{
+                  backgroundColor: "var(--danger-subtle)",
+                  color: "var(--danger)",
+                  border: "1px solid var(--danger-border)",
+                  borderRadius: "var(--radius-md)",
+                  padding: "0.65rem 0.85rem",
+                  marginBottom: "1rem",
+                  fontSize: "0.825rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                }}
+              >
+                <AlertCircle size={16} />
+                <span>{lotModalError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleCreateNewLot}>
+              {/* Generated Lot Number Preview */}
+              <div
+                style={{
+                  padding: "0.75rem 0.9rem",
+                  backgroundColor: "#eff6ff",
+                  border: "1px solid #bfdbfe",
+                  borderRadius: "8px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "1rem",
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", color: "#1e40af" }}>
+                    Assigned Lot Number
+                  </div>
+                  <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#1d4ed8", letterSpacing: "0.05em" }}>
+                    LOT {String(lots.reduce((max, l) => Math.max(max, l.lotNumber || 0), 0) + 1).padStart(3, "0")}
+                  </div>
+                </div>
+                <span
+                  style={{
+                    fontSize: "0.72rem",
+                    fontWeight: 700,
+                    padding: "0.25rem 0.6rem",
+                    borderRadius: "999px",
+                    backgroundColor: "#dbeafe",
+                    color: "#1e40af",
+                  }}
+                >
+                  Auto-Generated
+                </span>
+              </div>
+
+              {/* Partner Agency Selection */}
+              <div className="form-group" style={{ marginBottom: "1rem" }}>
+                <label className="form-label" style={{ fontSize: "0.85rem", fontWeight: 700 }}>
+                  Partner Agency *
+                </label>
+                <div style={{ position: "relative" }}>
+                  <select
+                    className="form-select"
+                    value={newLotAgency}
+                    onChange={(e) => setNewLotAgency(e.target.value)}
+                    style={{
+                      height: "38px",
+                      fontSize: "0.85rem",
+                      fontWeight: 600,
+                      width: "100%",
+                    }}
+                  >
+                    {AGENCIES.map((agency) => (
+                      <option key={agency} value={agency}>
+                        {agency}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Cycle Date Range */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "0.75rem",
+                  marginBottom: "1.5rem",
+                }}
+              >
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: "0.85rem", fontWeight: 700 }}>
+                    Cycle Start Date *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    className="form-input"
+                    value={newLotStart}
+                    onChange={(e) => setNewLotStart(e.target.value)}
+                    style={{ height: "38px" }}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: "0.85rem", fontWeight: 700 }}>
+                    Cycle End Date *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    className="form-input"
+                    value={newLotEnd}
+                    onChange={(e) => setNewLotEnd(e.target.value)}
+                    style={{ height: "38px" }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
+                <button
+                  type="button"
+                  onClick={() => setShowNewLotModal(false)}
+                  className="btn btn-secondary"
+                  style={{ padding: "0.5rem 1rem" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creatingLot}
+                  className="btn btn-primary"
+                  style={{ padding: "0.5rem 1.25rem", gap: "0.4rem" }}
+                >
+                  <Plus size={16} />
+                  <span>{creatingLot ? "Creating..." : "Create Lot"}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

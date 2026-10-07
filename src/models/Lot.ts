@@ -2,8 +2,9 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface ILotDocument extends Document {
   lotNumber: number; // e.g. 1, 2, 3...
-  lotCode: string; // e.g. "LOT-2026-001"
+  lotCode: string; // e.g. "LOT 001" or "LOT-2026-001"
   name?: string; // Optional friendly label (e.g. "Week 40 Payroll")
+  agencyName?: string; // Target partner agency (e.g. "ALC", "A&A HEALTH SERVICE")
   periodStart: Date;
   periodEnd: Date;
   status: "open" | "closed";
@@ -18,6 +19,7 @@ const LotSchema = new Schema<ILotDocument>(
     lotNumber: { type: Number, required: true, index: true },
     lotCode: { type: String, required: true, unique: true, trim: true },
     name: { type: String, trim: true },
+    agencyName: { type: String, trim: true },
     periodStart: { type: Date, required: true },
     periodEnd: { type: Date, required: true },
     status: {

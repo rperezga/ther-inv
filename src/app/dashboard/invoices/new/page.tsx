@@ -186,10 +186,14 @@ export default function CreateInvoicePage() {
     updateRatesForCurrentSelection(selectedWorkerId, agency);
   };
 
+  // Lot selection handler: auto-syncs dates and agency if lot has one
   const handleLotChange = (lId: string) => {
     setSelectedLotId(lId);
     const chosenLot = lots.find((l) => l._id === lId);
     if (chosenLot) {
+      if (chosenLot.agencyName) {
+        handleAgencyChange(chosenLot.agencyName);
+      }
       if (chosenLot.periodStart) {
         setPeriodStart(new Date(chosenLot.periodStart).toISOString().split("T")[0]);
       }
@@ -198,6 +202,8 @@ export default function CreateInvoicePage() {
       }
     }
   };
+
+  const [newLotAgency, setNewLotAgency] = useState<string>(selectedAgency);
 
   const handleCreateLot = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -215,6 +221,7 @@ export default function CreateInvoicePage() {
         body: JSON.stringify({
           periodStart: newLotStart,
           periodEnd: newLotEnd,
+          agencyName: newLotAgency || selectedAgency,
           name: newLotName || undefined,
         }),
       });
@@ -225,6 +232,9 @@ export default function CreateInvoicePage() {
 
       setLots((prev) => [data.lot, ...prev]);
       setSelectedLotId(data.lot._id);
+      if (data.lot.agencyName) {
+        handleAgencyChange(data.lot.agencyName);
+      }
       setPeriodStart(newLotStart);
       setPeriodEnd(newLotEnd);
       setShowNewLotModal(false);
@@ -1102,9 +1112,10 @@ export default function CreateInvoicePage() {
               ) : (
                 lots.map((l) => {
                   const lotFormatted = `LOT ${String(l.lotNumber || 1).padStart(3, "0")}`;
+                  const agencyText = l.agencyName ? ` • ${l.agencyName}` : "";
                   return (
                     <option key={l._id} value={l._id}>
-                      {lotFormatted} {l.name ? `• ${l.name}` : ""}
+                      {lotFormatted}{agencyText}
                     </option>
                   );
                 })
@@ -1682,17 +1693,63 @@ export default function CreateInvoicePage() {
             )}
 
             <form onSubmit={handleCreateLot}>
+              {/* Generated Lot Number Preview */}
+              <div
+                style={{
+                  padding: "0.75rem 0.9rem",
+                  backgroundColor: "#eff6ff",
+                  border: "1px solid #bfdbfe",
+                  borderRadius: "8px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "1rem",
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", color: "#1e40af" }}>
+                    Assigned Lot Number
+                  </div>
+                  <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#1d4ed8", letterSpacing: "0.05em" }}>
+                    LOT {String(lots.reduce((max, l) => Math.max(max, l.lotNumber || 0), 0) + 1).padStart(3, "0")}
+                  </div>
+                </div>
+                <span
+                  style={{
+                    fontSize: "0.72rem",
+                    fontWeight: 700,
+                    padding: "0.25rem 0.6rem",
+                    borderRadius: "999px",
+                    backgroundColor: "#dbeafe",
+                    color: "#1e40af",
+                  }}
+                >
+                  Auto-Generated
+                </span>
+              </div>
+
+              {/* Partner Agency Selection */}
               <div className="form-group" style={{ marginBottom: "1rem" }}>
-                <label className="form-label" style={{ fontSize: "0.85rem" }}>
-                  Lot Name / Label (Optional)
+                <label className="form-label" style={{ fontSize: "0.85rem", fontWeight: 700 }}>
+                  Partner Agency *
                 </label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="e.g. October Week 1 Payroll"
-                  value={newLotName}
-                  onChange={(e) => setNewLotName(e.target.value)}
-                />
+                <select
+                  className="form-select"
+                  value={newLotAgency}
+                  onChange={(e) => setNewLotAgency(e.target.value)}
+                  style={{
+                    height: "38px",
+                    fontSize: "0.85rem",
+                    fontWeight: 600,
+                    width: "100%",
+                  }}
+                >
+                  {AGENCIES.map((agency) => (
+                    <option key={agency} value={agency}>
+                      {agency}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div

@@ -59,6 +59,7 @@ export interface ILot {
   lotNumber: number;
   lotCode: string;
   name?: string;
+  agencyName?: string;
   periodStart: string | Date;
   periodEnd: string | Date;
   status: "open" | "closed";

@@ -325,17 +325,6 @@ export default function DashboardLayout({
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            {user?.role !== "viewer" && (
-              <Link
-                href="/dashboard/invoices/new"
-                id="header-create-invoice-btn"
-                className="btn btn-primary btn-sm"
-              >
-                <PlusCircle size={16} />
-                <span className="btn-responsive-text">New Weekly Invoice</span>
-              </Link>
-            )}
-
             {/* User Profile Chip with Role */}
             {/* User Profile Dropdown Pill */}
             <div id="user-dropdown-container" style={{ position: "relative" }}>

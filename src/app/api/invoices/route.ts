@@ -117,13 +117,14 @@ export async function POST(req: NextRequest) {
       if (!assignedLot) {
         const highestLot = await Lot.findOne().sort({ lotNumber: -1 });
         const nextLotNumber = highestLot ? highestLot.lotNumber + 1 : 1;
-        const year = new Date(periodStart).getFullYear() || new Date().getFullYear();
-        const lotCode = `LOT-${year}-${String(nextLotNumber).padStart(3, "0")}`;
+        const lotThreeDigits = String(nextLotNumber).padStart(3, "0");
+        const lotCode = `LOT ${lotThreeDigits}`;
 
         assignedLot = await Lot.create({
           lotNumber: nextLotNumber,
           lotCode,
-          name: `Lot #${nextLotNumber} (${new Date(periodStart).toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${new Date(periodEnd).toLocaleDateString("en-US", { month: "short", day: "numeric" })})`,
+          name: `LOT ${lotThreeDigits}`,
+          agencyName: clientName?.trim() || undefined,
           periodStart: new Date(periodStart),
           periodEnd: new Date(periodEnd),
           status: "open",

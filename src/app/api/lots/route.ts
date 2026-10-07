@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     if (errorResponse) return errorResponse;
 
     const body = await req.json();
-    const { periodStart, periodEnd, name, notes } = body;
+    const { periodStart, periodEnd, agencyName, name, notes } = body;
 
     if (!periodStart || !periodEnd) {
       return NextResponse.json(
@@ -72,13 +72,14 @@ export async function POST(req: NextRequest) {
     const highestLot = await Lot.findOne().sort({ lotNumber: -1 });
     const nextLotNumber = highestLot ? highestLot.lotNumber + 1 : 1;
 
-    const year = new Date(periodStart).getFullYear() || new Date().getFullYear();
-    const lotCode = `LOT-${year}-${String(nextLotNumber).padStart(3, "0")}`;
+    const lotThreeDigits = String(nextLotNumber).padStart(3, "0");
+    const lotCode = `LOT ${lotThreeDigits}`;
 
     const newLot = await Lot.create({
       lotNumber: nextLotNumber,
       lotCode,
-      name: name?.trim() || `Lot #${nextLotNumber} (${new Date(periodStart).toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${new Date(periodEnd).toLocaleDateString("en-US", { month: "short", day: "numeric" })})`,
+      name: name?.trim() || `LOT ${lotThreeDigits}`,
+      agencyName: agencyName?.trim() || undefined,
       periodStart: new Date(periodStart),
       periodEnd: new Date(periodEnd),
       status: "open",
