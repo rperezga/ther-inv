@@ -75,6 +75,19 @@ function getRoleBadgeStyle(roleStr: string): { bg: string; color: string; border
   };
 }
 
+function formatPhoneNumber(val?: string): string {
+  if (!val) return "";
+  const cleaned = val.replace(/\D/g, "");
+  if (cleaned.length === 10) {
+    return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+  }
+  if (cleaned.length === 11 && cleaned.startsWith("1")) {
+    return `${cleaned.slice(1, 4)}-${cleaned.slice(4, 7)}-${cleaned.slice(7)}`;
+  }
+  // If not standard 10 digits, replace spaces and formatting or return as-is
+  return val;
+}
+
 export default function WorkersPage() {
   const [workers, setWorkers] = useState<IWorker[]>([]);
   const [loading, setLoading] = useState(true);
@@ -428,7 +441,7 @@ export default function WorkersPage() {
                         {w.phone ? (
                           <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
                             <Phone size={13} color="var(--text-muted)" />
-                            <span>{w.phone}</span>
+                            <span>{formatPhoneNumber(w.phone)}</span>
                           </div>
                         ) : (
                           <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>-</span>
@@ -668,9 +681,19 @@ export default function WorkersPage() {
                     <input
                       type="text"
                       className="form-input"
-                      placeholder="(305) 555-0100"
+                      placeholder="305-555-0100"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        const cleaned = raw.replace(/\D/g, "").slice(0, 10);
+                        if (cleaned.length > 6) {
+                          setPhone(`${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6)}`);
+                        } else if (cleaned.length > 3) {
+                          setPhone(`${cleaned.slice(0, 3)}-${cleaned.slice(3)}`);
+                        } else {
+                          setPhone(cleaned);
+                        }
+                      }}
                     />
                   </div>
 

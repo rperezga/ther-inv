@@ -64,6 +64,18 @@ function getRoleBadgeStyle(roleStr: string): { bg: string; color: string; border
   return { bg: "#f1f5f9", color: "#334155", border: "#cbd5e1" };
 }
 
+function formatPhoneNumber(val?: string): string {
+  if (!val) return "";
+  const cleaned = val.replace(/\D/g, "");
+  if (cleaned.length === 10) {
+    return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+  }
+  if (cleaned.length === 11 && cleaned.startsWith("1")) {
+    return `${cleaned.slice(1, 4)}-${cleaned.slice(4, 7)}-${cleaned.slice(7)}`;
+  }
+  return val;
+}
+
 export default function AgencyAssignmentsPage() {
   const [workers, setWorkers] = useState<IWorker[]>([]);
   const [selectedWorkerId, setSelectedWorkerId] = useState<string>("");
@@ -531,7 +543,7 @@ export default function AgencyAssignmentsPage() {
                     {getRoleAbbr(selectedWorker.role)}
                   </span>
                   <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                    • {selectedWorker.email || selectedWorker.phone || "Active Roster"}
+                    • {selectedWorker.email || formatPhoneNumber(selectedWorker.phone) || "Active Roster"}
                   </span>
                 </div>
 
