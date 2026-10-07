@@ -21,6 +21,7 @@ import {
   BookmarkCheck,
   Layers,
   FolderPlus,
+  X,
 } from "lucide-react";
 import { IWorker, IAgencyAssignment, ILot } from "@/lib/types";
 import { normalizeDateToMMDDYY, toInputDateFormat } from "@/lib/calculations";
@@ -841,80 +842,50 @@ export default function CreateInvoicePage() {
             <span>Paste from Clipboard</span>
           </button>
 
-          {/* Upload / Screenshot Button */}
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={analyzingImage}
-            className="btn btn-secondary btn-sm"
-            style={{
-              gap: "0.4rem",
-              fontSize: "0.82rem",
-              padding: "0.35rem 0.75rem",
-              backgroundColor: "#f0f7ff",
-              borderColor: "var(--primary-border)",
-              color: "var(--primary)",
-              fontWeight: 700,
-            }}
-            title="Upload image or screenshot of the visit sheet"
-          >
-            {analyzingImage ? (
-              <>
-                <RefreshCw size={14} className="spin" />
-                <span>Extracting with AI...</span>
-              </>
-            ) : (
-              <>
-                <Camera size={14} />
-                <span>Upload Sheet</span>
-              </>
-            )}
-          </button>
-
-          {/* Save Draft Button (does not finalize invoice, allows returning to edit) */}
+          {/* Save Button (Blue) */}
           <button
             type="button"
             onClick={handleSaveDraft}
             disabled={savingDraft || visits.length === 0}
-            className="btn btn-secondary btn-sm"
+            className="btn btn-primary btn-sm"
             style={{
               gap: "0.4rem",
               fontSize: "0.82rem",
-              padding: "0.38rem 0.8rem",
+              padding: "0.38rem 0.85rem",
               fontWeight: 700,
-              backgroundColor: "#f8fafc",
-              borderColor: "#cbd5e1",
+              minWidth: "120px",
             }}
-            title="Save changes as a draft without generating final invoice so you can return to edit anytime"
+            title="Save invoice"
           >
             {savingDraft ? (
               <>
                 <RefreshCw size={14} className="spin" />
-                <span>Saving Draft...</span>
+                <span>Saving...</span>
               </>
             ) : (
               <>
-                <BookmarkCheck size={15} color="var(--primary)" />
-                <span>Save Draft</span>
+                <Save size={15} />
+                <span>Save</span>
               </>
             )}
           </button>
 
-          {/* Generate Invoice Final Button */}
+          {/* Cancel Button (Red) */}
           <button
-            onClick={handleGenerateInvoice}
-            disabled={submitting || visits.length === 0}
-            className="btn btn-primary btn-sm"
-            style={{ minWidth: "140px", fontSize: "0.82rem", padding: "0.4rem 0.85rem" }}
+            type="button"
+            onClick={() => router.push("/dashboard/invoices")}
+            className="btn btn-danger btn-sm"
+            style={{
+              gap: "0.4rem",
+              fontSize: "0.82rem",
+              padding: "0.38rem 0.85rem",
+              fontWeight: 700,
+              minWidth: "100px",
+            }}
+            title="Cancel and return to invoices list"
           >
-            {submitting ? (
-              <span>Generating...</span>
-            ) : (
-              <>
-                <Save size={15} />
-                <span>{editId ? "Update & Issue" : "Generate Invoice"}</span>
-              </>
-            )}
+            <X size={15} />
+            <span>Cancel</span>
           </button>
         </div>
       </div>
