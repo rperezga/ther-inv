@@ -184,6 +184,7 @@ export default function CreateInvoicePage() {
 
   const handleAgencyChange = (agency: string) => {
     setSelectedAgency(agency);
+    setNewLotAgency(agency);
     updateRatesForCurrentSelection(selectedWorkerId, agency);
   };
 
@@ -284,6 +285,11 @@ export default function CreateInvoicePage() {
           if (data.lots.length > 0 && !editId) {
             const firstOpen = data.lots.find((l: ILot) => l.status === "open") || data.lots[0];
             setSelectedLotId(firstOpen._id || "");
+            if (firstOpen.agencyName) {
+              setSelectedAgency(firstOpen.agencyName);
+              selectedAgencyRef.current = firstOpen.agencyName;
+              setNewLotAgency(firstOpen.agencyName);
+            }
             if (firstOpen.periodStart) {
               setPeriodStart(new Date(firstOpen.periodStart).toISOString().split("T")[0]);
             }
@@ -302,11 +308,21 @@ export default function CreateInvoicePage() {
         if (data.workers) {
           const list: IWorker[] = data.workers;
           setWorkers(list);
-          const eligible = list.filter((w) =>
+          const currentAgency = selectedAgencyRef.current;
+          // Prefer workers configured for current lot's agency if available, or any active with rates
+          const eligibleForAgency = list.filter((w) =>
+            w.agencyAssignments?.some(
+              (a) => a.agencyName === currentAgency && a.services?.some((s) => Number(s.rate) > 0)
+            )
+          );
+          const eligibleAny = list.filter((w) =>
             w.agencyAssignments?.some((a) => a.services?.some((s) => Number(s.rate) > 0))
           );
-          if (eligible.length > 0) {
-            setSelectedWorkerId(eligible[0]._id!);
+
+          if (eligibleForAgency.length > 0) {
+            setSelectedWorkerId(eligibleForAgency[0]._id!);
+          } else if (eligibleAny.length > 0) {
+            setSelectedWorkerId(eligibleAny[0]._id!);
           } else if (list.length > 0) {
             setSelectedWorkerId(list[0]._id!);
           }
