@@ -1290,10 +1290,19 @@ export default function CreateInvoicePage() {
               <button
                 type="button"
                 onClick={handleAddRow}
-                className="btn btn-secondary btn-sm"
-                style={{ fontSize: "0.75rem", padding: "0.25rem 0.55rem" }}
+                className="btn btn-secondary"
+                style={{
+                  fontSize: "0.85rem",
+                  fontWeight: 700,
+                  padding: "0.42rem 0.95rem",
+                  gap: "0.4rem",
+                  backgroundColor: "#ffffff",
+                  borderColor: "var(--border-color)",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+                }}
               >
-                <Plus size={13} /> Add Row
+                <Plus size={16} />
+                <span>Add Row</span>
               </button>
             </div>
           </div>
@@ -1324,29 +1333,24 @@ export default function CreateInvoicePage() {
                   No visit records loaded yet
                 </p>
                 <p style={{ color: "var(--text-muted)", fontSize: "0.82rem", maxWidth: "460px", marginTop: "0.2rem" }}>
-                  Click <strong>&quot;Paste from Clipboard&quot;</strong>, press <strong>Ctrl+V</strong>, or choose <strong>&quot;Upload Sheet&quot;</strong> to extract the patient names and visit dates automatically.
+                  Click <strong>&quot;Paste from Clipboard&quot;</strong>, press <strong>Ctrl+V</strong>, or add patient visits manually using <strong>&quot;Add Row&quot;</strong>.
                 </p>
-                <div style={{ marginTop: "0.85rem", display: "flex", gap: "0.45rem" }}>
+                <div style={{ marginTop: "0.85rem", display: "flex", gap: "0.6rem" }}>
                   <button
                     type="button"
                     onClick={handlePasteFromClipboardButton}
                     className="btn btn-primary btn-sm"
+                    style={{ padding: "0.42rem 0.9rem", fontWeight: 600 }}
                   >
-                    <ClipboardPaste size={14} /> Paste from Clipboard
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="btn btn-secondary btn-sm"
-                  >
-                    <Upload size={14} /> Upload Sheet
+                    <ClipboardPaste size={15} /> Paste from Clipboard
                   </button>
                   <button
                     type="button"
                     onClick={handleAddRow}
                     className="btn btn-secondary btn-sm"
+                    style={{ padding: "0.42rem 0.9rem", fontWeight: 700 }}
                   >
-                    <Plus size={14} /> Add Row
+                    <Plus size={15} /> Add Row
                   </button>
                 </div>
               </div>
