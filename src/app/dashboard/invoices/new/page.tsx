@@ -510,10 +510,11 @@ export default function CreateInvoicePage() {
           const currentRate = getRateForService(resolvedWorker, resolvedAgency, service);
           const cleanPatientName = rec.patientName ? rec.patientName.replace(/\(SR\)/i, "").trim() : "";
 
-          // Check if visitDate contains multiple dates (e.g. "9/15 - 9/24" or "9/15, 9/24" or "9/15 - 9/17 - 9/22")
-          // If the AI didn't split them already, split them here as a safety net!
+          // Check if visitDate contains multiple dates (e.g. "9/15-9/24", "9/15 - 9/24", "9/15-9/17-9/22-9/24")
+          // If the AI didn't split them already, split them here!
+          // We split by commas, semicolons, newlines, or hyphens between digits (e.g. 15-9 or 24-9)
           const rawDates = (rec.visitDate || "")
-            .split(/[,;\n]|\s+-\s+/)
+            .split(/(?:[,;\n]|\s*-\s*(?=\d{1,2}[\/\-]))/)
             .map((d: string) => d.trim())
             .filter((d: string) => d.length > 0);
 
