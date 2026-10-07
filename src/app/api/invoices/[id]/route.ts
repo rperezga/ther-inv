@@ -26,6 +26,14 @@ export async function GET(
       );
     }
 
+    // Role-based visibility check: Viewer can only see submitted (pending) or paid invoices
+    if (user.role === "viewer" && invoice.status === "draft") {
+      return NextResponse.json(
+        { error: "This draft invoice is being prepared by the manager and has not been submitted for review yet." },
+        { status: 403 }
+      );
+    }
+
     return NextResponse.json({ invoice });
   } catch (error: any) {
     return NextResponse.json(

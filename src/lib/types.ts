@@ -53,9 +53,26 @@ export interface IInvoiceItem {
   amount: number;
 }
 
+export interface ILot {
+  _id?: string;
+  lotNumber: number;
+  lotCode: string;
+  name?: string;
+  periodStart: string | Date;
+  periodEnd: string | Date;
+  status: "open" | "closed";
+  notes?: string;
+  invoicesCount?: number;
+  totalAmount?: number;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+}
+
 export interface IInvoice {
   _id?: string;
   invoiceNumber: string;
+  lotId?: string;
+  lotNumber?: number;
   clientName: string;
   clientEmail?: string;
   clientAddress?: string;

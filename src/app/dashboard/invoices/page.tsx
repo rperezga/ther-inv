@@ -18,22 +18,38 @@ import {
   Clock,
   User,
   Send,
+  Layers,
 } from "lucide-react";
-import { IInvoice } from "@/lib/types";
+import { IInvoice, ILot } from "@/lib/types";
 
 export default function InvoicesListPage() {
   const [invoices, setInvoices] = useState<IInvoice[]>([]);
+  const [lots, setLots] = useState<ILot[]>([]);
+  const [lotFilter, setLotFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
+  const fetchLots = async () => {
+    try {
+      const res = await fetch("/api/lots");
+      const data = await res.json();
+      if (res.ok && data.lots) {
+        setLots(data.lots);
+      }
+    } catch (err) {
+      console.error("Error fetching lots:", err);
+    }
+  };
+
   const fetchInvoices = async () => {
     setLoading(true);
     try {
       const url = new URL("/api/invoices", window.location.origin);
       if (statusFilter !== "all") url.searchParams.set("status", statusFilter);
+      if (lotFilter !== "all") url.searchParams.set("lotId", lotFilter);
       if (search) url.searchParams.set("search", search);
 
       const res = await fetch(url.toString());
@@ -49,8 +65,12 @@ export default function InvoicesListPage() {
   };
 
   useEffect(() => {
+    fetchLots();
+  }, []);
+
+  useEffect(() => {
     fetchInvoices();
-  }, [statusFilter]);
+  }, [statusFilter, lotFilter]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -207,24 +227,53 @@ export default function InvoicesListPage() {
           gap: "0.85rem",
         }}
       >
-        {/* Status Filter Buttons */}
-        <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
-          {[
-            { id: "all", label: "All Invoices" },
-            { id: "pending", label: "Submitted" },
-            { id: "paid", label: "Paid" },
-            { id: "draft", label: "Drafts" },
-          ].map((st) => (
-            <button
-              key={st.id}
-              onClick={() => setStatusFilter(st.id)}
-              className={`btn btn-sm ${
-                statusFilter === st.id ? "btn-primary" : "btn-secondary"
-              }`}
-            >
-              {st.label}
-            </button>
-          ))}
+        {/* Status Filter Buttons and Lot Filter */}
+        <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
+            {[
+              { id: "all", label: "All Invoices" },
+              { id: "pending", label: "Submitted" },
+              { id: "paid", label: "Paid" },
+              { id: "draft", label: "Drafts" },
+            ].map((st) => (
+              <button
+                key={st.id}
+                onClick={() => setStatusFilter(st.id)}
+                className={`btn btn-sm ${
+                  statusFilter === st.id ? "btn-primary" : "btn-secondary"
+                }`}
+              >
+                {st.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Lot Selector Filter */}
+          {lots.length > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginLeft: "0.5rem" }}>
+              <Layers size={14} color="var(--primary)" />
+              <select
+                className="form-select"
+                value={lotFilter}
+                onChange={(e) => setLotFilter(e.target.value)}
+                style={{
+                  height: "32px",
+                  fontSize: "0.8rem",
+                  padding: "0.2rem 0.5rem",
+                  width: "auto",
+                  minWidth: "160px",
+                  fontWeight: 600,
+                }}
+              >
+                <option value="all">All Billing Lots</option>
+                {lots.map((l) => (
+                  <option key={l._id} value={l._id}>
+                    {l.lotCode} {l.name ? `(${l.name})` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         {/* Search Input with instant/live typing */}
@@ -283,6 +332,7 @@ export default function InvoicesListPage() {
               <thead>
                 <tr>
                   <th>Invoice #</th>
+                  <th>Lot / Cycle</th>
                   <th>Clinical Agent</th>
                   <th>Agency</th>
                   <th>Period</th>
@@ -296,14 +346,36 @@ export default function InvoicesListPage() {
                 {invoices.map((inv) => {
                   const agentName = getAgentName(inv);
                   const isSubmitted = inv.status === "pending";
+                  const lotInfo = (inv as any).lotId;
 
                   return (
                     <tr key={inv._id}>
                       {/* Invoice Number */}
-                      <td style={{ fontWeight: 700, color: "var(--primary)" }}>
+                      <td style={{ fontWeight: 700, color: "var(--primary)", whiteSpace: "nowrap" }}>
                         <Link href={`/dashboard/invoices/${inv._id}`}>
                           {inv.invoiceNumber}
                         </Link>
+                      </td>
+
+                      {/* Lot / Cycle */}
+                      <td>
+                        <span
+                          style={{
+                            fontSize: "0.75rem",
+                            backgroundColor: "#f1f5f9",
+                            color: "#334155",
+                            padding: "0.2rem 0.5rem",
+                            borderRadius: "4px",
+                            fontWeight: 700,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "0.25rem",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          <Layers size={11} color="var(--primary)" />
+                          {lotInfo?.lotCode || (inv.lotNumber ? `LOT-${String(inv.lotNumber).padStart(2, "0")}` : "LOT-01")}
+                        </span>
                       </td>
 
                       {/* Agent Name */}

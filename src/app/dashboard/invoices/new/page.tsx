@@ -19,8 +19,10 @@ import {
   Key,
   RefreshCw,
   BookmarkCheck,
+  Layers,
+  FolderPlus,
 } from "lucide-react";
-import { IWorker, IAgencyAssignment } from "@/lib/types";
+import { IWorker, IAgencyAssignment, ILot } from "@/lib/types";
 
 const AGENCIES = [
   "A&A HEALTH SERVICE",
@@ -71,6 +73,16 @@ export default function CreateInvoicePage() {
   const [selectedWorkerId, setSelectedWorkerId] = useState<string>("");
   const [selectedAgency, setSelectedAgency] = useState<string>(AGENCIES[1]); // Default ALC
   const [loadingWorkers, setLoadingWorkers] = useState(true);
+
+  // Lot Batch / Cycle State
+  const [lots, setLots] = useState<ILot[]>([]);
+  const [selectedLotId, setSelectedLotId] = useState<string>("");
+  const [showNewLotModal, setShowNewLotModal] = useState(false);
+  const [newLotName, setNewLotName] = useState("");
+  const [newLotStart, setNewLotStart] = useState("");
+  const [newLotEnd, setNewLotEnd] = useState("");
+  const [creatingLot, setCreatingLot] = useState(false);
+  const [lotError, setLotError] = useState("");
 
   // Billing Period Dates
   const [periodStart, setPeriodStart] = useState("");
@@ -149,6 +161,58 @@ export default function CreateInvoicePage() {
     updateRatesForCurrentSelection(selectedWorkerId, agency);
   };
 
+  const handleLotChange = (lId: string) => {
+    setSelectedLotId(lId);
+    const chosenLot = lots.find((l) => l._id === lId);
+    if (chosenLot) {
+      if (chosenLot.periodStart) {
+        setPeriodStart(new Date(chosenLot.periodStart).toISOString().split("T")[0]);
+      }
+      if (chosenLot.periodEnd) {
+        setPeriodEnd(new Date(chosenLot.periodEnd).toISOString().split("T")[0]);
+      }
+    }
+  };
+
+  const handleCreateLot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLotError("");
+    if (!newLotStart || !newLotEnd) {
+      setLotError("Please select both start and end dates for the new lot.");
+      return;
+    }
+
+    setCreatingLot(true);
+    try {
+      const res = await fetch("/api/lots", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          periodStart: newLotStart,
+          periodEnd: newLotEnd,
+          name: newLotName || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to create lot");
+      }
+
+      setLots((prev) => [data.lot, ...prev]);
+      setSelectedLotId(data.lot._id);
+      setPeriodStart(newLotStart);
+      setPeriodEnd(newLotEnd);
+      setShowNewLotModal(false);
+      setNewLotName("");
+      setNewLotStart("");
+      setNewLotEnd("");
+    } catch (err: any) {
+      setLotError(err.message || "Failed to create lot");
+    } finally {
+      setCreatingLot(false);
+    }
+  };
+
   // Load active workers and default weekly dates or existing invoice if editId is provided
   useEffect(() => {
     const today = new Date();
@@ -174,6 +238,26 @@ export default function CreateInvoicePage() {
       const storedKey = localStorage.getItem("therinv_openai_key");
       if (storedKey) setApiKey(storedKey);
     } catch {}
+
+    // Fetch lots (billing cycles)
+    fetch("/api/lots")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.lots && Array.isArray(data.lots)) {
+          setLots(data.lots);
+          if (data.lots.length > 0 && !editId) {
+            const firstOpen = data.lots.find((l: ILot) => l.status === "open") || data.lots[0];
+            setSelectedLotId(firstOpen._id || "");
+            if (firstOpen.periodStart) {
+              setPeriodStart(new Date(firstOpen.periodStart).toISOString().split("T")[0]);
+            }
+            if (firstOpen.periodEnd) {
+              setPeriodEnd(new Date(firstOpen.periodEnd).toISOString().split("T")[0]);
+            }
+          }
+        }
+      })
+      .catch((err) => console.error("Error loading lots:", err));
 
     // Fetch workers
     fetch("/api/workers?status=active")
@@ -202,6 +286,7 @@ export default function CreateInvoicePage() {
         .then((data) => {
           if (data.invoice) {
             const inv = data.invoice;
+            if (inv.lotId) setSelectedLotId(typeof inv.lotId === "object" ? inv.lotId._id : inv.lotId);
             if (inv.clientName) setSelectedAgency(inv.clientName);
             if (inv.periodStart) setPeriodStart(new Date(inv.periodStart).toISOString().split("T")[0]);
             if (inv.periodEnd) setPeriodEnd(new Date(inv.periodEnd).toISOString().split("T")[0]);
@@ -521,6 +606,9 @@ export default function CreateInvoicePage() {
 
     try {
       const payload = {
+        lotId: selectedLotId || undefined,
+        workerId: selectedWorker?._id,
+        agentName: `${selectedWorker.firstName} ${selectedWorker.lastName}`,
         clientName: selectedAgency,
         periodStart,
         periodEnd,
@@ -579,6 +667,9 @@ export default function CreateInvoicePage() {
 
     try {
       const payload = {
+        lotId: selectedLotId || undefined,
+        workerId: selectedWorker?._id,
+        agentName: `${selectedWorker.firstName} ${selectedWorker.lastName}`,
         clientName: selectedAgency,
         periodStart,
         periodEnd,
@@ -890,19 +981,92 @@ export default function CreateInvoicePage() {
           overflow: "hidden",
         }}
       >
-        {/* Parameters Filter Strip: Agent, Agency, Dates, Summary Totals (No text cut-off) */}
+        {/* Parameters Filter Strip: Lot Cycle, Agent, Agency, Dates, Summary Totals */}
         <div
           className="card"
           style={{
             padding: "0.65rem 0.85rem",
             display: "grid",
-            gridTemplateColumns: "1.4fr 1.2fr 1fr 1fr 160px",
-            gap: "0.65rem",
+            gridTemplateColumns: "1.2fr 1.3fr 1.1fr 1fr 1fr 150px",
+            gap: "0.6rem",
             alignItems: "end",
             flexShrink: 0,
             backgroundColor: "#ffffff",
           }}
         >
+          {/* Billing Cycle / Lot Selection */}
+          <div style={{ minWidth: 0 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
+              <label
+                style={{
+                  fontSize: "0.7rem",
+                  fontWeight: 700,
+                  color: "var(--primary)",
+                  textTransform: "uppercase",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.25rem",
+                  margin: 0,
+                }}
+              >
+                <Layers size={13} />
+                <span>Billing Lot *</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setNewLotStart(periodStart);
+                  setNewLotEnd(periodEnd);
+                  setShowNewLotModal(true);
+                }}
+                style={{
+                  fontSize: "0.68rem",
+                  color: "var(--primary)",
+                  fontWeight: 700,
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "2px",
+                }}
+                title="Create a new cycle lot"
+              >
+                <Plus size={11} /> New Lot
+              </button>
+            </div>
+            <select
+              className="form-select"
+              value={selectedLotId}
+              onChange={(e) => handleLotChange(e.target.value)}
+              style={{
+                height: "36px",
+                fontSize: "0.8rem",
+                fontWeight: 700,
+                color: "#1e293b",
+                backgroundColor: "#f8fafc",
+                borderColor: "var(--primary-border)",
+                padding: "0.3rem 0.5rem",
+                width: "100%",
+                lineHeight: "normal",
+              }}
+            >
+              {lots.length === 0 ? (
+                <option value="">No lots available (will auto-create)</option>
+              ) : (
+                lots.map((l) => (
+                  <option key={l._id} value={l._id}>
+                    {l.lotCode} {l.name ? `• ${l.name}` : ""}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+
           {/* Agent Selection */}
           <div style={{ minWidth: 0 }}>
             <label
@@ -1393,6 +1557,156 @@ export default function CreateInvoicePage() {
           )}
         </div>
       </div>
+
+      {/* Create New Lot Modal */}
+      {showNewLotModal && (
+        <div className="modal-overlay" style={{ zIndex: 100 }}>
+          <div
+            className="modal-content"
+            style={{
+              maxWidth: "460px",
+              padding: "1.75rem",
+              borderRadius: "var(--radius-lg)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: "1.25rem",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                <div
+                  style={{
+                    width: "38px",
+                    height: "38px",
+                    borderRadius: "8px",
+                    backgroundColor: "var(--primary-subtle)",
+                    color: "var(--primary)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Layers size={18} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: "1.15rem", fontWeight: 700, margin: 0 }}>
+                    Create New Billing Lot
+                  </h3>
+                  <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", margin: 0 }}>
+                    Set up a cycle or date range for batching invoices
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowNewLotModal(false)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--text-muted)",
+                  padding: "0.25rem",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {lotError && (
+              <div
+                style={{
+                  backgroundColor: "var(--danger-subtle)",
+                  color: "var(--danger)",
+                  border: "1px solid var(--danger-border)",
+                  borderRadius: "var(--radius-md)",
+                  padding: "0.65rem 0.85rem",
+                  marginBottom: "1rem",
+                  fontSize: "0.825rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                }}
+              >
+                <AlertCircle size={16} />
+                <span>{lotError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleCreateLot}>
+              <div className="form-group" style={{ marginBottom: "1rem" }}>
+                <label className="form-label" style={{ fontSize: "0.85rem" }}>
+                  Lot Name / Label (Optional)
+                </label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. October Week 1 Payroll"
+                  value={newLotName}
+                  onChange={(e) => setNewLotName(e.target.value)}
+                />
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "0.75rem",
+                  marginBottom: "1.5rem",
+                }}
+              >
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: "0.85rem" }}>
+                    Cycle Start Date *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    className="form-input"
+                    value={newLotStart}
+                    onChange={(e) => setNewLotStart(e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: "0.85rem" }}>
+                    Cycle End Date *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    className="form-input"
+                    value={newLotEnd}
+                    onChange={(e) => setNewLotEnd(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
+                <button
+                  type="button"
+                  onClick={() => setShowNewLotModal(false)}
+                  className="btn btn-secondary"
+                  style={{ padding: "0.5rem 1rem" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creatingLot}
+                  className="btn btn-primary"
+                  style={{ padding: "0.5rem 1.25rem" }}
+                >
+                  {creatingLot ? "Creating..." : "Create Lot"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

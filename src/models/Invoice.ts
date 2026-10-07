@@ -17,6 +17,8 @@ export interface IInvoiceItemDoc {
 
 export interface IInvoiceDocument extends Document {
   invoiceNumber: string;
+  lotId?: mongoose.Types.ObjectId;
+  lotNumber?: number;
   clientName: string;
   clientEmail?: string;
   clientAddress?: string;
@@ -57,6 +59,8 @@ const InvoiceItemSchema = new Schema<IInvoiceItemDoc>(
 const InvoiceSchema = new Schema<IInvoiceDocument>(
   {
     invoiceNumber: { type: String, required: true, unique: true, trim: true },
+    lotId: { type: Schema.Types.ObjectId, ref: "Lot", index: true },
+    lotNumber: { type: Number },
     clientName: { type: String, required: true, trim: true },
     clientEmail: { type: String, trim: true },
     clientAddress: { type: String, trim: true },

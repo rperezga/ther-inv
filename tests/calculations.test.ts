@@ -4,6 +4,8 @@ import {
   calculateInvoiceTotals,
   formatCurrency,
   validateInvoiceDates,
+  getAgentInitials,
+  generateStructuredInvoiceNumber,
 } from "../src/lib/calculations";
 
 describe("Invoice & Payroll Calculation Engine", () => {
@@ -171,6 +173,45 @@ describe("Invoice & Payroll Calculation Engine", () => {
       expect(resolveRate("ALC", "Special Rate")).toBe(110);
       expect(resolveRate("ALC", "Eval")).toBe(0);
       expect(resolveRate("USAD", "SOC")).toBe(0);
+    });
+  });
+
+  describe("Structured Invoice Nomenclature Engine", () => {
+    it("should extract correct agent initials for first and last names", () => {
+      expect(getAgentInitials("Camila", "Rodriguez")).toBe("CR");
+      expect(getAgentInitials("Alfredo", "Gomez")).toBe("AG");
+      expect(getAgentInitials("Therina")).toBe("TH");
+      expect(getAgentInitials("Mary Jane", "Watson")).toBe("MW");
+    });
+
+    it("should build structured invoice nomenclature INV-<INITIALS>-<YEAR>-LOT<LOT#>-<UID>", () => {
+      const invNum1 = generateStructuredInvoiceNumber({
+        agentName: "Camila",
+        agentLastName: "Rodriguez",
+        year: 2026,
+        lotNumber: 1,
+        sequenceNumber: 1,
+      });
+      expect(invNum1).toBe("INV-CR-2026-LOT01-0001");
+
+      const invNum2 = generateStructuredInvoiceNumber({
+        agentName: "Alfredo",
+        agentLastName: "Gomez",
+        year: 2026,
+        lotNumber: 5,
+        sequenceNumber: 12,
+      });
+      expect(invNum2).toBe("INV-AG-2026-LOT05-0012");
+    });
+
+    it("should handle string lot numbers and pad correctly", () => {
+      const invNum = generateStructuredInvoiceNumber({
+        agentName: "Therina",
+        year: 2026,
+        lotNumber: "02",
+        sequenceNumber: "45",
+      });
+      expect(invNum).toBe("INV-TH-2026-LOT02-0045");
     });
   });
 });

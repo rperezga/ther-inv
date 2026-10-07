@@ -104,3 +104,50 @@ export function validateInvoiceDates(
 
   return { isValid: true };
 }
+
+/**
+ * Extracts first and last name initials from an agent's full name.
+ * e.g., "Camila Rodriguez" -> "CR", "John" -> "J", "Mary Jane Watson" -> "MW"
+ */
+export function getAgentInitials(nameOrFirst: string, lastName?: string): string {
+  if (lastName && lastName.trim()) {
+    const f = nameOrFirst.trim().charAt(0).toUpperCase();
+    const l = lastName.trim().charAt(0).toUpperCase();
+    return `${f}${l}`.replace(/[^A-Z]/g, "X");
+  }
+
+  const parts = nameOrFirst.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "XX";
+  if (parts.length === 1) {
+    const clean = parts[0].replace(/[^A-Za-z]/g, "").toUpperCase();
+    return (clean.slice(0, 2) || "XX").padEnd(2, "X");
+  }
+
+  const firstChar = parts[0].charAt(0).toUpperCase();
+  const lastChar = parts[parts.length - 1].charAt(0).toUpperCase();
+  return `${firstChar}${lastChar}`.replace(/[^A-Z]/g, "X");
+}
+
+/**
+ * Generates structured invoice nomenclature:
+ * INV-<AGENT INITIALS>-<YEAR>-<LOT#>-<INCREMENTAL UID>
+ * e.g. INV-CR-2026-LOT01-0001
+ */
+export function generateStructuredInvoiceNumber(params: {
+  agentName: string;
+  agentLastName?: string;
+  year?: number | string;
+  lotNumber: number | string;
+  sequenceNumber: number | string;
+}): string {
+  const initials = getAgentInitials(params.agentName, params.agentLastName);
+  const year = params.year || new Date().getFullYear();
+  
+  const lotNum = parseInt(String(params.lotNumber), 10) || 1;
+  const lotFormatted = `LOT${String(lotNum).padStart(2, "0")}`;
+  
+  const seqNum = parseInt(String(params.sequenceNumber), 10) || 1;
+  const seqFormatted = String(seqNum).padStart(4, "0");
+
+  return `INV-${initials}-${year}-${lotFormatted}-${seqFormatted}`;
+}
