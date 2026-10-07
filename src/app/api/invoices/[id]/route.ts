@@ -147,12 +147,12 @@ export async function DELETE(
       );
     }
 
-    // Once submitted (pending) or paid, invoices CANNOT be deleted by anyone (neither manager nor viewer)
-    if (existingInv.status !== "draft") {
+    // Invoices can be deleted as long as they have not been paid/approved by the viewer
+    if (existingInv.status === "paid") {
       return NextResponse.json(
         {
           error:
-            "Submitted and Paid invoices are locked and cannot be deleted. Only draft invoices can be removed.",
+            "This invoice has already been paid/approved and is locked. Paid invoices cannot be deleted.",
         },
         { status: 400 }
       );
@@ -160,7 +160,7 @@ export async function DELETE(
 
     await Invoice.findByIdAndDelete(id);
 
-    return NextResponse.json({ success: true, message: "Draft invoice deleted successfully" });
+    return NextResponse.json({ success: true, message: "Invoice deleted successfully" });
   } catch (error: any) {
     return NextResponse.json(
       { error: "Failed to delete invoice" },

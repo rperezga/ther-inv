@@ -190,12 +190,13 @@ export default function InvoicesListPage() {
   };
 
   const handleDelete = async (id: string, invoiceNum: string, status: string) => {
-    if (status !== "draft") {
-      alert("Submitted and Paid invoices cannot be deleted.");
+    if (status === "paid") {
+      alert("This invoice has already been paid/approved and cannot be deleted.");
       return;
     }
 
-    if (!confirm(`Are you sure you want to delete draft invoice ${invoiceNum}?`)) {
+    const typeDesc = status === "draft" ? "draft invoice" : "submitted invoice";
+    if (!confirm(`Are you sure you want to delete ${typeDesc} ${invoiceNum}?`)) {
       return;
     }
 
@@ -621,8 +622,8 @@ export default function InvoicesListPage() {
                             <span style={{ fontSize: "0.78rem" }}>Print</span>
                           </button>
 
-                          {/* Edit / Draft button (Managers/Admins only) */}
-                          {currentUserRole !== "viewer" && isDraft && (
+                          {/* Edit / Draft button (Managers/Admins only: allowed as long as not paid) */}
+                          {currentUserRole !== "viewer" && inv.status !== "paid" && (
                             <Link
                               href={`/dashboard/invoices/new?edit=${inv._id}`}
                               className="btn btn-secondary btn-sm"
@@ -638,8 +639,8 @@ export default function InvoicesListPage() {
                             </Link>
                           )}
 
-                          {/* Delete Button: ONLY available for Draft invoices, NEVER for viewers or submitted invoices */}
-                          {currentUserRole !== "viewer" && isDraft && (
+                          {/* Delete Button: Allowed for Managers/Admins as long as not marked as Paid/Approved by viewer */}
+                          {currentUserRole !== "viewer" && inv.status !== "paid" && (
                             <button
                               onClick={() => handleDelete(inv._id!, inv.invoiceNumber, inv.status)}
                               disabled={deletingId === inv._id}
@@ -650,7 +651,7 @@ export default function InvoicesListPage() {
                                 border: "1px solid var(--danger-border)",
                                 backgroundColor: "var(--danger-subtle)",
                               }}
-                              title="Delete Draft Invoice"
+                              title={inv.status === "draft" ? "Delete Draft Invoice" : "Delete Submitted Invoice"}
                             >
                               <Trash2 size={14} />
                             </button>
@@ -765,7 +766,7 @@ export default function InvoicesListPage() {
             >
               <AlertCircle size={16} style={{ flexShrink: 0, marginTop: "2px" }} />
               <div>
-                <strong>Notice:</strong> Once submitted, this invoice will be published for <strong>Viewers</strong> to see and will be <strong>locked from deletion</strong>.
+                <strong>Notice:</strong> Once submitted, this invoice will be published for <strong>Viewers</strong> to see. It can still be deleted or modified until the viewer approves or marks it as <strong>Paid</strong>.
               </div>
             </div>
 
