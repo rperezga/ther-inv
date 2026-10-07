@@ -484,24 +484,6 @@ export default function DashboardLayout({
                 </div>
               )}
             </div>
-
-            {/* Direct Sign Out Button */}
-            <button
-              onClick={handleLogout}
-              id="header-logout-btn"
-              className="btn btn-secondary btn-sm"
-              style={{
-                padding: "0.4rem 0.75rem",
-                fontSize: "0.82rem",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.35rem",
-              }}
-              title="Sign Out"
-            >
-              <LogOut size={14} />
-              <span className="btn-responsive-text">Sign Out</span>
-            </button>
           </div>
         </header>
 
