@@ -31,6 +31,20 @@ export default function InvoicesListPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<string>("");
+
+  // Confirmation modal for Submit action
+  const [invoiceToSubmit, setInvoiceToSubmit] = useState<IInvoice | null>(null);
+  const [isSubmittingConfirm, setIsSubmittingConfirm] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.user?.role) setCurrentUserRole(data.user.role);
+      })
+      .catch(() => {});
+  }, []);
 
   const fetchLots = async () => {
     try {
@@ -77,27 +91,38 @@ export default function InvoicesListPage() {
     fetchInvoices();
   };
 
-  // Instant status toggle (e.g. mark Submitted/Pending or Paid)
-  const handleStatusChange = async (id: string, newStatus: string) => {
-    setUpdatingId(id);
+  // Open confirmation modal for submit
+  const handleOpenSubmitConfirm = (inv: IInvoice) => {
+    setInvoiceToSubmit(inv);
+  };
+
+  // Confirm submit from modal
+  const handleConfirmSubmit = async () => {
+    if (!invoiceToSubmit) return;
+    setIsSubmittingConfirm(true);
+
     try {
-      const res = await fetch(`/api/invoices/${id}`, {
+      const res = await fetch(`/api/invoices/${invoiceToSubmit._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ status: "pending" }),
       });
+
       if (res.ok) {
-        const data = await res.json();
         setInvoices((prev) =>
-          prev.map((inv) => (inv._id === id ? { ...inv, status: newStatus as any } : inv))
+          prev.map((inv) =>
+            inv._id === invoiceToSubmit._id ? { ...inv, status: "pending" } : inv
+          )
         );
+        setInvoiceToSubmit(null);
       } else {
-        alert("Failed to update status");
+        const data = await res.json();
+        alert(data.error || "Failed to submit invoice");
       }
     } catch {
       alert("Failed to connect to server");
     } finally {
-      setUpdatingId(null);
+      setIsSubmittingConfirm(false);
     }
   };
 
@@ -106,18 +131,24 @@ export default function InvoicesListPage() {
     window.open(`/dashboard/invoices/${id}?print=true`, "_blank");
   };
 
-  const handleDelete = async (id: string, invoiceNum: string) => {
-    if (!confirm(`Are you sure you want to delete invoice ${invoiceNum}?`)) {
+  const handleDelete = async (id: string, invoiceNum: string, status: string) => {
+    if (status !== "draft") {
+      alert("Submitted and Paid invoices cannot be deleted.");
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete draft invoice ${invoiceNum}?`)) {
       return;
     }
 
     setDeletingId(id);
     try {
       const res = await fetch(`/api/invoices/${id}`, { method: "DELETE" });
+      const data = await res.json();
       if (res.ok) {
         setInvoices((prev) => prev.filter((inv) => inv._id !== id));
       } else {
-        alert("Failed to delete invoice");
+        alert(data.error || "Failed to delete invoice");
       }
     } catch {
       alert("Failed to connect to server");
@@ -332,7 +363,7 @@ export default function InvoicesListPage() {
               <thead>
                 <tr>
                   <th>Invoice #</th>
-                  <th>Lot / Cycle</th>
+                  <th>LOT</th>
                   <th>Clinical Agent</th>
                   <th>Agency</th>
                   <th>Period</th>
@@ -345,8 +376,21 @@ export default function InvoicesListPage() {
               <tbody>
                 {invoices.map((inv) => {
                   const agentName = getAgentName(inv);
-                  const isSubmitted = inv.status === "pending";
+                  const isSubmitted = inv.status === "pending" || inv.status === "paid";
+                  const isDraft = inv.status === "draft";
                   const lotInfo = (inv as any).lotId;
+
+                  // Format 3-digit LOT number e.g. LOT 001
+                  let lotDisplay = "LOT 001";
+                  if (lotInfo?.lotNumber) {
+                    lotDisplay = `LOT ${String(lotInfo.lotNumber).padStart(3, "0")}`;
+                  } else if (inv.lotNumber) {
+                    lotDisplay = `LOT ${String(inv.lotNumber).padStart(3, "0")}`;
+                  } else if (lotInfo?.lotCode) {
+                    const match = lotInfo.lotCode.match(/(\d+)/g);
+                    const lastNum = match ? match[match.length - 1] : "1";
+                    lotDisplay = `LOT ${String(lastNum).padStart(3, "0")}`;
+                  }
 
                   return (
                     <tr key={inv._id}>
@@ -357,24 +401,26 @@ export default function InvoicesListPage() {
                         </Link>
                       </td>
 
-                      {/* Lot / Cycle */}
+                      {/* LOT (3 digits, e.g. LOT 001) */}
                       <td>
                         <span
                           style={{
-                            fontSize: "0.75rem",
-                            backgroundColor: "#f1f5f9",
-                            color: "#334155",
-                            padding: "0.2rem 0.5rem",
-                            borderRadius: "4px",
-                            fontWeight: 700,
+                            fontSize: "0.78rem",
+                            backgroundColor: "#eff6ff",
+                            color: "#1d4ed8",
+                            border: "1px solid #bfdbfe",
+                            padding: "0.22rem 0.55rem",
+                            borderRadius: "5px",
+                            fontWeight: 800,
+                            letterSpacing: "0.03em",
                             display: "inline-flex",
                             alignItems: "center",
                             gap: "0.25rem",
                             whiteSpace: "nowrap",
                           }}
                         >
-                          <Layers size={11} color="var(--primary)" />
-                          {lotInfo?.lotCode || (inv.lotNumber ? `LOT-${String(inv.lotNumber).padStart(2, "0")}` : "LOT-01")}
+                          <Layers size={12} color="#1d4ed8" />
+                          {lotDisplay}
                         </span>
                       </td>
 
@@ -422,7 +468,7 @@ export default function InvoicesListPage() {
                       {/* Status */}
                       <td>{getStatusBadge(inv.status)}</td>
 
-                      {/* Action Buttons: View, Download, Print, Delete, Submitted */}
+                      {/* Action Buttons: View, Download, Print, Delete, Submit */}
                       <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                         <div
                           style={{
@@ -432,32 +478,35 @@ export default function InvoicesListPage() {
                             justifyContent: "flex-end",
                           }}
                         >
-                          {/* Submitted / Status Toggle Button */}
-                          <button
-                            onClick={() =>
-                              handleStatusChange(
-                                inv._id!,
-                                isSubmitted ? "draft" : "pending"
-                              )
-                            }
-                            disabled={updatingId === inv._id}
-                            className={`btn btn-sm ${
-                              isSubmitted ? "btn-primary" : "btn-secondary"
-                            }`}
-                            style={{
-                              padding: "0.3rem 0.6rem",
-                              fontSize: "0.78rem",
-                              gap: "0.25rem",
-                            }}
-                            title={
-                              isSubmitted
-                                ? "Marked as Submitted (Click to revert to Draft)"
-                                : "Mark as Submitted"
-                            }
-                          >
-                            <Send size={12} />
-                            <span>{isSubmitted ? "Submitted" : "Submit"}</span>
-                          </button>
+                          {/* Submit Action Button (Only for Managers/Admins, disabled/locked once submitted) */}
+                          {currentUserRole !== "viewer" && (
+                            <button
+                              onClick={() => {
+                                if (isDraft) {
+                                  handleOpenSubmitConfirm(inv);
+                                }
+                              }}
+                              disabled={!isDraft || updatingId === inv._id}
+                              className={`btn btn-sm ${
+                                isSubmitted ? "btn-primary" : "btn-secondary"
+                              }`}
+                              style={{
+                                padding: "0.3rem 0.6rem",
+                                fontSize: "0.78rem",
+                                gap: "0.25rem",
+                                opacity: isSubmitted ? 0.85 : 1,
+                                cursor: isSubmitted ? "default" : "pointer",
+                              }}
+                              title={
+                                isSubmitted
+                                  ? "Submitted & Locked"
+                                  : "Submit invoice (confirms and makes visible to viewers)"
+                              }
+                            >
+                              <Send size={12} />
+                              <span>{isSubmitted ? "Submitted" : "Submit"}</span>
+                            </button>
+                          )}
 
                           {/* View Button */}
                           <Link
@@ -492,36 +541,40 @@ export default function InvoicesListPage() {
                             <span style={{ fontSize: "0.78rem" }}>Print</span>
                           </button>
 
-                          {/* Edit / Draft button */}
-                          <Link
-                            href={`/dashboard/invoices/new?edit=${inv._id}`}
-                            className="btn btn-secondary btn-sm"
-                            style={{
-                              padding: "0.35rem 0.5rem",
-                              color: "var(--primary)",
-                              borderColor: "var(--primary-border)",
-                              backgroundColor: "#f0f7ff",
-                            }}
-                            title="Edit Visits / Rates"
-                          >
-                            <Edit2 size={13} />
-                          </Link>
+                          {/* Edit / Draft button (Managers/Admins only) */}
+                          {currentUserRole !== "viewer" && isDraft && (
+                            <Link
+                              href={`/dashboard/invoices/new?edit=${inv._id}`}
+                              className="btn btn-secondary btn-sm"
+                              style={{
+                                padding: "0.35rem 0.5rem",
+                                color: "var(--primary)",
+                                borderColor: "var(--primary-border)",
+                                backgroundColor: "#f0f7ff",
+                              }}
+                              title="Edit Visits / Rates"
+                            >
+                              <Edit2 size={13} />
+                            </Link>
+                          )}
 
-                          {/* Delete Button */}
-                          <button
-                            onClick={() => handleDelete(inv._id!, inv.invoiceNumber)}
-                            disabled={deletingId === inv._id}
-                            className="btn btn-sm"
-                            style={{
-                              padding: "0.35rem 0.5rem",
-                              color: "var(--danger)",
-                              border: "1px solid var(--danger-border)",
-                              backgroundColor: "var(--danger-subtle)",
-                            }}
-                            title="Delete Invoice"
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          {/* Delete Button: ONLY available for Draft invoices, NEVER for viewers or submitted invoices */}
+                          {currentUserRole !== "viewer" && isDraft && (
+                            <button
+                              onClick={() => handleDelete(inv._id!, inv.invoiceNumber, inv.status)}
+                              disabled={deletingId === inv._id}
+                              className="btn btn-sm"
+                              style={{
+                                padding: "0.35rem 0.5rem",
+                                color: "var(--danger)",
+                                border: "1px solid var(--danger-border)",
+                                backgroundColor: "var(--danger-subtle)",
+                              }}
+                              title="Delete Draft Invoice"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -532,6 +585,133 @@ export default function InvoicesListPage() {
           </div>
         )}
       </div>
+
+      {/* Confirmation Modal for Submitting Invoice */}
+      {invoiceToSubmit && (
+        <div className="modal-backdrop">
+          <div
+            className="modal"
+            style={{
+              maxWidth: "480px",
+              padding: "1.5rem",
+              borderRadius: "12px",
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "1rem" }}>
+              <div
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "50%",
+                  backgroundColor: "var(--primary-subtle)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "var(--primary)",
+                }}
+              >
+                <Send size={20} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800 }}>
+                  Confirm Invoice Submission
+                </h3>
+                <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                  Review summary before locking and publishing
+                </span>
+              </div>
+            </div>
+
+            <div
+              style={{
+                backgroundColor: "var(--bg-subtle)",
+                borderRadius: "8px",
+                padding: "1rem",
+                marginBottom: "1.25rem",
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.5rem",
+                fontSize: "0.88rem",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "var(--text-muted)", fontWeight: 600 }}>Invoice #:</span>
+                <span style={{ fontWeight: 800, color: "var(--primary)" }}>{invoiceToSubmit.invoiceNumber}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "var(--text-muted)", fontWeight: 600 }}>Clinical Agent:</span>
+                <span style={{ fontWeight: 700 }}>{getAgentName(invoiceToSubmit)}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "var(--text-muted)", fontWeight: 600 }}>Partner Agency:</span>
+                <span style={{ fontWeight: 700 }}>{invoiceToSubmit.clientName}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "var(--text-muted)", fontWeight: 600 }}>Cycle Period:</span>
+                <span style={{ fontWeight: 600 }}>
+                  {formatDate(invoiceToSubmit.periodStart)} – {formatDate(invoiceToSubmit.periodEnd)}
+                </span>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  borderTop: "1px dashed var(--border-color)",
+                  paddingTop: "0.5rem",
+                  marginTop: "0.25rem",
+                }}
+              >
+                <span style={{ fontWeight: 700 }}>Total Amount:</span>
+                <span style={{ fontWeight: 800, fontSize: "1.05rem", color: "var(--text-primary)" }}>
+                  {formatCurrency(invoiceToSubmit.totalAmount)}
+                </span>
+              </div>
+            </div>
+
+            <div
+              style={{
+                backgroundColor: "#fffbeb",
+                border: "1px solid var(--warning-border)",
+                borderRadius: "6px",
+                padding: "0.6rem 0.85rem",
+                fontSize: "0.78rem",
+                color: "#92400e",
+                marginBottom: "1.25rem",
+                display: "flex",
+                gap: "0.5rem",
+                alignItems: "flex-start",
+              }}
+            >
+              <AlertCircle size={16} style={{ flexShrink: 0, marginTop: "2px" }} />
+              <div>
+                <strong>Notice:</strong> Once submitted, this invoice will be published for <strong>Viewers</strong> to see and will be <strong>locked from deletion</strong>.
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.6rem" }}>
+              <button
+                type="button"
+                onClick={() => setInvoiceToSubmit(null)}
+                disabled={isSubmittingConfirm}
+                className="btn btn-secondary btn-sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmSubmit}
+                disabled={isSubmittingConfirm}
+                className="btn btn-primary btn-sm"
+                style={{ gap: "0.4rem" }}
+              >
+                <CheckCircle2 size={15} />
+                <span>{isSubmittingConfirm ? "Submitting..." : "Confirm & Submit"}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

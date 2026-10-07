@@ -190,7 +190,7 @@ export function generateStructuredInvoiceNumber(params: {
   const year = params.year || new Date().getFullYear();
   
   const lotNum = parseInt(String(params.lotNumber), 10) || 1;
-  const lotFormatted = `LOT${String(lotNum).padStart(2, "0")}`;
+  const lotFormatted = `LOT${String(lotNum).padStart(3, "0")}`;
   
   const seqNum = parseInt(String(params.sequenceNumber), 10) || 1;
   const seqFormatted = String(seqNum).padStart(4, "0");

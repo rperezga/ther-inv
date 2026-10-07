@@ -1100,11 +1100,14 @@ export default function CreateInvoicePage() {
               {lots.length === 0 ? (
                 <option value="">No lots available (will auto-create)</option>
               ) : (
-                lots.map((l) => (
-                  <option key={l._id} value={l._id}>
-                    {l.lotCode} {l.name ? `• ${l.name}` : ""}
-                  </option>
-                ))
+                lots.map((l) => {
+                  const lotFormatted = `LOT ${String(l.lotNumber || 1).padStart(3, "0")}`;
+                  return (
+                    <option key={l._id} value={l._id}>
+                      {lotFormatted} {l.name ? `• ${l.name}` : ""}
+                    </option>
+                  );
+                })
               )}
             </select>
           </div>

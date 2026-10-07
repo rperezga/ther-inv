@@ -138,16 +138,29 @@ export async function DELETE(
     if (errorResponse) return errorResponse;
 
     await connectDB();
-    const deleted = await Invoice.findByIdAndDelete(id);
+    const existingInv = await Invoice.findById(id);
 
-    if (!deleted) {
+    if (!existingInv) {
       return NextResponse.json(
         { error: "Invoice not found" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ success: true, message: "Invoice deleted successfully" });
+    // Once submitted (pending) or paid, invoices CANNOT be deleted by anyone (neither manager nor viewer)
+    if (existingInv.status !== "draft") {
+      return NextResponse.json(
+        {
+          error:
+            "Submitted and Paid invoices are locked and cannot be deleted. Only draft invoices can be removed.",
+        },
+        { status: 400 }
+      );
+    }
+
+    await Invoice.findByIdAndDelete(id);
+
+    return NextResponse.json({ success: true, message: "Draft invoice deleted successfully" });
   } catch (error: any) {
     return NextResponse.json(
       { error: "Failed to delete invoice" },
