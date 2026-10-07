@@ -42,21 +42,19 @@ When triggered manually or via a GitHub commit webhook:
    - If systemd: `systemctl restart ther-inv.service`
 5. Seed verification: `curl -s -X POST http://localhost:3000/api/seed`
 
-## Webhook Auto-Deploy Setup
+## Auto-Deploy Pattern (Server Standard: Cron Polling)
 
-To trigger deployments automatically on every GitHub push:
+The server uses **cron polling every 2 minutes** (NOT GitHub Webhooks, due to Cloudflare Tunnel and security guards):
+
 ```bash
-apt update && apt install -y webhook
-cat <<EOF > /etc/webhook.json
-[
-  {
-    "id": "deploy-ther-inv",
-    "execute-command": "/opt/ther-inv/deploy.sh",
-    "command-working-directory": "/opt/ther-inv"
-  }
-]
-EOF
-systemctl enable --now webhook
+# Crontab entry on Kali Linux:
+*/2 * * * * /home/roger/apps/ther-inv/deploy.sh >> /home/roger/apps/ther-inv/deploy.log 2>&1
 ```
-Configure GitHub repository Settings -> Webhooks to target:
-`http://<SERVER_IP>:9000/hooks/deploy-ther-inv`
+
+The script [deploy.sh](file:///c:/Users/roger/Desktop/THER-INV/deploy.sh):
+1. Uses `flock` to guarantee single-instance execution.
+2. Checks `LOCAL_HASH` vs `REMOTE_HASH` (`git rev-parse HEAD` vs `origin/main`).
+3. If no new commits exist, exits immediately with 0 overhead.
+4. If new commits exist, does `git merge --ff-only origin/main` (non-destructive, preserves unversioned files like `.alfredo-credentials`).
+5. Runs `npm ci --prefer-offline` and `npm run build`.
+6. Reloads the PM2 process: `pm2 reload ther-inv || pm2 restart ther-inv`.

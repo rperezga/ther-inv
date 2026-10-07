@@ -1,60 +1,59 @@
 #!/bin/bash
-set -e
-
-echo "=========================================="
-echo "🚀 THER-INV - Native Auto-Deploy Script"
-echo "=========================================="
+set -euo pipefail
 
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LOCK_FILE="/tmp/ther-inv-deploy.lock"
+
+# Concurrency protection with flock
+exec 200>"$LOCK_FILE"
+flock -n 200 || {
+  echo "⚠️ Deploy already in progress. Exiting."
+  exit 0
+}
+
 cd "$APP_DIR"
 
-echo "📥 1. Pulling latest code changes from GitHub..."
-git fetch origin main
-git reset --hard origin/main
+# 1. Fetch latest commits without destroying local files
+git fetch origin main --quiet
 
-echo "📦 2. Installing dependencies..."
-if [ -f "package-lock.json" ]; then
-  npm ci --prefer-offline || npm install
-else
-  npm install
+LOCAL_HASH=$(git rev-parse HEAD)
+REMOTE_HASH=$(git rev-parse origin/main)
+
+# If already up to date, exit quietly
+if [ "$LOCAL_HASH" = "$REMOTE_HASH" ]; then
+  exit 0
 fi
 
-echo "🔨 3. Building Next.js application..."
+echo "=========================================="
+echo "🚀 THER-INV - Updating: $LOCAL_HASH -> $REMOTE_HASH"
+echo "=========================================="
+
+# Fast-forward merge (preserves non-tracked files like .alfredo-credentials)
+git merge --ff-only origin/main
+
+# 2. Dependencies
+if [ -f "package-lock.json" ]; then
+  npm ci --prefer-offline --no-audit --no-fund
+else
+  npm install --no-audit --no-fund
+fi
+
+# 3. Production Build
+echo "🔨 Building Next.js..."
 npm run build
 
-APP_PORT="${PORT:-3300}"
-if [ -f ".env" ]; then
-  ENV_PORT=$(grep -E '^PORT=' .env | cut -d '=' -f2 | tr -d '"\r ')
-  if [ -n "$ENV_PORT" ]; then
-    APP_PORT="$ENV_PORT"
-  fi
-fi
-
-echo "🔄 4. Restarting application process on port $APP_PORT..."
+# 4. Graceful Reload via PM2 or systemd
 if command -v pm2 &> /dev/null; then
-  echo "Detected PM2 process manager..."
   if pm2 describe ther-inv &> /dev/null; then
+    echo "🔄 Reloading ther-inv process..."
     pm2 reload ther-inv || pm2 restart ther-inv
   else
+    echo "▶️ Starting ther-inv with ecosystem.config.cjs..."
     pm2 start ecosystem.config.cjs
   fi
-  pm2 save || true
 elif systemctl is-active --quiet ther-inv.service 2>/dev/null; then
-  echo "Detected systemd ther-inv.service..."
   systemctl restart ther-inv.service
-else
-  echo "ℹ️ No active PM2 or systemd unit detected for ther-inv."
-  echo "Please start the service using your server's process manager (PM2 or systemd)."
 fi
 
-echo "⏳ 5. Waiting for service to respond on port $APP_PORT..."
-sleep 4
-
-echo "🌱 6. Ensuring database seed initialized..."
-curl -s -X POST "http://localhost:$APP_PORT/api/seed" || true
-
-echo ""
-echo "✅ Deployment finished successfully!"
-echo "Access the application at: http://localhost:$APP_PORT (or via configured domain/reverse proxy)"
-echo "=========================================="
+echo "✅ THER-INV deploy completed at $(date)"
 
