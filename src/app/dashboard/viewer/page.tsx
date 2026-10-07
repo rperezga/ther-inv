@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { IInvoice, IUser } from "@/lib/types";
 import { formatCurrency } from "@/lib/calculations";
+import { generateInvoicePDF } from "@/lib/pdfExport";
 
 export default function ViewerPortalPage() {
   const [user, setUser] = useState<IUser | null>(null);
@@ -60,6 +61,10 @@ export default function ViewerPortalPage() {
 
   const handleDirectPrint = (id: string) => {
     window.open(`/dashboard/invoices/${id}?print=true`, "_blank");
+  };
+
+  const handleDirectDownload = (inv: IInvoice) => {
+    generateInvoicePDF(inv);
   };
 
   const filteredInvoices = invoices.filter((inv) => {
@@ -246,10 +251,10 @@ export default function ViewerPortalPage() {
                           </Link>
 
                           <button
-                            onClick={() => handleDirectPrint(inv._id!)}
+                            onClick={() => handleDirectDownload(inv)}
                             className="btn btn-secondary btn-sm"
                             style={{ padding: "0.35rem 0.55rem" }}
-                            title="Download PDF"
+                            title="Download PDF directly"
                           >
                             <Download size={14} />
                             <span style={{ fontSize: "0.78rem" }}>Download</span>
@@ -259,7 +264,7 @@ export default function ViewerPortalPage() {
                             onClick={() => handleDirectPrint(inv._id!)}
                             className="btn btn-secondary btn-sm"
                             style={{ padding: "0.35rem 0.55rem" }}
-                            title="Print Invoice"
+                            title="Print Invoice in new tab"
                           >
                             <Printer size={14} />
                             <span style={{ fontSize: "0.78rem" }}>Print</span>

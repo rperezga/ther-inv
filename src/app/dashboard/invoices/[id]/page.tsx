@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { IInvoice } from "@/lib/types";
 import { normalizeDateToMMDDYY } from "@/lib/calculations";
+import { generateInvoicePDF } from "@/lib/pdfExport";
 
 export default function InvoiceDetailPage({
   params,
@@ -180,12 +181,25 @@ export default function InvoiceDetailPage({
           </Link>
 
           <button
+            onClick={() => generateInvoicePDF(invoice)}
+            id="download-invoice-btn"
+            className="btn btn-secondary btn-sm"
+            style={{ gap: "0.4rem", fontWeight: 600 }}
+            title="Download PDF directly"
+          >
+            <Download size={16} />
+            <span>Download PDF</span>
+          </button>
+
+          <button
             onClick={handlePrint}
             id="print-invoice-btn"
             className="btn btn-primary btn-sm"
+            style={{ gap: "0.4rem" }}
+            title="Print Invoice"
           >
             <Printer size={16} />
-            <span>Print / Save as PDF</span>
+            <span>Print Invoice</span>
           </button>
         </div>
       </div>

@@ -23,6 +23,7 @@ import {
   Building2,
 } from "lucide-react";
 import { IInvoice, ILot } from "@/lib/types";
+import { generateInvoicePDF } from "@/lib/pdfExport";
 
 const AGENCIES = [
   "A&A HEALTH SERVICE",
@@ -184,9 +185,14 @@ export default function InvoicesListPage() {
     }
   };
 
-  // Direct print invoice in printable tab/window
+  // Direct print invoice in a new printable tab/window
   const handleDirectPrint = (id: string) => {
     window.open(`/dashboard/invoices/${id}?print=true`, "_blank");
+  };
+
+  // Direct download PDF document without opening print view
+  const handleDirectDownload = (inv: IInvoice) => {
+    generateInvoicePDF(inv);
   };
 
   const handleDelete = async (id: string, invoiceNum: string, status: string) => {
@@ -600,9 +606,9 @@ export default function InvoicesListPage() {
                             <span style={{ fontSize: "0.78rem" }}>View</span>
                           </Link>
 
-                          {/* Download / Save as PDF Button */}
+                          {/* Download / Save as PDF Button (Direct Download) */}
                           <button
-                            onClick={() => handleDirectPrint(inv._id!)}
+                            onClick={() => handleDirectDownload(inv)}
                             className="btn btn-secondary btn-sm"
                             style={{ padding: "0.35rem 0.55rem" }}
                             title="Download PDF"
@@ -611,12 +617,12 @@ export default function InvoicesListPage() {
                             <span style={{ fontSize: "0.78rem" }}>Download</span>
                           </button>
 
-                          {/* Print Button */}
+                          {/* Print Button (Opens in new tab to print) */}
                           <button
                             onClick={() => handleDirectPrint(inv._id!)}
                             className="btn btn-secondary btn-sm"
                             style={{ padding: "0.35rem 0.55rem" }}
-                            title="Print Invoice"
+                            title="Print Invoice in new tab"
                           >
                             <Printer size={14} />
                             <span style={{ fontSize: "0.78rem" }}>Print</span>
