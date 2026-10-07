@@ -33,7 +33,6 @@ const AGENCIES = [
   "USAD",
 ];
 
-// 8 Service definitions with clear readable abbreviations for 1-click button row
 export interface ServiceButtonDef {
   id: string;
   abbr: string;
@@ -41,7 +40,7 @@ export interface ServiceButtonDef {
   isSpecial?: boolean;
 }
 
-const SERVICE_BUTTONS: ServiceButtonDef[] = [
+const PT_SERVICE_BUTTONS: ServiceButtonDef[] = [
   { id: "SOC", abbr: "SOC", fullName: "Start of Care" },
   { id: "ReCert", abbr: "Re-Cert", fullName: "Re-Certification" },
   { id: "ReEval", abbr: "Re-Eval", fullName: "Re-Evaluation" },
@@ -51,6 +50,22 @@ const SERVICE_BUTTONS: ServiceButtonDef[] = [
   { id: "Special Rate", abbr: "Special Rate", fullName: "Special Rate", isSpecial: true },
   { id: "NoBill", abbr: "No Bill", fullName: "No Billable" },
 ];
+
+const PTA_SERVICE_BUTTONS: ServiceButtonDef[] = [
+  { id: "Visit", abbr: "Visit", fullName: "PTA Standard Visit" },
+  { id: "Missed Visit", abbr: "Missed Visit", fullName: "Missed Visit" },
+  { id: "Special Rate", abbr: "Special Rate", fullName: "Special Rate", isSpecial: true },
+];
+
+function isPtaRole(roleStr?: string): boolean {
+  if (!roleStr) return false;
+  const lower = roleStr.toLowerCase();
+  return lower.includes("pta") || lower.includes("assistant");
+}
+
+function getServiceButtonsForRole(roleStr?: string): ServiceButtonDef[] {
+  return isPtaRole(roleStr) ? PTA_SERVICE_BUTTONS : PT_SERVICE_BUTTONS;
+}
 
 export interface ExtractedVisitRow {
   id: string;
@@ -143,11 +158,21 @@ export default function CreateInvoicePage() {
   // Automatically recalculate rates for all rows when agent or agency changes
   const updateRatesForCurrentSelection = (newWorkerId: string, newAgency: string) => {
     const targetWorker = workers.find((w) => w._id === newWorkerId);
+    const allowedButtons = getServiceButtonsForRole(targetWorker?.role);
+    const defaultRoleService = isPtaRole(targetWorker?.role) ? "Visit" : "SOC";
+
     setVisits((prev) =>
-      prev.map((row) => ({
-        ...row,
-        rate: getRateForService(targetWorker, newAgency, row.serviceType),
-      }))
+      prev.map((row) => {
+        let currentSrv = row.serviceType;
+        if (!allowedButtons.some((b) => b.id === currentSrv)) {
+          currentSrv = defaultRoleService;
+        }
+        return {
+          ...row,
+          serviceType: currentSrv,
+          rate: getRateForService(targetWorker, newAgency, currentSrv),
+        };
+      })
     );
   };
 
@@ -467,29 +492,45 @@ export default function CreateInvoicePage() {
 
       // Convert extracted rows to table rows with rates automatically populated
       if (extracted.records && Array.isArray(extracted.records)) {
-        const newRows: ExtractedVisitRow[] = extracted.records.map(
-          (rec: any, idx: number) => {
-            let service = rec.suggestedService || "SOC";
-            if (rec.notes?.includes("SR") || rec.patientName?.includes("(SR)")) {
-              service = "Special Rate";
-            }
-            if (!SERVICE_BUTTONS.some((s) => s.id === service)) {
-              service = "SOC";
-            }
+        const allowedButtons = getServiceButtonsForRole(resolvedWorker?.role);
+        const defaultRoleService = isPtaRole(resolvedWorker?.role) ? "Visit" : "SOC";
 
-            const currentRate = getRateForService(resolvedWorker, resolvedAgency, service);
+        const newRows: ExtractedVisitRow[] = [];
+        let rowIdx = 0;
 
-            return {
-              id: `row-${Date.now()}-${idx}`,
-              patientName: rec.patientName ? rec.patientName.replace(/\(SR\)/i, "").trim() : "",
-              visitDate: rec.visitDate || new Date().toISOString().split("T")[0],
+        for (const rec of extracted.records) {
+          let service = rec.suggestedService || defaultRoleService;
+          if (rec.notes?.includes("SR") || rec.patientName?.includes("(SR)")) {
+            service = "Special Rate";
+          }
+          if (!allowedButtons.some((s) => s.id === service)) {
+            service = defaultRoleService;
+          }
+
+          const currentRate = getRateForService(resolvedWorker, resolvedAgency, service);
+          const cleanPatientName = rec.patientName ? rec.patientName.replace(/\(SR\)/i, "").trim() : "";
+
+          // Check if visitDate contains multiple dates (e.g. "9/15 - 9/24" or "9/15, 9/24" or "9/15 - 9/17 - 9/22")
+          // If the AI didn't split them already, split them here as a safety net!
+          const rawDates = (rec.visitDate || "")
+            .split(/[,;\n]|\s+-\s+/)
+            .map((d: string) => d.trim())
+            .filter((d: string) => d.length > 0);
+
+          const datesToProcess = rawDates.length > 0 ? rawDates : [new Date().toISOString().split("T")[0]];
+
+          for (const d of datesToProcess) {
+            newRows.push({
+              id: `row-${Date.now()}-${rowIdx++}`,
+              patientName: cleanPatientName,
+              visitDate: d,
               serviceType: service,
               rate: currentRate,
               selected: true,
               notes: rec.notes || "",
-            };
+            });
           }
-        );
+        }
 
         setVisits(newRows);
       }
@@ -503,7 +544,7 @@ export default function CreateInvoicePage() {
 
   // Add Manual Row (empty string for patientName, placeholder "Patient Name")
   const handleAddRow = () => {
-    const defaultSrv = "SOC";
+    const defaultSrv = isPtaRole(selectedWorker?.role) ? "Visit" : "SOC";
     const defaultRate = getRateForService(selectedWorker, selectedAgency, defaultSrv);
 
     setVisits((prev) => [
@@ -1410,7 +1451,7 @@ export default function CreateInvoicePage() {
                         />
                       </td>
 
-                      {/* 8 Clickable Service Buttons Row (Replaces dropdown) */}
+                      {/* Clickable Service Buttons Row (PTA: 3 buttons, PT: 8 buttons) */}
                       <td style={{ padding: "0.3rem 0.5rem" }}>
                         <div
                           style={{
@@ -1420,7 +1461,7 @@ export default function CreateInvoicePage() {
                             flexWrap: "nowrap",
                           }}
                         >
-                          {SERVICE_BUTTONS.map((btn) => {
+                          {getServiceButtonsForRole(selectedWorker?.role).map((btn) => {
                             const isSelectedService = row.serviceType === btn.id;
 
                             // Special color for SR (Special Rate)

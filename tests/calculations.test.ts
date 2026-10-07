@@ -6,6 +6,8 @@ import {
   validateInvoiceDates,
   getAgentInitials,
   generateStructuredInvoiceNumber,
+  isPtaRole,
+  getServicesForRole,
 } from "../src/lib/calculations";
 
 describe("Invoice & Payroll Calculation Engine", () => {
@@ -212,6 +214,39 @@ describe("Invoice & Payroll Calculation Engine", () => {
         sequenceNumber: "45",
       });
       expect(invNum).toBe("INV-TH-2026-LOT02-0045");
+    });
+  });
+
+  describe("PTA vs PT Services Configuration", () => {
+    it("should correctly identify PTA roles", () => {
+      expect(isPtaRole("PTA")).toBe(true);
+      expect(isPtaRole("Physical Therapy Assistant")).toBe(true);
+      expect(isPtaRole("pta")).toBe(true);
+      expect(isPtaRole("PT")).toBe(false);
+      expect(isPtaRole("Physical Therapist")).toBe(false);
+      expect(isPtaRole("Admin")).toBe(false);
+      expect(isPtaRole(undefined)).toBe(false);
+    });
+
+    it("should return only 3 services for PTA agents: Visit, Missed Visit, Special Rate", () => {
+      const ptaServices = getServicesForRole("PTA");
+      expect(ptaServices).toEqual(["Visit", "Missed Visit", "Special Rate"]);
+      expect(ptaServices.length).toBe(3);
+    });
+
+    it("should return the standard 8 services for PT agents", () => {
+      const ptServices = getServicesForRole("PT");
+      expect(ptServices).toEqual([
+        "SOC",
+        "ReCert",
+        "ReEval",
+        "Eval",
+        "Disch",
+        "Missed Visit",
+        "Special Rate",
+        "NoBill",
+      ]);
+      expect(ptServices.length).toBe(8);
     });
   });
 });

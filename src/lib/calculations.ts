@@ -151,3 +151,25 @@ export function generateStructuredInvoiceNumber(params: {
 
   return `INV-${initials}-${year}-${lotFormatted}-${seqFormatted}`;
 }
+
+export const PTA_SERVICES = ["Visit", "Missed Visit", "Special Rate"] as const;
+export const PT_SERVICES = [
+  "SOC",
+  "ReCert",
+  "ReEval",
+  "Eval",
+  "Disch",
+  "Missed Visit",
+  "Special Rate",
+  "NoBill",
+] as const;
+
+export function isPtaRole(role?: string): boolean {
+  if (!role) return false;
+  const lower = role.toLowerCase();
+  return lower.includes("pta") || lower.includes("assistant");
+}
+
+export function getServicesForRole(role?: string): readonly string[] {
+  return isPtaRole(role) ? PTA_SERVICES : PT_SERVICES;
+}

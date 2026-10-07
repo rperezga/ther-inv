@@ -32,7 +32,7 @@ interface ServiceDefinition {
   isBillable: boolean;
 }
 
-const SERVICE_DEFINITIONS: ServiceDefinition[] = [
+const PT_SERVICE_DEFINITIONS: ServiceDefinition[] = [
   { id: "SOC", label: "SOC", description: "Start of Care (Inicio de atención)", isBillable: true },
   { id: "ReCert", label: "ReCert", description: "Recertification (Recertificación)", isBillable: true },
   { id: "ReEval", label: "ReEval", description: "Re-evaluation (Reevaluación)", isBillable: true },
@@ -42,6 +42,20 @@ const SERVICE_DEFINITIONS: ServiceDefinition[] = [
   { id: "Special Rate", label: "Special Rate", description: "Custom agreed special visit rate", isBillable: true },
   { id: "NoBill", label: "NoBill", description: "Non-billable administrative service", isBillable: false },
 ];
+
+const PTA_SERVICE_DEFINITIONS: ServiceDefinition[] = [
+  { id: "Visit", label: "Visit", description: "Standard Physical Therapy Assistant Visit", isBillable: true },
+  { id: "Missed Visit", label: "Missed Visit", description: "Visita perdida / No concretada", isBillable: true },
+  { id: "Special Rate", label: "Special Rate", description: "Custom agreed special visit rate", isBillable: true },
+];
+
+function getServicesForRole(roleStr?: string): ServiceDefinition[] {
+  const abbr = getRoleAbbr(roleStr || "");
+  if (abbr === "PTA") {
+    return PTA_SERVICE_DEFINITIONS;
+  }
+  return PT_SERVICE_DEFINITIONS;
+}
 
 function getRoleAbbr(roleStr: string): string {
   if (!roleStr) return "";
@@ -122,10 +136,11 @@ export default function AgencyAssignmentsPage() {
     const worker = workers.find((w) => w._id === selectedWorkerId);
     if (!worker) return;
 
+    const currentServices = getServicesForRole(worker?.role);
     const initialMap: Record<string, Record<string, number | "">> = {};
     DEFAULT_AGENCIES.forEach((agency) => {
       initialMap[agency] = {};
-      SERVICE_DEFINITIONS.forEach((srv) => {
+      currentServices.forEach((srv) => {
         initialMap[agency][srv.id] = "";
       });
     });
@@ -551,6 +566,7 @@ export default function AgencyAssignmentsPage() {
                   <button
                     type="button"
                     onClick={() => {
+                      const activeServices = getServicesForRole(selectedWorker?.role);
                       const defaultFill = prompt(
                         `Enter closed rate ($) for all billable services for ${selectedAgency}:`,
                         "65"
@@ -559,7 +575,7 @@ export default function AgencyAssignmentsPage() {
                         const cleaned = defaultFill.replace(/[^0-9]/g, "");
                         if (cleaned) {
                           const intVal = parseInt(cleaned, 10);
-                          SERVICE_DEFINITIONS.forEach((srv) => {
+                          activeServices.forEach((srv) => {
                             if (srv.isBillable) {
                               handleRateChange(selectedAgency, srv.id, String(intVal));
                             }
@@ -683,7 +699,7 @@ export default function AgencyAssignmentsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {SERVICE_DEFINITIONS.map((service) => {
+                      {getServicesForRole(selectedWorker.role).map((service) => {
                         const currentRateVal = workingRates[selectedAgency]?.[service.id] ?? "";
                         const isConfigured = currentRateVal !== "" && Number(currentRateVal) > 0;
 
