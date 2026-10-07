@@ -4,6 +4,9 @@ set -euo pipefail
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOCK_FILE="/tmp/ther-inv-deploy.lock"
 
+# Ensure Node/npm/pm2 paths are present in cron non-interactive environment
+export PATH="/home/roger/.nvm/versions/node/$(ls /home/roger/.nvm/versions/node 2>/dev/null | tail -n 1)/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
+
 # Concurrency protection with flock
 exec 200>"$LOCK_FILE"
 flock -n 200 || {
