@@ -1,60 +1,55 @@
 ---
 name: ther-inv-deployment
-description: Runbook for native non-Docker deployment on Kali Linux server using Hermes, PM2 or systemd process managers, local MongoDB database, and GitHub commit continuous delivery.
+description: Standard operational runbook for native deployment and automated continuous delivery (cron polling every 2 min) of THER-INV on Kali Linux with PM2, Nginx, Cloudflare Tunnel, and zero-downtime reload.
 ---
 
-# THER-INV Native Server Deployment Skill
+# THER-INV Native Server Deployment & Auto-Deploy Skill
 
-Use this skill when deploying, diagnosing, or configuring continuous delivery for the THER-INV application on the Kali Linux server via Hermes.
+Use this skill when deploying, diagnosing, updating, or configuring continuous delivery for the THER-INV application on the Kali Linux server via Hermes.
 
-## Strict Guidelines
+## Core Architectural Guidelines
 
-- **NO DOCKER**: The system must run directly on the host operating system.
-- **Adopt Existing Conventions**: First inspect how other services run on the server (PM2 vs systemd, Nginx reverse proxy vs direct binding) and adopt the same architecture.
+- **NO DOCKER**: Run directly on the host system.
+- **Node Process Management**: Native PM2 (`ther-inv`).
+- **Database**: Local MongoDB service (`mongodb://127.0.0.1:27017/ther_inv`).
+- **Reverse Proxy**: Nginx + Cloudflare Tunnel (`https://therinv.roshhome.com`).
+- **Continuous Delivery**: Non-interactive user cron polling every 2 minutes (matches `smec-planner`, `boxtruck`, `pcremotely`, `uscashout-markets`).
 
-## Server Inspection Commands
+## Server Security Guards & Execution Rules
 
+> [!IMPORTANT]
+> The server security guard **blocks** `pm2 restart` and `git reset --hard` as destructive mutations.
+> **ALWAYS** use `pm2 reload ther-inv` (zero-downtime graceful reload). `pm2 reload` is permitted by the guard.
+
+## Auto-Deploy Architecture (`deploy.sh`)
+
+Location on server: `/home/roger/apps/ther-inv/deploy.sh` (chmod 775, owner `roger:roger`).
+
+### Crontab Schedule
 ```bash
-# 1. Check running process managers
-pm2 list
-systemctl list-units --type=service | grep -E 'node|app|web'
-
-# 2. Check web reverse proxies
-systemctl status nginx
-ls -la /etc/nginx/sites-enabled/
-
-# 3. Check open ports
-ss -tulpn | grep LISTEN
-
-# 4. Check local MongoDB
-systemctl status mongod || systemctl status mongodb
-mongosh --eval "db.adminCommand('ping')"
-```
-
-## Deployment Flow (`deploy.sh`)
-
-When triggered manually or via a GitHub commit webhook:
-1. `git fetch origin main && git reset --hard origin/main`
-2. `npm ci --prefer-offline || npm install`
-3. `npm run build`
-4. Process reload:
-   - If PM2: `pm2 reload ther-inv || pm2 start ecosystem.config.cjs`
-   - If systemd: `systemctl restart ther-inv.service`
-5. Seed verification: `curl -s -X POST http://localhost:3000/api/seed`
-
-## Auto-Deploy Pattern (Server Standard: Cron Polling)
-
-The server uses **cron polling every 2 minutes** (NOT GitHub Webhooks, due to Cloudflare Tunnel and security guards):
-
-```bash
-# Crontab entry on Kali Linux:
 */2 * * * * /home/roger/apps/ther-inv/deploy.sh >> /home/roger/apps/ther-inv/deploy.log 2>&1
 ```
 
-The script [deploy.sh](file:///c:/Users/roger/Desktop/THER-INV/deploy.sh):
-1. Uses `flock` to guarantee single-instance execution.
-2. Checks `LOCAL_HASH` vs `REMOTE_HASH` (`git rev-parse HEAD` vs `origin/main`).
-3. If no new commits exist, exits immediately with 0 overhead.
-4. If new commits exist, does `git merge --ff-only origin/main` (non-destructive, preserves unversioned files like `.alfredo-credentials`).
-5. Runs `npm ci --prefer-offline` and `npm run build`.
-6. Reloads the PM2 process: `pm2 reload ther-inv || pm2 restart ther-inv`.
+### Script Execution Sequence:
+1. **Concurrency Lock**: Uses `flock -n 200` on `/tmp/ther-inv-deploy.lock` to prevent overlapping runs.
+2. **Environment PATH**: Exports `/home/roger/.nvm/versions/node/*/bin:/usr/local/bin:/usr/bin:/bin` so cron non-interactive shells have full access to `node`, `npm`, and `pm2`.
+3. **Change Detection**: Fetches `origin main` and compares `git rev-parse HEAD` with `git rev-parse origin/main`. If hashes match, exits with 0 resource consumption.
+4. **Non-Destructive Pull**: Executes `git merge --ff-only origin/main`. Preserves unversioned files (e.g. `.alfredo-credentials`, `.env.local`, `deploy.log`).
+5. **Build**: Runs `npm ci --prefer-offline` and `npm run build`.
+6. **Graceful Reload**: Triggers `pm2 reload ther-inv` without downtime.
+
+## Manual Emergency Deployment / Verification
+
+If manual verification is needed in Kali terminal:
+```bash
+cd /home/roger/apps/ther-inv
+git checkout deploy.sh 2>/dev/null || true
+git pull origin main
+npm run build
+pm2 reload ther-inv
+```
+
+## Health Check
+- Local HTTP: `curl -s -I http://localhost:3300` -> `HTTP/1.1 200 OK`
+- Public Domain: `curl -s -I https://therinv.roshhome.com` -> `HTTP/2 200`
+- PM2 Status: `pm2 status ther-inv` -> `online`
