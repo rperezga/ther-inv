@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
         name: user.name,
         email: user.email,
         role: user.role,
+        agentType: user.agentType,
       },
     });
   } catch (error) {

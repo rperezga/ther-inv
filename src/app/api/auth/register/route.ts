@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
     const totalUsers = await User.countDocuments();
     let role: UserRole = "agent";
     let invitedBy = undefined;
+    let assignedAgentType: "PT" | "PTA" | undefined = undefined;
 
     // First user becomes Admin automatically
     if (totalUsers === 0) {
@@ -71,6 +72,7 @@ export async function POST(req: NextRequest) {
       }
 
       role = invite.role;
+      assignedAgentType = (invite as any).agentType;
       invitedBy = invite.invitedBy;
 
       // Mark invite as accepted
@@ -84,6 +86,7 @@ export async function POST(req: NextRequest) {
       email: normalizedEmail,
       password: hashedPassword,
       role,
+      agentType: role === "agent" ? assignedAgentType : undefined,
       isActive: true,
       invitedBy,
     });
@@ -93,6 +96,7 @@ export async function POST(req: NextRequest) {
       name: newUser.name,
       email: newUser.email,
       role: newUser.role,
+      agentType: newUser.agentType,
     };
 
     const token = signToken(payload);

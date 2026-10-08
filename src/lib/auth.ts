@@ -13,6 +13,7 @@ export interface JWTPayload {
   name: string;
   email: string;
   role: UserRole;
+  agentType?: "PT" | "PTA";
 }
 
 export function hashPassword(password: string): string {

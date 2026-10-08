@@ -22,10 +22,10 @@ export async function GET(req: NextRequest) {
       .sort({ createdAt: -1 });
 
     // Exclude 'admin' (e.g. Roger Admin) from the list.
-    // Therina (manager) and all invited team members (viewer / manager) are shown.
+    // Therina (manager) and all invited team members (viewer / manager / agent) are shown.
     const users = await User.find(
       { role: { $ne: "admin" } },
-      "name email role isActive createdAt"
+      "name email role agentType isActive createdAt"
     ).sort({ createdAt: -1 });
 
     return NextResponse.json({ invitations, users });
@@ -47,18 +47,25 @@ export async function PATCH(req: NextRequest) {
     if (errorResponse) return errorResponse;
 
     const body = await req.json();
-    const { userId, role } = body;
+    const { userId, role, agentType } = body;
 
-    if (!userId || !role) {
+    if (!userId) {
       return NextResponse.json(
-        { error: "User ID and new role are required" },
+        { error: "User ID is required" },
         { status: 400 }
       );
     }
 
-    if (role !== "viewer" && role !== "manager" && role !== "agent") {
+    if (role && role !== "viewer" && role !== "manager" && role !== "agent") {
       return NextResponse.json(
         { error: "Role can only be changed to agent, viewer or manager" },
+        { status: 400 }
+      );
+    }
+
+    if (agentType && agentType !== "PT" && agentType !== "PTA") {
+      return NextResponse.json(
+        { error: "Agent type must be PT or PTA" },
         { status: 400 }
       );
     }
@@ -78,7 +85,16 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    targetUser.role = role as UserRole;
+    if (role) {
+      targetUser.role = role as UserRole;
+    }
+
+    if (agentType) {
+      targetUser.agentType = agentType;
+    } else if (targetUser.role === "agent" && !targetUser.agentType) {
+      targetUser.agentType = "PT"; // default fallback if none
+    }
+
     await targetUser.save();
 
     return NextResponse.json({
@@ -88,6 +104,7 @@ export async function PATCH(req: NextRequest) {
         name: targetUser.name,
         email: targetUser.email,
         role: targetUser.role,
+        agentType: targetUser.agentType,
       },
     });
   } catch (error: any) {
@@ -108,13 +125,23 @@ export async function POST(req: NextRequest) {
     if (errorResponse) return errorResponse;
 
     const body = await req.json();
-    const { email, role = "agent", expirationHours = 24 } = body;
+    const { email, role = "agent", agentType, expirationHours = 24 } = body;
 
     if (!email) {
       return NextResponse.json(
         { error: "Email address is required" },
         { status: 400 }
       );
+    }
+
+    // Agent type validation: If role is agent, agentType (PT or PTA) is strictly required!
+    if (role === "agent") {
+      if (!agentType || (agentType !== "PT" && agentType !== "PTA")) {
+        return NextResponse.json(
+          { error: "Para el rol de Agente, es obligatorio seleccionar el tipo de agente (PT o PTA)." },
+          { status: 400 }
+        );
+      }
     }
 
     const normalizedEmail = email.toLowerCase().trim();
@@ -152,6 +179,7 @@ export async function POST(req: NextRequest) {
       token,
       email: normalizedEmail,
       role: role as UserRole,
+      agentType: role === "agent" ? agentType : undefined,
       status: "pending",
       invitedBy: user.userId,
       expiresAt,
@@ -194,6 +222,7 @@ export async function POST(req: NextRequest) {
     const emailResult = await sendInvitationEmail({
       to: normalizedEmail,
       role: role,
+      agentType: role === "agent" ? agentType : undefined,
       invitationUrl: fullInviteUrl,
       invitedByName: inviterName,
     });

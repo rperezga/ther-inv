@@ -23,6 +23,7 @@ export default function InvitationsPage() {
   // Form State
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"agent" | "manager" | "viewer">("agent");
+  const [agentType, setAgentType] = useState<"PT" | "PTA">("PT");
   const [sending, setSending] = useState(false);
   const [formError, setFormError] = useState("");
   const [emailStatus, setEmailStatus] = useState<{ sent: boolean; message: string } | null>(null);
@@ -60,13 +61,23 @@ export default function InvitationsPage() {
       return;
     }
 
+    if (role === "agent" && (!agentType || (agentType !== "PT" && agentType !== "PTA"))) {
+      setFormError("Debes seleccionar obligatoriamente si el Agente es PT o PTA");
+      return;
+    }
+
     setSending(true);
 
     try {
       const res = await fetch("/api/invitations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, role, expirationHours: 24 }),
+        body: JSON.stringify({
+          email,
+          role,
+          agentType: role === "agent" ? agentType : undefined,
+          expirationHours: 24,
+        }),
       });
 
       const data = await res.json();
@@ -80,7 +91,7 @@ export default function InvitationsPage() {
       if (data.emailSent) {
         setEmailStatus({
           sent: true,
-          message: `Invitación enviada por email a ${email} vía Resend (válida por 24 horas).`,
+          message: `Invitación enviada por email a ${email} como ${role === "agent" ? `Agente (${agentType})` : role} vía Resend (válida por 24 horas).`,
         });
       } else if (data.emailError) {
         setEmailStatus({
@@ -117,12 +128,12 @@ export default function InvitationsPage() {
     }
   };
 
-  const handleRoleChange = async (userId: string, newRole: "agent" | "manager" | "viewer") => {
+  const handleRoleChange = async (userId: string, newRole: "agent" | "manager" | "viewer", newAgentType?: "PT" | "PTA") => {
     try {
       const res = await fetch("/api/invitations", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, role: newRole }),
+        body: JSON.stringify({ userId, role: newRole, agentType: newAgentType }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -130,10 +141,30 @@ export default function InvitationsPage() {
         return;
       }
       setUsers((prev) =>
-        prev.map((u) => (u._id === userId ? { ...u, role: newRole } : u))
+        prev.map((u) => (u._id === userId ? { ...u, role: newRole, agentType: newAgentType || u.agentType } : u))
       );
     } catch {
       alert("Failed to update role");
+    }
+  };
+
+  const handleAgentTypeChange = async (userId: string, newType: "PT" | "PTA") => {
+    try {
+      const res = await fetch("/api/invitations", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, agentType: newType }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Failed to update agent type");
+        return;
+      }
+      setUsers((prev) =>
+        prev.map((u) => (u._id === userId ? { ...u, agentType: newType } : u))
+      );
+    } catch {
+      alert("Failed to update agent type");
     }
   };
 
@@ -318,6 +349,82 @@ export default function InvitationsPage() {
               </select>
             </div>
 
+            {/* Mandatory Agent Type Selection when role is agent */}
+            {role === "agent" && (
+              <div
+                className="form-group"
+                style={{
+                  backgroundColor: "#eff6ff",
+                  padding: "0.85rem",
+                  borderRadius: "10px",
+                  border: "1.5px solid #bfdbfe",
+                }}
+              >
+                <label
+                  className="form-label"
+                  style={{
+                    color: "#1e40af",
+                    fontWeight: 700,
+                    marginBottom: "0.4rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <span>Tipo de Agente (Obligatorio) *</span>
+                  <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#2563eb" }}>
+                    Determina sus servicios rápidos
+                  </span>
+                </label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                  <button
+                    type="button"
+                    onClick={() => setAgentType("PT")}
+                    style={{
+                      padding: "0.6rem",
+                      borderRadius: "8px",
+                      border: agentType === "PT" ? "2px solid #2563eb" : "1px solid #cbd5e1",
+                      backgroundColor: agentType === "PT" ? "#2563eb" : "#ffffff",
+                      color: agentType === "PT" ? "#ffffff" : "#1e293b",
+                      fontWeight: 700,
+                      fontSize: "0.88rem",
+                      cursor: "pointer",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span>PT</span>
+                    <span style={{ fontSize: "0.68rem", opacity: agentType === "PT" ? 0.9 : 0.7 }}>
+                      Physical Therapist
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAgentType("PTA")}
+                    style={{
+                      padding: "0.6rem",
+                      borderRadius: "8px",
+                      border: agentType === "PTA" ? "2px solid #2563eb" : "1px solid #cbd5e1",
+                      backgroundColor: agentType === "PTA" ? "#2563eb" : "#ffffff",
+                      color: agentType === "PTA" ? "#ffffff" : "#1e293b",
+                      fontWeight: 700,
+                      fontSize: "0.88rem",
+                      cursor: "pointer",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span>PTA</span>
+                    <span style={{ fontSize: "0.68rem", opacity: agentType === "PTA" ? 0.9 : 0.7 }}>
+                      Therapy Assistant
+                    </span>
+                  </button>
+                </div>
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={sending}
@@ -394,49 +501,81 @@ export default function InvitationsPage() {
                   </div>
                 </div>
 
-                {u.name?.toLowerCase().includes("therina") ? (
-                  <span className="badge badge-role-manager">MANAGER</span>
-                ) : (
-                  <select
-                    className="form-select"
-                    style={{
-                      width: "auto",
-                      padding: "0.25rem 0.6rem",
-                      fontSize: "0.78rem",
-                      fontWeight: 600,
-                      borderRadius: "6px",
-                      cursor: "pointer",
-                      backgroundColor:
-                        u.role === "manager"
-                          ? "#f0fdf4"
-                          : u.role === "agent"
-                          ? "#ecfdf5"
-                          : "#f1f5f9",
-                      borderColor:
-                        u.role === "manager"
-                          ? "#bbf7d0"
-                          : u.role === "agent"
-                          ? "#a7f3d0"
-                          : "#cbd5e1",
-                      color:
-                        u.role === "manager"
-                          ? "#166534"
-                          : u.role === "agent"
-                          ? "#065f46"
-                          : "#334155",
-                    }}
-                    value={u.role || "agent"}
-                    onChange={(e) => {
-                      if (u._id) {
-                        handleRoleChange(u._id, e.target.value as "agent" | "manager" | "viewer");
-                      }
-                    }}
-                  >
-                    <option value="agent">AGENT</option>
-                    <option value="viewer">VIEWER</option>
-                    <option value="manager">MANAGER</option>
-                  </select>
-                )}
+                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                  {u.name?.toLowerCase().includes("therina") ? (
+                    <span className="badge badge-role-manager">MANAGER</span>
+                  ) : (
+                    <>
+                      <select
+                        className="form-select"
+                        style={{
+                          width: "auto",
+                          padding: "0.25rem 0.5rem",
+                          fontSize: "0.78rem",
+                          fontWeight: 600,
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          backgroundColor:
+                            u.role === "manager"
+                              ? "#f0fdf4"
+                              : u.role === "agent"
+                              ? "#ecfdf5"
+                              : "#f1f5f9",
+                          borderColor:
+                            u.role === "manager"
+                              ? "#bbf7d0"
+                              : u.role === "agent"
+                              ? "#a7f3d0"
+                              : "#cbd5e1",
+                          color:
+                            u.role === "manager"
+                              ? "#166534"
+                              : u.role === "agent"
+                              ? "#065f46"
+                              : "#334155",
+                        }}
+                        value={u.role || "agent"}
+                        onChange={(e) => {
+                          if (u._id) {
+                            handleRoleChange(u._id, e.target.value as "agent" | "manager" | "viewer");
+                          }
+                        }}
+                      >
+                        <option value="agent">AGENT</option>
+                        <option value="viewer">VIEWER</option>
+                        <option value="manager">MANAGER</option>
+                      </select>
+
+                      {/* Agent Type selector when role is agent */}
+                      {u.role === "agent" && (
+                        <select
+                          className="form-select"
+                          title="Cambiar tipo de agente"
+                          style={{
+                            width: "auto",
+                            padding: "0.25rem 0.45rem",
+                            fontSize: "0.75rem",
+                            fontWeight: 700,
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            backgroundColor: u.agentType === "PTA" ? "#fef3c7" : "#eff6ff",
+                            borderColor: u.agentType === "PTA" ? "#fde68a" : "#bfdbfe",
+                            color: u.agentType === "PTA" ? "#b45309" : "#1d4ed8",
+                          }}
+                          value={u.agentType || "PT"}
+                          onChange={(e) => {
+                            if (u._id) {
+                              handleAgentTypeChange(u._id, e.target.value as "PT" | "PTA");
+                            }
+                          }}
+                        >
+                          <option value="PT">PT</option>
+                          <option value="PTA">PTA</option>
+                        </select>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -482,7 +621,7 @@ export default function InvitationsPage() {
                         {inv.role === "manager"
                           ? "Manager"
                           : inv.role === "agent"
-                          ? "Agent"
+                          ? `Agent ${inv.agentType ? `(${inv.agentType})` : ""}`
                           : "Viewer"}
                       </span>
                     </td>

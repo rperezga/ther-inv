@@ -16,6 +16,7 @@ function RegisterContent() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [tokenInput, setTokenInput] = useState(inviteToken);
   const [roleInfo, setRoleInfo] = useState<string | null>(null);
+  const [agentTypeInfo, setAgentTypeInfo] = useState<string | null>(null);
   const [invitedByInfo, setInvitedByInfo] = useState<string | null>(null);
 
   const [validatingToken, setValidatingToken] = useState(false);
@@ -42,6 +43,7 @@ function RegisterContent() {
         setTokenValid(true);
         setEmail(data.email);
         setRoleInfo(data.role);
+        setAgentTypeInfo(data.agentType || null);
         setInvitedByInfo(data.invitedBy?.name || "Administrator");
       } else {
         setTokenValid(false);
@@ -199,7 +201,9 @@ function RegisterContent() {
             </p>
             <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
               Assigned role:{" "}
-              <strong style={{ textTransform: "capitalize" }}>{roleInfo}</strong>
+              <strong style={{ textTransform: "capitalize" }}>
+                {roleInfo === "agent" && agentTypeInfo ? `Agent (${agentTypeInfo})` : roleInfo}
+              </strong>
             </p>
           </div>
         </div>

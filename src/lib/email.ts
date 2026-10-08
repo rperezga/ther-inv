@@ -8,6 +8,7 @@ export const resend = resendApiKey ? new Resend(resendApiKey) : null;
 export interface SendInvitationEmailParams {
   to: string;
   role: string;
+  agentType?: "PT" | "PTA";
   invitationUrl: string;
   invitedByName?: string;
 }
@@ -15,6 +16,7 @@ export interface SendInvitationEmailParams {
 export async function sendInvitationEmail({
   to,
   role,
+  agentType,
   invitationUrl,
   invitedByName = "El equipo de THER-INV",
 }: SendInvitationEmailParams): Promise<{ success: boolean; id?: string; error?: string }> {
@@ -27,7 +29,7 @@ export async function sendInvitationEmail({
   }
 
   const roleLabels: Record<string, string> = {
-    agent: "Clinical Agent",
+    agent: agentType ? `Clinical Agent (${agentType})` : "Clinical Agent",
     manager: "Manager",
     viewer: "Viewer",
     admin: "Administrator",

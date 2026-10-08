@@ -1,4 +1,5 @@
 export type UserRole = "admin" | "manager" | "viewer" | "agent";
+export type AgentType = "PT" | "PTA";
 
 export interface IUser {
   _id?: string;
@@ -6,6 +7,7 @@ export interface IUser {
   email: string;
   password?: string;
   role: UserRole;
+  agentType?: AgentType;
   isActive: boolean;
   invitedBy?: string;
   createdAt?: string | Date;
@@ -103,6 +105,7 @@ export interface IInvitation {
   token: string;
   email: string;
   role: UserRole;
+  agentType?: AgentType;
   status: "pending" | "accepted" | "expired";
   invitedBy: {
     _id: string;

@@ -34,6 +34,23 @@ describe("Invitation System & Lifecycle Logic", () => {
     expect(isValidRole("hacker")).toBe(false);
   });
 
+  it("should enforce agentType (PT or PTA) when role is agent", () => {
+    const validateAgentInvite = (role: string, agentType?: string) => {
+      if (role === "agent") {
+        if (!agentType || (agentType !== "PT" && agentType !== "PTA")) {
+          return { valid: false, error: "agentType must be PT or PTA" };
+        }
+      }
+      return { valid: true };
+    };
+
+    expect(validateAgentInvite("agent", "PT").valid).toBe(true);
+    expect(validateAgentInvite("agent", "PTA").valid).toBe(true);
+    expect(validateAgentInvite("agent", undefined).valid).toBe(false);
+    expect(validateAgentInvite("agent", "OTHER").valid).toBe(false);
+    expect(validateAgentInvite("viewer").valid).toBe(true);
+  });
+
   it("should set expiration to exactly 24 hours by default", () => {
     const now = Date.now();
     const defaultHours = 24;

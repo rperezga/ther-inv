@@ -59,6 +59,35 @@ export default function AgentPortalPage() {
   const [loadingVisits, setLoadingVisits] = useState(true);
   const [activeTab, setActiveTab] = useState<"form" | "history">("form");
 
+  const agentRole = (currentUser as any)?.agentType === "PTA" ? "PTA" : "PT";
+  const isPTA = agentRole === "PTA";
+
+  // Fast service definitions
+  const serviceOptions = useMemo(() => {
+    if (isPTA) {
+      return [
+        { id: "Visit", label: "Standard Visit" },
+        { id: "Missed Visit", label: "Missed Visit" },
+        { id: "Special Rate", label: "Special Rate" },
+      ];
+    }
+    return [
+      { id: "SOC", label: "Start of Care" },
+      { id: "Eval", label: "Evaluation" },
+      { id: "ReEval", label: "Re-Evaluation" },
+      { id: "ReCert", label: "Recertification" },
+      { id: "Disch", label: "Discharge" },
+      { id: "Missed Visit", label: "Missed Visit" },
+    ];
+  }, [isPTA]);
+
+  // Set initial serviceType when options change
+  useEffect(() => {
+    if (serviceOptions.length > 0 && !serviceOptions.some((s) => s.id === serviceType)) {
+      setServiceType(serviceOptions[0].id);
+    }
+  }, [serviceOptions, serviceType]);
+
   // Load User Info
   useEffect(() => {
     fetch("/api/auth/me")
@@ -595,42 +624,80 @@ export default function AgentPortalPage() {
                 </div>
               </div>
 
-              {/* Service Type Selection */}
+              {/* Dynamic Fast Service Type Buttons based on Agent Role (PT vs PTA) */}
               <div style={{ marginBottom: "1.35rem" }}>
-                <label
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.4rem" }}>
+                  <label
+                    style={{
+                      fontSize: "0.85rem",
+                      fontWeight: 700,
+                      color: "#1e293b",
+                    }}
+                  >
+                    Tipo de Servicio
+                  </label>
+                  <span
+                    style={{
+                      fontSize: "0.72rem",
+                      fontWeight: 700,
+                      padding: "2px 8px",
+                      borderRadius: "6px",
+                      backgroundColor: isPTA ? "#fef3c7" : "#eff6ff",
+                      color: isPTA ? "#b45309" : "#1d4ed8",
+                      border: isPTA ? "1px solid #fde68a" : "1px solid #bfdbfe",
+                    }}
+                  >
+                    Rol: {agentRole}
+                  </span>
+                </div>
+
+                <div
                   style={{
-                    display: "block",
-                    fontSize: "0.85rem",
-                    fontWeight: 700,
-                    color: "#1e293b",
-                    marginBottom: "0.4rem",
+                    display: "grid",
+                    gridTemplateColumns: isPTA ? "repeat(3, 1fr)" : "repeat(3, 1fr)",
+                    gap: "0.5rem",
                   }}
                 >
-                  Tipo de Servicio
-                </label>
-                <select
-                  value={serviceType}
-                  onChange={(e) => setServiceType(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "0.7rem 0.9rem",
-                    borderRadius: "10px",
-                    border: "1.5px solid #cbd5e1",
-                    fontSize: "0.9rem",
-                    color: "#0f172a",
-                    backgroundColor: "#ffffff",
-                    outline: "none",
-                    cursor: "pointer",
-                  }}
-                >
-                  <option value="PT Visit">PT Visit (Physical Therapy)</option>
-                  <option value="PTA Visit">PTA Visit (Physical Therapy Assistant)</option>
-                  <option value="SOC">SOC (Start of Care)</option>
-                  <option value="Eval">Eval (Evaluation)</option>
-                  <option value="ReEval">ReEval (Re-evaluation)</option>
-                  <option value="ReCert">ReCert (Recertification)</option>
-                  <option value="Discharge">Discharge</option>
-                </select>
+                  {serviceOptions.map((opt) => {
+                    const isSelected = serviceType === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setServiceType(opt.id)}
+                        style={{
+                          padding: "0.65rem 0.5rem",
+                          borderRadius: "10px",
+                          border: isSelected ? "2px solid #2563eb" : "1px solid #cbd5e1",
+                          backgroundColor: isSelected ? "#eff6ff" : "#ffffff",
+                          color: isSelected ? "#1d4ed8" : "#334155",
+                          fontWeight: isSelected ? 800 : 600,
+                          fontSize: "0.82rem",
+                          cursor: "pointer",
+                          transition: "all 0.15s ease",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "2px",
+                          textAlign: "center",
+                          boxShadow: isSelected ? "0 2px 5px rgba(37,99,235,0.15)" : "none",
+                        }}
+                      >
+                        <span style={{ fontSize: "0.92rem", fontWeight: 800 }}>{opt.id}</span>
+                        <span
+                          style={{
+                            fontSize: "0.68rem",
+                            color: isSelected ? "#2563eb" : "#64748b",
+                            lineHeight: 1.1,
+                          }}
+                        >
+                          {opt.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Interactive Multi-Week Calendar Picker */}

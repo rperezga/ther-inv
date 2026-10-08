@@ -5,6 +5,7 @@ export interface IUserDocument extends Document {
   email: string;
   password?: string;
   role: "admin" | "manager" | "viewer" | "agent";
+  agentType?: "PT" | "PTA";
   isActive: boolean;
   invitedBy?: mongoose.Types.ObjectId;
   createdAt: Date;
@@ -20,6 +21,11 @@ const UserSchema = new Schema<IUserDocument>(
       type: String,
       enum: ["admin", "manager", "viewer", "agent"],
       default: "agent",
+    },
+    agentType: {
+      type: String,
+      enum: ["PT", "PTA"],
+      required: false,
     },
     isActive: { type: Boolean, default: true },
     invitedBy: { type: Schema.Types.ObjectId, ref: "User" },

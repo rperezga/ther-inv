@@ -4,6 +4,7 @@ export interface IInvitationDocument extends Document {
   token: string;
   email: string;
   role: "admin" | "manager" | "viewer" | "agent";
+  agentType?: "PT" | "PTA";
   status: "pending" | "accepted" | "expired";
   invitedBy: mongoose.Types.ObjectId;
   expiresAt: Date;
@@ -19,6 +20,11 @@ const InvitationSchema = new Schema<IInvitationDocument>(
       type: String,
       enum: ["admin", "manager", "viewer", "agent"],
       default: "agent",
+    },
+    agentType: {
+      type: String,
+      enum: ["PT", "PTA"],
+      required: false,
     },
     status: {
       type: String,

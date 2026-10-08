@@ -33,6 +33,7 @@ export async function GET(req: NextRequest) {
       valid: true,
       email: invite.email,
       role: invite.role,
+      agentType: (invite as any).agentType,
       invitedBy: invite.invitedBy,
     });
   } catch (error: any) {
