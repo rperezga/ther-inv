@@ -144,7 +144,6 @@ export default function WorkersPage() {
   // Change Password Modal State
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [selectedWorkerForPassword, setSelectedWorkerForPassword] = useState<IEnrichedWorker | null>(null);
-  const [newPassword, setNewPassword] = useState("");
   const [confirmFirstNameInput, setConfirmFirstNameInput] = useState("");
   const [passwordModalError, setPasswordModalError] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
@@ -378,13 +377,12 @@ export default function WorkersPage() {
   // Open Change Password modal
   const openPasswordModal = (worker: IEnrichedWorker) => {
     setSelectedWorkerForPassword(worker);
-    setNewPassword("");
     setConfirmFirstNameInput("");
     setPasswordModalError("");
     setPasswordModalOpen(true);
   };
 
-  // Submit Password Change
+  // Submit Password Reset Request
   const handleSubmitPasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordModalError("");
@@ -402,11 +400,6 @@ export default function WorkersPage() {
       return;
     }
 
-    if (newPassword.length < 6) {
-      setPasswordModalError("Password must be at least 6 characters long.");
-      return;
-    }
-
     setChangingPassword(true);
 
     try {
@@ -415,22 +408,23 @@ export default function WorkersPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: selectedWorkerForPassword.userAccount.id,
-          newPassword,
           confirmFirstName: confirmFirstNameInput.trim(),
         }),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "Failed to reset password");
+        throw new Error(data.error || "Failed to request password reset");
       }
 
       setPasswordModalOpen(false);
-      setActionSuccessMsg(`Password for ${selectedWorkerForPassword.firstName} ${selectedWorkerForPassword.lastName} updated successfully!`);
-      setTimeout(() => setActionSuccessMsg(""), 5000);
+      setActionSuccessMsg(
+        `A 24-hour password setup link was emailed to ${selectedWorkerForPassword.email}. Previous password deactivated.`
+      );
+      setTimeout(() => setActionSuccessMsg(""), 6000);
       fetchWorkers(search);
     } catch (err: any) {
-      setPasswordModalError(err.message || "Failed to change password");
+      setPasswordModalError(err.message || "Failed to process password reset");
     } finally {
       setChangingPassword(false);
     }
@@ -850,13 +844,18 @@ export default function WorkersPage() {
                     backgroundColor: "#fef3c7",
                     border: "1px solid #fde68a",
                     color: "#92400e",
-                    padding: "0.75rem 1rem",
+                    padding: "0.85rem 1rem",
                     borderRadius: "8px",
-                    fontSize: "0.83rem",
-                    lineHeight: 1.4,
+                    fontSize: "0.85rem",
+                    lineHeight: 1.45,
                   }}
                 >
-                  ⚠️ <strong>Security confirmation:</strong> To prevent accidental password changes, please confirm the staff member&apos;s first name below before updating.
+                  <div style={{ fontWeight: 700, marginBottom: "4px", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <span>⚠️ Security Confirmation</span>
+                  </div>
+                  <span>
+                    To prevent accidental changes, confirm the staff member&apos;s first name. This action will <strong>deactivate the agent&apos;s current password</strong> and email them a secure <strong>24-hour link</strong> to create their new password.
+                  </span>
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 0 }}>
@@ -872,19 +871,9 @@ export default function WorkersPage() {
                     onChange={(e) => setConfirmFirstNameInput(e.target.value)}
                     autoFocus
                   />
-                </div>
-
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label">New Password *</label>
-                  <input
-                    type="password"
-                    required
-                    minLength={6}
-                    className="form-input"
-                    placeholder="Enter new secure password (min. 6 characters)"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                  />
+                  <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "5px" }}>
+                    An email with instructions to set a new password will be sent to <strong>{selectedWorkerForPassword.email}</strong>.
+                  </p>
                 </div>
               </div>
 
@@ -900,13 +889,12 @@ export default function WorkersPage() {
                   type="submit"
                   disabled={
                     changingPassword ||
-                    !newPassword ||
                     confirmFirstNameInput.trim().toLowerCase() !==
                       selectedWorkerForPassword.firstName.trim().toLowerCase()
                   }
                   className="btn btn-primary"
                 >
-                  {changingPassword ? "Updating Password..." : "Confirm & Update Password"}
+                  {changingPassword ? "Sending Reset Email..." : "Send Reset Email & Deactivate Old Password"}
                 </button>
               </div>
             </form>
@@ -1121,238 +1109,6 @@ export default function WorkersPage() {
                         Entering an email automatically creates an Agent invitation for portal access.
                       </p>
                     )}
-                  </div>
-                </div>
-
-                {/* Row 4: Notes & Preferences */}
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label">Notes & Preferences</label>
-                  <textarea
-                    className="form-textarea"
-                    rows={3}
-                    placeholder="Certifications, shift availability, license details..."
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="modal-footer" style={{ marginTop: "1.25rem" }}>
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="btn btn-secondary"
-                >
-                  Cancel
-                </button>
-                <button type="submit" disabled={saving} className="btn btn-primary">
-                  {saving
-                    ? "Saving..."
-                    : editingWorker
-                    ? "Save Changes"
-                    : "Create Staff Member"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Add / Edit Worker Modal */}
-      {isModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: "520px" }}>
-            <div className="modal-header">
-              <div>
-                <h3 style={{ fontSize: "1.25rem", fontWeight: 700 }}>
-                  {editingWorker ? "Edit Staff Member" : "New Agency Staff Member"}
-                </h3>
-                <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginTop: "2px" }}>
-                  Enter staff details for the agency active roster
-                </p>
-              </div>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                style={{ color: "var(--text-muted)" }}
-                aria-label="Close modal"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveWorker}>
-              <div className="modal-body" style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
-                {modalError && (
-                  <div
-                    style={{
-                      backgroundColor: "var(--danger-subtle)",
-                      color: "var(--danger)",
-                      border: "1px solid var(--danger-border)",
-                      borderRadius: "var(--radius-md)",
-                      padding: "0.65rem 1rem",
-                      fontSize: "0.85rem",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.5rem",
-                    }}
-                  >
-                    <AlertCircle size={16} />
-                    <span>{modalError}</span>
-                  </div>
-                )}
-
-                {/* Row 1: First Name & Last Name */}
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "1rem",
-                  }}
-                >
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label">First Name *</label>
-                    <input
-                      type="text"
-                      required
-                      className="form-input"
-                      placeholder="e.g. Camila"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label">Last Name *</label>
-                    <input
-                      type="text"
-                      required
-                      className="form-input"
-                      placeholder="e.g. Rodriguez"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                {/* Row 2: Role / Clinical Specialty Dropdown */}
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label">Role / Clinical Specialty *</label>
-                  <select
-                    className="form-select"
-                    required
-                    value={isAddingNewRole ? "__ADD_NEW__" : role}
-                    onChange={handleRoleSelectChange}
-                  >
-                    <option value="" disabled>
-                      Select a role / clinical specialty...
-                    </option>
-                    {availableRoles.map((r) => (
-                      <option key={r} value={r}>
-                        {r}
-                      </option>
-                    ))}
-                    <option value="__ADD_NEW__">✨ + Add New Role...</option>
-                  </select>
-
-                  {/* Inline Add New Role Box */}
-                  {isAddingNewRole && (
-                    <div
-                      style={{
-                        marginTop: "0.75rem",
-                        padding: "0.85rem 1rem",
-                        backgroundColor: "var(--primary-subtle)",
-                        border: "1px solid var(--primary-border)",
-                        borderRadius: "var(--radius-md)",
-                      }}
-                    >
-                      <label
-                        style={{
-                          fontSize: "0.8rem",
-                          fontWeight: 700,
-                          color: "var(--primary)",
-                          display: "block",
-                          marginBottom: "0.4rem",
-                        }}
-                      >
-                        Enter New Role or Specialty Name
-                      </label>
-                      <div style={{ display: "flex", gap: "0.5rem" }}>
-                        <input
-                          type="text"
-                          autoFocus
-                          className="form-input"
-                          placeholder="e.g. Occupational Therapy (OT)"
-                          value={customRoleInput}
-                          onChange={(e) => setCustomRoleInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              handleAddNewRole();
-                            }
-                          }}
-                        />
-                        <button
-                          type="button"
-                          onClick={handleAddNewRole}
-                          disabled={!customRoleInput.trim()}
-                          className="btn btn-primary btn-sm"
-                          style={{ whiteSpace: "nowrap" }}
-                        >
-                          <Plus size={14} /> Add
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsAddingNewRole(false);
-                            setCustomRoleInput("");
-                          }}
-                          className="btn btn-secondary btn-sm"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Row 3: Phone Number & Email Address */}
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "1rem",
-                  }}
-                >
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label">Phone Number</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="305-555-0100"
-                      value={phone}
-                      onChange={(e) => {
-                        const raw = e.target.value;
-                        const cleaned = raw.replace(/\D/g, "").slice(0, 10);
-                        if (cleaned.length > 6) {
-                          setPhone(`${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6)}`);
-                        } else if (cleaned.length > 3) {
-                          setPhone(`${cleaned.slice(0, 3)}-${cleaned.slice(3)}`);
-                        } else {
-                          setPhone(cleaned);
-                        }
-                      }}
-                    />
-                  </div>
-
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label">Email Address</label>
-                    <input
-                      type="email"
-                      className="form-input"
-                      placeholder="staff@agency.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
                   </div>
                 </div>
 

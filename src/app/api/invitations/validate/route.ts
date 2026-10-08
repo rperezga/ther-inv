@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { Invitation } from "@/models/Invitation";
+import { User } from "@/models/User";
 
 export async function GET(req: NextRequest) {
   try {
@@ -29,12 +30,16 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    const existingUser = await User.findOne({ email: invite.email.toLowerCase() });
+
     return NextResponse.json({
       valid: true,
       email: invite.email,
       role: invite.role,
       agentType: (invite as any).agentType,
       invitedBy: invite.invitedBy,
+      existingUserName: existingUser?.name || null,
+      isPasswordReset: Boolean(existingUser),
     });
   } catch (error: any) {
     return NextResponse.json(

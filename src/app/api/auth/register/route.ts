@@ -27,12 +27,6 @@ export async function POST(req: NextRequest) {
 
     const normalizedEmail = email.toLowerCase().trim();
     const existingUser = await User.findOne({ email: normalizedEmail });
-    if (existingUser) {
-      return NextResponse.json(
-        { error: "A user is already registered with this email" },
-        { status: 400 }
-      );
-    }
 
     const totalUsers = await User.countDocuments();
     let role: UserRole = "agent";
@@ -81,22 +75,43 @@ export async function POST(req: NextRequest) {
     }
 
     const hashedPassword = hashPassword(password);
-    const newUser = await User.create({
-      name: name.trim(),
-      email: normalizedEmail,
-      password: hashedPassword,
-      role,
-      agentType: role === "agent" ? assignedAgentType : undefined,
-      isActive: true,
-      invitedBy,
-    });
+
+    let targetUserDoc;
+
+    if (existingUser) {
+      // Updating / resetting password for existing user
+      existingUser.password = hashedPassword;
+      if (name && name.trim()) {
+        existingUser.name = name.trim();
+      }
+      if (role) {
+        existingUser.role = role;
+      }
+      if (assignedAgentType) {
+        existingUser.agentType = assignedAgentType;
+      }
+      existingUser.isActive = true;
+      await existingUser.save();
+      targetUserDoc = existingUser;
+    } else {
+      // Create new user
+      targetUserDoc = await User.create({
+        name: name.trim(),
+        email: normalizedEmail,
+        password: hashedPassword,
+        role,
+        agentType: role === "agent" ? assignedAgentType : undefined,
+        isActive: true,
+        invitedBy,
+      });
+    }
 
     const payload = {
-      userId: newUser._id.toString(),
-      name: newUser.name,
-      email: newUser.email,
-      role: newUser.role,
-      agentType: newUser.agentType,
+      userId: targetUserDoc._id.toString(),
+      name: targetUserDoc.name,
+      email: targetUserDoc.email,
+      role: targetUserDoc.role,
+      agentType: targetUserDoc.agentType,
     };
 
     const token = signToken(payload);

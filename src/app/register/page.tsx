@@ -21,6 +21,7 @@ function RegisterContent() {
 
   const [validatingToken, setValidatingToken] = useState(false);
   const [tokenValid, setTokenValid] = useState<boolean | null>(null);
+  const [isPasswordReset, setIsPasswordReset] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -45,6 +46,12 @@ function RegisterContent() {
         setRoleInfo(data.role);
         setAgentTypeInfo(data.agentType || null);
         setInvitedByInfo(data.invitedBy?.name || "Administrator");
+        if (data.existingUserName) {
+          setName(data.existingUserName);
+        }
+        if (data.isPasswordReset) {
+          setIsPasswordReset(true);
+        }
       } else {
         setTokenValid(false);
         setError(data.error || "Invalid or expired invitation");
@@ -119,10 +126,12 @@ function RegisterContent() {
     >
       <div style={{ textAlign: "center", marginBottom: "1.75rem" }}>
         <h1 style={{ fontSize: "1.65rem", marginBottom: "0.35rem" }}>
-          Accept Invitation
+          {isPasswordReset ? "Reset Your Password" : "Accept Invitation"}
         </h1>
         <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-          Set up your credentials to join the THER-INV team
+          {isPasswordReset
+            ? "Create a new password to access your THER-INV account"
+            : "Set up your credentials to join the THER-INV team"}
         </p>
       </div>
 
@@ -333,7 +342,13 @@ function RegisterContent() {
           className="btn btn-primary"
           style={{ width: "100%", padding: "0.85rem", fontSize: "0.95rem" }}
         >
-          {loading ? "Creating account..." : "Complete Registration"}
+          {loading
+            ? isPasswordReset
+              ? "Updating password..."
+              : "Creating account..."
+            : isPasswordReset
+            ? "Set New Password"
+            : "Complete Registration"}
           {!loading && <ArrowRight size={18} />}
         </button>
       </form>
