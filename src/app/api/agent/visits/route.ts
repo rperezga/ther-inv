@@ -142,6 +142,81 @@ export async function POST(req: NextRequest) {
   }
 }
 
+export async function PUT(req: NextRequest) {
+  try {
+    const auth = await getUserFromRequest(req);
+    if (!auth) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const { id, patientName, visitDates, serviceType, notes } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "Visit ID is required" }, { status: 400 });
+    }
+
+    if (!patientName || !patientName.trim()) {
+      return NextResponse.json({ error: "Patient name is required" }, { status: 400 });
+    }
+
+    if (!Array.isArray(visitDates) || visitDates.length === 0) {
+      return NextResponse.json({ error: "Please select at least 1 visit date" }, { status: 400 });
+    }
+
+    await connectDB();
+
+    const visit = await AgentVisit.findById(id);
+    if (!visit) {
+      return NextResponse.json({ error: "Visit not found" }, { status: 404 });
+    }
+
+    // Agents can only edit their own visits
+    if (auth.role === "agent" && visit.agentId.toString() !== auth.userId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    if (visit.status === "invoiced") {
+      return NextResponse.json({ error: "Cannot edit a visit that has already been invoiced" }, { status: 400 });
+    }
+
+    // Check if lot is closed or agent completed
+    if (visit.lotId) {
+      const lot = await Lot.findById(visit.lotId);
+      if (lot) {
+        if (lot.status === "closed") {
+          return NextResponse.json({ error: "Cannot edit visits in a closed billing cycle" }, { status: 403 });
+        }
+        if (auth.role === "agent" && lot.agentStatuses) {
+          const agentStatus = lot.agentStatuses.find(
+            (as: any) => as.agentId.toString() === auth.userId
+          );
+          if (agentStatus && agentStatus.status === "completed") {
+            return NextResponse.json(
+              { error: "Cannot edit visits after the manager has finalized your submission for this cycle" },
+              { status: 403 }
+            );
+          }
+        }
+      }
+    }
+
+    const sortedDates = [...visitDates].sort();
+
+    visit.patientName = patientName.trim();
+    visit.visitDates = sortedDates;
+    if (serviceType) visit.serviceType = serviceType.trim();
+    if (notes !== undefined) visit.notes = notes.trim();
+
+    await visit.save();
+
+    return NextResponse.json({ success: true, visit });
+  } catch (error: any) {
+    console.error("PUT /api/agent/visits error:", error);
+    return NextResponse.json({ error: "Failed to update visit record" }, { status: 500 });
+  }
+}
+
 export async function DELETE(req: NextRequest) {
   try {
     const auth = await getUserFromRequest(req);

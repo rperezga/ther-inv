@@ -18,6 +18,9 @@ import {
   History,
   Search,
   Sparkles,
+  Edit2,
+  X,
+  RefreshCw,
 } from "lucide-react";
 import { IAgentVisit, IUser, ILot } from "@/lib/types";
 
@@ -78,6 +81,9 @@ export default function AgentPortalPage() {
 
   const [visits, setVisits] = useState<IAgentVisit[]>([]);
   const [loadingVisits, setLoadingVisits] = useState(true);
+
+  // Edit visit state
+  const [editingVisitId, setEditingVisitId] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<"active_cycle" | "past_cycles">("active_cycle");
   const [pastSearchQuery, setPastSearchQuery] = useState("");
@@ -364,24 +370,33 @@ export default function AgentPortalPage() {
     setSubmitting(true);
 
     try {
-      const res = await fetch("/api/agent/visits", {
-        method: "POST",
+      const isEditing = Boolean(editingVisitId);
+      const url = "/api/agent/visits";
+      const method = isEditing ? "PUT" : "POST";
+      const payload: any = {
+        patientName: patientName.trim(),
+        serviceType,
+        visitDates: selectedDates,
+        notes,
+        lotId: selectedPeriodId,
+      };
+      if (isEditing) {
+        payload.id = editingVisitId;
+      }
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          patientName: patientName.trim(),
-          serviceType,
-          visitDates: selectedDates,
-          notes,
-          lotId: selectedPeriodId,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "Failed to record visit");
+        throw new Error(data.error || `Failed to ${isEditing ? "update" : "record"} visit`);
       }
 
       setFormSuccess(true);
+      setEditingVisitId(null);
       setPatientName("");
       setSelectedDates([]);
       setNotes("");
@@ -397,6 +412,29 @@ export default function AgentPortalPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleSelectVisitForEdit = (visit: IAgentVisit) => {
+    if (isAgentLockedForPeriod) return;
+    setEditingVisitId(visit._id || null);
+    setPatientName(visit.patientName || "");
+    setServiceType(visit.serviceType || (isPTA ? "Visit" : "Eval"));
+    setNotes(visit.notes || "");
+    setSelectedDates(visit.visitDates ? [...visit.visitDates] : []);
+    setFormError("");
+    setFormSuccess(false);
+
+    // Scroll smoothly to form
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingVisitId(null);
+    setPatientName("");
+    setServiceType(isPTA ? "Visit" : "Eval");
+    setNotes("");
+    setSelectedDates([]);
+    setFormError("");
   };
 
   const handleNotifyManagerReady = async () => {
@@ -603,6 +641,47 @@ export default function AgentPortalPage() {
               </div>
             )}
 
+            {/* Edit Mode Banner */}
+            {editingVisitId && (
+              <div
+                style={{
+                  backgroundColor: "#eff6ff",
+                  border: "1.5px solid #60a5fa",
+                  borderRadius: "10px",
+                  padding: "0.55rem 0.85rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: "0.5rem",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", color: "#1d4ed8", fontSize: "0.82rem", fontWeight: 700 }}>
+                  <Edit2 size={15} />
+                  <span>Editing record: <u>{patientName || "Patient"}</u> — Adjust name, dates, or service type below.</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    padding: "0.25rem 0.6rem",
+                    borderRadius: "6px",
+                    border: "1px solid #cbd5e1",
+                    backgroundColor: "#ffffff",
+                    color: "#475569",
+                    fontSize: "0.75rem",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  <X size={13} /> Cancel Edit
+                </button>
+              </div>
+            )}
+
             {/* Compact Form Card: Entry Line & Dates */}
             <div className="agent-panel">
               <form onSubmit={handleSubmitVisit}>
@@ -761,18 +840,44 @@ export default function AgentPortalPage() {
                       </div>
                     )}
 
-                    {/* Save Button on the Right */}
-                    <button
-                      type="submit"
-                      disabled={submitting || selectedDates.length === 0 || isAgentLockedForPeriod || !selectedPeriodId}
-                      className="agent-save-btn"
-                      style={{ marginTop: "0.6rem" }}
-                    >
-                      <Check size={16} />
-                      <span>
-                        Save Patient Visits ({selectedDates.length} {selectedDates.length === 1 ? "day" : "days"})
-                      </span>
-                    </button>
+                    {/* Save / Update Button on the Right */}
+                    <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.6rem" }}>
+                      {editingVisitId && (
+                        <button
+                          type="button"
+                          onClick={handleCancelEdit}
+                          style={{
+                            padding: "0.6rem 0.85rem",
+                            borderRadius: "10px",
+                            border: "1px solid #cbd5e1",
+                            backgroundColor: "#ffffff",
+                            color: "#475569",
+                            fontSize: "0.85rem",
+                            fontWeight: 700,
+                            cursor: "pointer",
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      )}
+                      <button
+                        type="submit"
+                        disabled={submitting || selectedDates.length === 0 || isAgentLockedForPeriod || !selectedPeriodId}
+                        className="agent-save-btn"
+                        style={{
+                          flex: 1,
+                          marginTop: 0,
+                          backgroundColor: editingVisitId ? "#059669" : "#2563eb",
+                        }}
+                      >
+                        <Check size={16} />
+                        <span>
+                          {editingVisitId
+                            ? `Update Record (${selectedDates.length} ${selectedDates.length === 1 ? "day" : "days"})`
+                            : `Save Patient Visits (${selectedDates.length} ${selectedDates.length === 1 ? "day" : "days"})`}
+                        </span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </form>
@@ -817,43 +922,72 @@ export default function AgentPortalPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {currentCycleVisits.map((v) => (
-                        <tr key={v._id}>
-                          <td style={{ fontWeight: 700, color: "#0f172a" }}>{v.patientName}</td>
-                          <td>
-                            <span className="agent-service-tag">{v.serviceType || "Visit"}</span>
-                          </td>
-                          <td>
-                            <div className="agent-table-dates">
-                              {v.visitDates.map((dt) => (
-                                <span key={dt} className="agent-table-date-pill">
-                                  {formatDisplayDate(dt)}
-                                </span>
-                              ))}
-                            </div>
-                          </td>
-                          <td style={{ color: "#64748b", fontSize: "0.78rem" }}>{v.notes || "—"}</td>
-                          <td style={{ textAlign: "center" }}>
-                            <span className={`agent-row-status status-${v.status || "pending"}`}>
-                              {v.status === "invoiced" ? "Invoiced" : v.status === "approved" ? "Approved" : "Pending"}
-                            </span>
-                          </td>
-                          <td style={{ textAlign: "right" }}>
-                            {v.status !== "invoiced" && !isAgentLockedForPeriod ? (
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteVisit(v._id)}
-                                className="agent-delete-btn"
-                                title="Delete"
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            ) : (
-                              <span style={{ fontSize: "0.72rem", color: "#94a3b8" }}>Locked</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                      {currentCycleVisits.map((v) => {
+                        const isBeingEdited = editingVisitId === v._id;
+                        return (
+                          <tr
+                            key={v._id}
+                            style={{
+                              backgroundColor: isBeingEdited ? "#eff6ff" : undefined,
+                              borderLeft: isBeingEdited ? "3px solid #2563eb" : undefined,
+                            }}
+                          >
+                            <td style={{ fontWeight: 700, color: "#0f172a" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                                <span>{v.patientName}</span>
+                                {isBeingEdited && (
+                                  <span style={{ fontSize: "0.65rem", padding: "1px 5px", borderRadius: "4px", backgroundColor: "#dbeafe", color: "#1d4ed8", fontWeight: 700 }}>
+                                    EDITING
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td>
+                              <span className="agent-service-tag">{v.serviceType || "Visit"}</span>
+                            </td>
+                            <td>
+                              <div className="agent-table-dates">
+                                {v.visitDates.map((dt) => (
+                                  <span key={dt} className="agent-table-date-pill">
+                                    {formatDisplayDate(dt)}
+                                  </span>
+                                ))}
+                              </div>
+                            </td>
+                            <td style={{ color: "#64748b", fontSize: "0.78rem" }}>{v.notes || "—"}</td>
+                            <td style={{ textAlign: "center" }}>
+                              <span className={`agent-row-status status-${v.status || "pending"}`}>
+                                {v.status === "invoiced" ? "Invoiced" : v.status === "approved" ? "Approved" : "Pending"}
+                              </span>
+                            </td>
+                            <td style={{ textAlign: "right" }}>
+                              {v.status !== "invoiced" && !isAgentLockedForPeriod ? (
+                                <div style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSelectVisitForEdit(v)}
+                                    className={`agent-edit-btn ${isBeingEdited ? "active" : ""}`}
+                                    title="Edit patient name or dates"
+                                  >
+                                    <Edit2 size={13} />
+                                    <span>{isBeingEdited ? "Editing" : "Edit"}</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteVisit(v._id)}
+                                    className="agent-delete-btn"
+                                    title="Delete"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <span style={{ fontSize: "0.72rem", color: "#94a3b8" }}>Locked</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -1594,6 +1728,32 @@ export default function AgentPortalPage() {
           background-color: #fffbeb;
           color: #b45309;
           border: 1px solid #fde68a;
+        }
+
+        .agent-edit-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+          padding: 0.25rem 0.5rem;
+          border-radius: 4px;
+          color: #2563eb;
+          cursor: pointer;
+          border: 1px solid #bfdbfe;
+          background-color: #eff6ff;
+          font-size: 0.75rem;
+          font-weight: 700;
+          transition: all 0.1s ease;
+        }
+
+        .agent-edit-btn:hover {
+          background-color: #dbeafe;
+          border-color: #93c5fd;
+        }
+
+        .agent-edit-btn.active {
+          background-color: #2563eb;
+          color: #ffffff;
+          border-color: #1d4ed8;
         }
 
         .agent-delete-btn {
