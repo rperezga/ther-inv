@@ -518,30 +518,43 @@ export default function AgentPortalPage() {
           <div className="agent-stack">
             {/* Integrated Top Control Bar: Cycle Selector + Status / Submit Action */}
             <div className="agent-control-banner">
-              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flex: "1 1 300px" }}>
-                <Layers size={17} style={{ color: "#2563eb", flexShrink: 0 }} />
-                <div style={{ display: "flex", flexDirection: "column", width: "100%", maxWidth: "480px" }}>
-                  <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "#1e40af", textTransform: "uppercase", letterSpacing: "0.03em" }}>
-                    Billing Cycle
+              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap", flex: "1 1 auto" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginRight: "0.25rem" }}>
+                  <Layers size={16} style={{ color: "#2563eb", flexShrink: 0 }} />
+                  <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "#1e40af", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                    Billing Cycles:
                   </span>
-                  {openPeriods.length === 0 ? (
-                    <span style={{ fontSize: "0.82rem", color: "#b45309", fontWeight: 600 }}>
-                      No active billing cycle open
-                    </span>
-                  ) : (
-                    <select
-                      value={selectedPeriodId}
-                      onChange={(e) => setSelectedPeriodId(e.target.value)}
-                      className="agent-cycle-select"
-                    >
-                      {openPeriods.map((p) => (
-                        <option key={p._id} value={p._id}>
-                          {getCycleDisplayTitle(p)}
-                        </option>
-                      ))}
-                    </select>
-                  )}
                 </div>
+                {openPeriods.length === 0 ? (
+                  <span style={{ fontSize: "0.82rem", color: "#b45309", fontWeight: 600 }}>
+                    No active billing cycle open
+                  </span>
+                ) : (
+                  <div className="agent-cycles-btn-group">
+                    {openPeriods.map((p) => {
+                      const isSelected = p._id === selectedPeriodId;
+                      const num = p.lotNumber ? String(p.lotNumber).padStart(3, "0") : (p.lotCode ? p.lotCode.replace(/LOT\s*/i, "") : "");
+                      return (
+                        <button
+                          key={p._id}
+                          type="button"
+                          onClick={() => setSelectedPeriodId(p._id!)}
+                          className={`agent-cycle-pill-btn ${isSelected ? "selected" : ""}`}
+                        >
+                          <span className="agent-cycle-pill-title">
+                            Cycle #{num}
+                          </span>
+                          <span className="agent-cycle-pill-agency">
+                            {p.agencyName || "Agency"}
+                          </span>
+                          <span className="agent-cycle-pill-dates">
+                            ({formatDateShort(p.periodStart)} - {formatDateShort(p.periodEnd)})
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Status or Submission CTA */}
@@ -1087,20 +1100,57 @@ export default function AgentPortalPage() {
           align-items: center;
           justify-content: space-between;
           flex-wrap: wrap;
-          gap: 0.5rem;
+          gap: 0.6rem;
         }
 
-        .agent-cycle-select {
+        .agent-cycles-btn-group {
+          display: flex;
+          align-items: center;
+          gap: 0.45rem;
+          flex-wrap: wrap;
+        }
+
+        .agent-cycle-pill-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          padding: 0.35rem 0.65rem;
+          border-radius: 8px;
+          border: 1.5px solid #cbd5e1;
           background-color: #f8fafc;
-          border: 1px solid #cbd5e1;
-          border-radius: 6px;
-          padding: 0.3rem 0.5rem;
-          font-size: 0.85rem;
-          font-weight: 700;
-          color: #0f172a;
+          color: #334155;
+          font-size: 0.8rem;
           cursor: pointer;
-          outline: none;
-          width: 100%;
+          transition: all 0.15s ease;
+        }
+
+        .agent-cycle-pill-btn:hover {
+          border-color: #93c5fd;
+          background-color: #eff6ff;
+        }
+
+        .agent-cycle-pill-btn.selected {
+          border-color: #2563eb;
+          background-color: #eff6ff;
+          color: #1d4ed8;
+          box-shadow: 0 1px 3px rgba(37, 99, 235, 0.12);
+        }
+
+        .agent-cycle-pill-title {
+          font-weight: 800;
+          color: inherit;
+        }
+
+        .agent-cycle-pill-agency {
+          font-weight: 700;
+          color: inherit;
+          opacity: 0.9;
+        }
+
+        .agent-cycle-pill-dates {
+          font-size: 0.72rem;
+          opacity: 0.75;
+          color: inherit;
         }
 
         .agent-status-tag {
