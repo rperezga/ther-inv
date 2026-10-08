@@ -559,6 +559,44 @@ input, select, textarea {
   }
 }
 
+/* Animations */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes progress-indeterminate {
+  0% {
+    left: -35%;
+    width: 35%;
+  }
+  50% {
+    left: 25%;
+    width: 60%;
+  }
+  100% {
+    left: 100%;
+    width: 40%;
+  }
+}
+
+.progress-bar-indeterminate {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, #3b82f6, #2563eb, #1d4ed8);
+  border-radius: 999px;
+  animation: progress-indeterminate 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
 /* Print Optimization for Invoices (Pixel-Perfect Letter Paper PDF Generation) */
 @page {
   size: letter portrait;

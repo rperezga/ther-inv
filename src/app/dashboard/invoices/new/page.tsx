@@ -835,11 +835,23 @@ export default function CreateInvoicePage() {
               fontSize: "0.82rem",
               padding: "0.35rem 0.75rem",
               fontWeight: 700,
+              backgroundColor: analyzingImage ? "#eff6ff" : undefined,
+              borderColor: analyzingImage ? "var(--primary)" : undefined,
+              color: analyzingImage ? "var(--primary)" : undefined,
             }}
             title="Paste image directly from clipboard"
           >
-            <ClipboardPaste size={14} />
-            <span>Paste from Clipboard</span>
+            {analyzingImage ? (
+              <>
+                <RefreshCw size={14} className="spin" />
+                <span>Reading image...</span>
+              </>
+            ) : (
+              <>
+                <ClipboardPaste size={14} />
+                <span>Paste from Clipboard</span>
+              </>
+            )}
           </button>
 
           {/* Save Button (Blue) */}
@@ -889,6 +901,54 @@ export default function CreateInvoicePage() {
           </button>
         </div>
       </div>
+
+      {/* AI Image Processing Progress Banner */}
+      {analyzingImage && (
+        <div
+          style={{
+            backgroundColor: "#eff6ff",
+            border: "1px solid #bfdbfe",
+            borderRadius: "8px",
+            padding: "0.65rem 0.9rem",
+            marginBottom: "0.55rem",
+            flexShrink: 0,
+            boxShadow: "0 2px 4px rgba(37,99,235,0.06)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: "0.45rem",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.55rem" }}>
+              <Sparkles size={16} color="var(--primary)" className="spin" />
+              <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e40af" }}>
+                AI Vision is reading your visit sheet...
+              </span>
+            </div>
+            <span style={{ fontSize: "0.76rem", color: "#3b82f6", fontWeight: 600 }}>
+              Scanning names, dates & services
+            </span>
+          </div>
+
+          {/* Animated Indeterminate Progress Bar */}
+          <div
+            style={{
+              width: "100%",
+              height: "6px",
+              backgroundColor: "#dbeafe",
+              borderRadius: "999px",
+              overflow: "hidden",
+              position: "relative",
+            }}
+          >
+            <div className="progress-bar-indeterminate" />
+          </div>
+        </div>
+      )}
 
       {/* Draft Save Success Notification */}
       {saveSuccessMsg && (
@@ -1317,7 +1377,52 @@ export default function CreateInvoicePage() {
               minHeight: 0,
             }}
           >
-            {visits.length === 0 ? (
+            {analyzingImage && visits.length === 0 ? (
+              <div
+                style={{
+                  padding: "3.5rem 1.5rem",
+                  textAlign: "center",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <div
+                  style={{
+                    width: "56px",
+                    height: "56px",
+                    borderRadius: "50%",
+                    backgroundColor: "#eff6ff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: "1rem",
+                    border: "2px solid #bfdbfe",
+                  }}
+                >
+                  <Sparkles size={28} color="var(--primary)" className="spin" />
+                </div>
+                <h3 style={{ fontSize: "1.1rem", fontWeight: 700, margin: "0 0 0.35rem 0", color: "#1e293b" }}>
+                  Analyzing Image with AI...
+                </h3>
+                <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", maxWidth: "420px", margin: "0 0 1.25rem 0" }}>
+                  Extracting patient names, visit dates, and matching services directly into your table.
+                </p>
+                <div
+                  style={{
+                    width: "280px",
+                    height: "8px",
+                    backgroundColor: "#e2e8f0",
+                    borderRadius: "999px",
+                    overflow: "hidden",
+                    position: "relative",
+                  }}
+                >
+                  <div className="progress-bar-indeterminate" />
+                </div>
+              </div>
+            ) : visits.length === 0 ? (
               <div
                 style={{
                   padding: "3rem 1.5rem",
