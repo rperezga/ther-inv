@@ -10,12 +10,19 @@ export async function GET(req: NextRequest) {
       "admin",
       "manager",
       "viewer",
+      "agent",
     ]);
     if (errorResponse) return errorResponse;
 
     await connectDB();
 
-    const lots = await Lot.find().sort({ lotNumber: -1 });
+    // If agent, return open lots or lots where they have status
+    const query: any = {};
+    if (user.role === "agent") {
+      query.status = "open";
+    }
+
+    const lots = await Lot.find(query).sort({ lotNumber: -1 });
 
     // Aggregate statistics per lot: invoice count and total amount
     const lotsWithStats = await Promise.all(

@@ -19,6 +19,7 @@ import {
   ChevronDown,
   CheckCircle2,
   AlertCircle,
+  Layers,
 } from "lucide-react";
 import { IUser } from "@/lib/types";
 
@@ -177,6 +178,13 @@ export default function DashboardLayout({
   }
 
   const navItems = [
+    {
+      label: "Billing Periods",
+      href: "/dashboard/periods",
+      icon: Layers,
+      active: pathname.startsWith("/dashboard/periods"),
+      hidden: user?.role === "viewer" || user?.role === "agent",
+    },
     {
       label: "Invoices",
       href: "/dashboard/invoices",

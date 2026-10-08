@@ -56,6 +56,17 @@ export interface IInvoiceItem {
   amount: number;
 }
 
+export interface ILotAgentStatus {
+  agentId: string;
+  agentName: string;
+  agentEmail: string;
+  status: "in_progress" | "submitted" | "completed";
+  invoiceId?: string;
+  invoiceNumber?: string;
+  completedAt?: string | Date;
+  completedBy?: string;
+}
+
 export interface ILot {
   _id?: string;
   lotNumber: number;
@@ -66,6 +77,7 @@ export interface ILot {
   periodEnd: string | Date;
   status: "open" | "closed";
   notes?: string;
+  agentStatuses?: ILotAgentStatus[];
   invoicesCount?: number;
   totalAmount?: number;
   createdAt?: string | Date;
@@ -121,11 +133,14 @@ export interface IAgentVisit {
   agentId?: string;
   agentName: string;
   agentEmail: string;
+  lotId?: string;
+  lotCode?: string;
   patientName: string;
   serviceType?: string;
   visitDates: string[];
   notes?: string;
   status?: "pending" | "approved" | "invoiced";
+  invoiceId?: string;
   createdAt?: string | Date;
   updatedAt?: string | Date;
 }

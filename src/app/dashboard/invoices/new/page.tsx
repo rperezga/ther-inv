@@ -278,12 +278,32 @@ export default function CreateInvoicePage() {
     } catch {}
 
     // Fetch lots (billing cycles)
+    const paramLotId = searchParams.get("lotId");
+    const paramAgency = searchParams.get("agency");
+    const paramWorkerEmail = searchParams.get("workerEmail");
+
     fetch("/api/lots")
       .then((res) => res.json())
       .then((data) => {
         if (data.lots && Array.isArray(data.lots)) {
           setLots(data.lots);
-          if (data.lots.length > 0 && !editId) {
+          if (paramLotId) {
+            const matchedLot = data.lots.find((l: ILot) => l._id === paramLotId);
+            if (matchedLot) {
+              setSelectedLotId(matchedLot._id || "");
+              if (matchedLot.agencyName) {
+                setSelectedAgency(matchedLot.agencyName);
+                selectedAgencyRef.current = matchedLot.agencyName;
+                setNewLotAgency(matchedLot.agencyName);
+              }
+              if (matchedLot.periodStart) {
+                setPeriodStart(new Date(matchedLot.periodStart).toISOString().split("T")[0]);
+              }
+              if (matchedLot.periodEnd) {
+                setPeriodEnd(new Date(matchedLot.periodEnd).toISOString().split("T")[0]);
+              }
+            }
+          } else if (data.lots.length > 0 && !editId) {
             const firstOpen = data.lots.find((l: ILot) => l.status === "open") || data.lots[0];
             setSelectedLotId(firstOpen._id || "");
             if (firstOpen.agencyName) {
@@ -302,6 +322,12 @@ export default function CreateInvoicePage() {
       })
       .catch((err) => console.error("Error loading lots:", err));
 
+    if (paramAgency) {
+      setSelectedAgency(paramAgency);
+      selectedAgencyRef.current = paramAgency;
+      setNewLotAgency(paramAgency);
+    }
+
     // Fetch workers
     fetch("/api/workers?status=active")
       .then((res) => res.json())
@@ -309,6 +335,60 @@ export default function CreateInvoicePage() {
         if (data.workers) {
           const list: IWorker[] = data.workers;
           setWorkers(list);
+
+          // If workerEmail was passed via query params, match directly
+          if (paramWorkerEmail) {
+            const matchedWorker = list.find(
+              (w) => w.email?.toLowerCase().trim() === paramWorkerEmail.toLowerCase().trim()
+            );
+            if (matchedWorker) {
+              setSelectedWorkerId(matchedWorker._id!);
+              selectedWorkerRef.current = matchedWorker;
+
+              // Also auto-fetch this agent's logged visits for this period to populate the table
+              if (paramLotId) {
+                fetch(`/api/agent/visits?lotId=${paramLotId}`)
+                  .then((r) => r.json())
+                  .then((vData) => {
+                    if (vData.visits && Array.isArray(vData.visits)) {
+                      const agentVisits = vData.visits.filter(
+                        (v: any) => v.agentEmail?.toLowerCase() === paramWorkerEmail.toLowerCase()
+                      );
+                      if (agentVisits.length > 0) {
+                        const prefilledRows: ExtractedVisitRow[] = [];
+                        agentVisits.forEach((av: any, avIdx: number) => {
+                          const dates = Array.isArray(av.visitDates) ? av.visitDates : [];
+                          dates.forEach((dStr: string, dIdx: number) => {
+                            const [y, m, d] = dStr.split("-");
+                            const mmddyy = m && d && y ? `${m}/${d}/${y.slice(-2)}` : dStr;
+                            prefilledRows.push({
+                              id: `auto-${av._id}-${dIdx}`,
+                              patientName: av.patientName,
+                              visitDate: mmddyy,
+                              serviceType: av.serviceType || "Visit",
+                              rate: getRateForService(
+                                matchedWorker,
+                                paramAgency || selectedAgencyRef.current,
+                                av.serviceType || "Visit"
+                              ),
+                              selected: true,
+                              notes: av.notes || "",
+                            });
+                          });
+                        });
+                        if (prefilledRows.length > 0) {
+                          setVisits(prefilledRows);
+                        }
+                      }
+                    }
+                  })
+                  .catch((err) => console.error("Error loading visits for worker:", err));
+              }
+
+              return;
+            }
+          }
+
           const currentAgency = selectedAgencyRef.current;
           // Prefer workers configured for current lot's agency if available, or any active with rates
           const eligibleForAgency = list.filter((w) =>

@@ -17,8 +17,12 @@ import {
   Stethoscope,
   FileCheck2,
   CalendarCheck,
+  Layers,
+  Send,
+  Lock,
+  Building2,
 } from "lucide-react";
-import { IAgentVisit, IUser } from "@/lib/types";
+import { IAgentVisit, IUser, ILot } from "@/lib/types";
 
 // Helper to format date to "YYYY-MM-DD"
 function toDateKey(date: Date): string {
@@ -40,10 +44,24 @@ function formatDisplayDate(dateKey: string): string {
   });
 }
 
+function formatDateShort(d: string | Date | undefined): string {
+  if (!d) return "";
+  const date = new Date(d);
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export default function AgentPortalPage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<IUser | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
+
+  // Billing Periods state
+  const [openPeriods, setOpenPeriods] = useState<ILot[]>([]);
+  const [selectedPeriodId, setSelectedPeriodId] = useState<string>("");
+  const [loadingPeriods, setLoadingPeriods] = useState(true);
 
   // Form states
   const [patientName, setPatientName] = useState("");
@@ -53,6 +71,7 @@ export default function AgentPortalPage() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState(false);
+  const [submittingPeriod, setSubmittingPeriod] = useState(false);
 
   // Visits list state
   const [visits, setVisits] = useState<IAgentVisit[]>([]);
@@ -106,6 +125,61 @@ export default function AgentPortalPage() {
       .finally(() => setLoadingUser(false));
   }, [router]);
 
+  // Load Open Billing Periods
+  const loadPeriods = async () => {
+    setLoadingPeriods(true);
+    try {
+      const res = await fetch("/api/lots");
+      const data = await res.json();
+      if (res.ok && data.lots) {
+        const openList: ILot[] = data.lots.filter((l: ILot) => l.status === "open");
+        setOpenPeriods(openList);
+        if (openList.length > 0 && !selectedPeriodId) {
+          setSelectedPeriodId(openList[0]._id!);
+        }
+      }
+    } catch (err) {
+      console.error("Error loading periods:", err);
+    } finally {
+      setLoadingPeriods(false);
+    }
+  };
+
+  useEffect(() => {
+    loadPeriods();
+  }, []);
+
+  // Selected period object
+  const activePeriod = useMemo(() => {
+    return openPeriods.find((p) => p._id === selectedPeriodId) || null;
+  }, [openPeriods, selectedPeriodId]);
+
+  // Check if current agent is completed/locked for this period
+  const isAgentLockedForPeriod = useMemo(() => {
+    if (!activePeriod || !currentUser) return false;
+    const currentId = (currentUser as any).id || (currentUser as any)._id;
+    const statuses = activePeriod.agentStatuses || [];
+    const myStatus = statuses.find(
+      (s: any) =>
+        (currentId && s.agentId?.toString() === currentId) ||
+        (currentUser.email && s.agentEmail?.toLowerCase() === currentUser.email.toLowerCase())
+    );
+    return myStatus?.status === "completed";
+  }, [activePeriod, currentUser]);
+
+  // Check if current agent has marked submitted
+  const isAgentSubmittedForPeriod = useMemo(() => {
+    if (!activePeriod || !currentUser) return false;
+    const currentId = (currentUser as any).id || (currentUser as any)._id;
+    const statuses = activePeriod.agentStatuses || [];
+    const myStatus = statuses.find(
+      (s: any) =>
+        (currentId && s.agentId?.toString() === currentId) ||
+        (currentUser.email && s.agentEmail?.toLowerCase() === currentUser.email.toLowerCase())
+    );
+    return myStatus?.status === "submitted";
+  }, [activePeriod, currentUser]);
+
   // Load Past Visits
   const loadVisits = async () => {
     try {
@@ -134,74 +208,53 @@ export default function AgentPortalPage() {
     }
   };
 
-  // Generate Calendar Weeks:
-  // Show past 3 weeks, current week, and next week (5 weeks total)
-  const calendarWeeks = useMemo(() => {
+  // Generate Calendar Days exclusively for the selected Billing Period
+  const periodDays = useMemo(() => {
+    if (!activePeriod || !activePeriod.periodStart || !activePeriod.periodEnd) {
+      return [];
+    }
+
+    const start = new Date(activePeriod.periodStart);
+    const end = new Date(activePeriod.periodEnd);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Current week Sunday (or Monday depending on start)
-    const currentDayOfWeek = today.getDay(); // 0 is Sunday
-    // Start of current week (Sunday)
-    const currentWeekStart = new Date(today);
-    currentWeekStart.setDate(today.getDate() - currentDayOfWeek);
-
-    // 3 weeks ago Sunday
-    const calendarStart = new Date(currentWeekStart);
-    calendarStart.setDate(calendarStart.getDate() - 21); // 3 weeks back
-
-    const weeks: {
-      weekIndex: number;
-      label: string;
-      isCurrentWeek: boolean;
-      days: { date: Date; key: string; isToday: boolean; isPast: boolean; isFuture: boolean }[];
+    const days: {
+      date: Date;
+      key: string;
+      dayOfWeek: string;
+      dayNumber: number;
+      isToday: boolean;
+      isInPeriod: boolean;
     }[] = [];
 
-    // Build 5 consecutive weeks (3 past, 1 current, 1 next)
-    for (let w = 0; w < 5; w++) {
-      const weekStartDate = new Date(calendarStart);
-      weekStartDate.setDate(calendarStart.getDate() + w * 7);
+    const curr = new Date(start);
+    while (curr <= end) {
+      const dateCopy = new Date(curr);
+      const key = toDateKey(dateCopy);
+      const isToday = dateCopy.getTime() === today.getTime();
 
-      const days = [];
-      let isCurrentWeek = false;
-
-      for (let d = 0; d < 7; d++) {
-        const dayDate = new Date(weekStartDate);
-        dayDate.setDate(weekStartDate.getDate() + d);
-        const key = toDateKey(dayDate);
-
-        const isToday = dayDate.getTime() === today.getTime();
-        if (isToday) isCurrentWeek = true;
-
-        days.push({
-          date: dayDate,
-          key,
-          isToday,
-          isPast: dayDate.getTime() < today.getTime(),
-          isFuture: dayDate.getTime() > today.getTime(),
-        });
-      }
-
-      let label = `Week ${w + 1}`;
-      if (w === 0) label = "3 Weeks Ago";
-      else if (w === 1) label = "2 Weeks Ago";
-      else if (w === 2) label = "Previous Week";
-      else if (w === 3) label = "Current Week";
-      else if (w === 4) label = "Next Week";
-
-      weeks.push({
-        weekIndex: w,
-        label,
-        isCurrentWeek: w === 3,
-        days,
+      days.push({
+        date: dateCopy,
+        key,
+        dayOfWeek: dateCopy.toLocaleDateString("en-US", { weekday: "short" }),
+        dayNumber: dateCopy.getDate(),
+        isToday,
+        isInPeriod: true,
       });
+
+      curr.setDate(curr.getDate() + 1);
     }
 
-    return weeks;
-  }, []);
+    return days;
+  }, [activePeriod]);
 
-  // Toggle date selection (can select 1 or multiple non-consecutive days)
+  // Toggle date selection
   const toggleDateSelection = (key: string) => {
+    if (isAgentLockedForPeriod) return;
     setFormError("");
     setSelectedDates((prev) => {
       if (prev.includes(key)) {
@@ -218,13 +271,23 @@ export default function AgentPortalPage() {
     setFormError("");
     setFormSuccess(false);
 
+    if (isAgentLockedForPeriod) {
+      setFormError("This period has been finalized by your manager and locked for editing.");
+      return;
+    }
+
+    if (!selectedPeriodId) {
+      setFormError("Please select a billing period first.");
+      return;
+    }
+
     if (!patientName.trim()) {
       setFormError("Please enter the patient's name.");
       return;
     }
 
     if (selectedDates.length === 0) {
-      setFormError("Please select at least one day in the calendar.");
+      setFormError("Please select at least one treatment day from this period.");
       return;
     }
 
@@ -239,6 +302,7 @@ export default function AgentPortalPage() {
           serviceType,
           visitDates: selectedDates,
           notes,
+          lotId: selectedPeriodId,
         }),
       });
 
@@ -252,6 +316,7 @@ export default function AgentPortalPage() {
       setSelectedDates([]);
       setNotes("");
       loadVisits();
+      loadPeriods();
 
       setTimeout(() => {
         setFormSuccess(false);
@@ -260,6 +325,39 @@ export default function AgentPortalPage() {
       setFormError(err.message || "Failed to submit visit");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Agent submits all records for manager review
+  const handleNotifyManagerReady = async () => {
+    if (!selectedPeriodId || !currentUser) return;
+    const currentId = (currentUser as any).id || (currentUser as any)._id;
+    setSubmittingPeriod(true);
+
+    try {
+      const res = await fetch(`/api/lots/${selectedPeriodId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "set_agent_status",
+          agentId: currentId,
+          agentName: currentUser.name,
+          agentEmail: currentUser.email,
+          status: "submitted",
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to submit period");
+      }
+
+      alert("Awesome! Your visits for this period have been submitted to the manager for review.");
+      loadPeriods();
+    } catch (err: any) {
+      alert(err.message || "Network error");
+    } finally {
+      setSubmittingPeriod(false);
     }
   };
 
@@ -274,6 +372,9 @@ export default function AgentPortalPage() {
       });
       if (res.ok) {
         setVisits((prev) => prev.filter((v) => v._id !== id));
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to delete visit");
       }
     } catch {
       alert("Failed to delete visit record");
@@ -309,8 +410,6 @@ export default function AgentPortalPage() {
       </div>
     );
   }
-
-  const dayHeaders = ["S", "M", "T", "W", "T", "F", "S"];
 
   return (
     <div
@@ -413,7 +512,7 @@ export default function AgentPortalPage() {
         </div>
       </header>
 
-      {/* Main Container with Responsive Classes */}
+      {/* Main Container */}
       <main className="agent-portal-main">
         {/* Navigation Tabs (Segmented Control) */}
         <div className="agent-tabs-container">
@@ -443,15 +542,145 @@ export default function AgentPortalPage() {
         {activeTab === "form" ? (
           /* FORM VIEW */
           <div className="agent-form-card">
-            {/* Header info */}
-            <div style={{ marginBottom: "1.25rem" }}>
-              <h1 style={{ fontSize: "1.25rem", fontWeight: 800, color: "#0f172a", marginBottom: "0.25rem" }}>
-                Quick Visit Log
-              </h1>
-              <p style={{ fontSize: "0.82rem", color: "#64748b" }}>
-                Enter the patient's name and tap the dates on the calendar when care was provided.
-              </p>
+            {/* Billing Period Selector Banner */}
+            <div
+              style={{
+                backgroundColor: "#eff6ff",
+                border: "1px solid #bfdbfe",
+                borderRadius: "12px",
+                padding: "0.85rem 1rem",
+                marginBottom: "1rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: "0.6rem",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <Layers size={18} style={{ color: "#2563eb", flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#1e40af", textTransform: "uppercase" }}>
+                    Active Billing Period
+                  </div>
+                  {openPeriods.length === 0 ? (
+                    <span style={{ fontSize: "0.85rem", color: "#b45309", fontWeight: 600 }}>
+                      No open billing periods available from manager yet
+                    </span>
+                  ) : (
+                    <select
+                      value={selectedPeriodId}
+                      onChange={(e) => setSelectedPeriodId(e.target.value)}
+                      style={{
+                        backgroundColor: "#ffffff",
+                        border: "1px solid #93c5fd",
+                        borderRadius: "6px",
+                        padding: "0.25rem 0.5rem",
+                        fontSize: "0.85rem",
+                        fontWeight: 700,
+                        color: "#0f172a",
+                        cursor: "pointer",
+                        outline: "none",
+                        marginTop: "2px",
+                      }}
+                    >
+                      {openPeriods.map((p) => (
+                        <option key={p._id} value={p._id}>
+                          {p.lotCode} — {p.agencyName || "Agency"} ({formatDateShort(p.periodStart)} to {formatDateShort(p.periodEnd)})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              </div>
+
+              {/* Status & Submit Ready Button */}
+              {activePeriod && (
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  {isAgentLockedForPeriod ? (
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        fontSize: "0.75rem",
+                        fontWeight: 700,
+                        padding: "0.25rem 0.6rem",
+                        borderRadius: "6px",
+                        backgroundColor: "#ecfdf5",
+                        color: "#065f46",
+                        border: "1px solid #a7f3d0",
+                      }}
+                    >
+                      <Lock size={12} /> Finalized & Invoiced
+                    </span>
+                  ) : isAgentSubmittedForPeriod ? (
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        fontSize: "0.75rem",
+                        fontWeight: 700,
+                        padding: "0.25rem 0.6rem",
+                        borderRadius: "6px",
+                        backgroundColor: "#fffbeb",
+                        color: "#b45309",
+                        border: "1px solid #fde68a",
+                      }}
+                    >
+                      <Clock size={12} /> Under Manager Review
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleNotifyManagerReady}
+                      disabled={submittingPeriod}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        fontSize: "0.75rem",
+                        fontWeight: 700,
+                        padding: "0.3rem 0.75rem",
+                        borderRadius: "6px",
+                        backgroundColor: "#2563eb",
+                        color: "#ffffff",
+                        border: "none",
+                        cursor: "pointer",
+                      }}
+                      title="Notify manager that your visits for this period are complete"
+                    >
+                      <Send size={12} />
+                      <span>{submittingPeriod ? "Submitting..." : "Submit for Review"}</span>
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
+
+            {/* Locked Warning */}
+            {isAgentLockedForPeriod && (
+              <div
+                style={{
+                  backgroundColor: "#ecfdf5",
+                  border: "1px solid #a7f3d0",
+                  color: "#065f46",
+                  padding: "0.75rem 1rem",
+                  borderRadius: "10px",
+                  marginBottom: "1rem",
+                  fontSize: "0.85rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                }}
+              >
+                <Lock size={16} style={{ color: "#059669", flexShrink: 0 }} />
+                <span>
+                  <strong>Submissions finalized:</strong> The manager has completed this billing period and generated the invoice. You can view records in &quot;My Records&quot;. Contact your manager if you need to reopen.
+                </span>
+              </div>
+            )}
 
             {/* Success message */}
             {formSuccess && (
@@ -471,7 +700,7 @@ export default function AgentPortalPage() {
               >
                 <Check size={18} style={{ color: "#059669", flexShrink: 0 }} />
                 <span>
-                  <strong>Visit recorded successfully!</strong> The dates have been saved and are ready for weekly invoicing.
+                  <strong>Visit recorded successfully!</strong> The dates have been saved to period {activePeriod?.lotCode}.
                 </span>
               </div>
             )}
@@ -482,7 +711,7 @@ export default function AgentPortalPage() {
                 style={{
                   backgroundColor: "#fef2f2",
                   border: "1px solid #fecaca",
-                  color: "#b91c1c",
+                  color: "#991b1b",
                   borderRadius: "10px",
                   padding: "0.85rem 1rem",
                   marginBottom: "1rem",
@@ -497,6 +726,7 @@ export default function AgentPortalPage() {
               </div>
             )}
 
+            {/* Form Inner */}
             <form onSubmit={handleSubmitVisit} className="agent-form-inner">
               <div className="agent-form-split">
                 {/* Column 1: Patient info, service type, notes, submit button */}
@@ -520,6 +750,7 @@ export default function AgentPortalPage() {
                         id="patient-name-input"
                         type="text"
                         required
+                        disabled={isAgentLockedForPeriod}
                         placeholder="e.g. John Doe or Smith, John"
                         value={patientName}
                         onChange={(e) => setPatientName(e.target.value)}
@@ -530,12 +761,9 @@ export default function AgentPortalPage() {
                           border: "1.5px solid #cbd5e1",
                           fontSize: "0.95rem",
                           color: "#0f172a",
-                          backgroundColor: "#ffffff",
+                          backgroundColor: isAgentLockedForPeriod ? "#f1f5f9" : "#ffffff",
                           outline: "none",
-                          transition: "border-color 0.15s ease",
                         }}
-                        onFocus={(e) => (e.target.style.borderColor = "#2563eb")}
-                        onBlur={(e) => (e.target.style.borderColor = "#cbd5e1")}
                       />
                       <User
                         size={17}
@@ -550,16 +778,10 @@ export default function AgentPortalPage() {
                     </div>
                   </div>
 
-                  {/* Dynamic Fast Service Type Buttons based on Agent Role (PT vs PTA) */}
+                  {/* Fast Service Type Buttons */}
                   <div style={{ marginBottom: "1.1rem" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.4rem" }}>
-                      <label
-                        style={{
-                          fontSize: "0.85rem",
-                          fontWeight: 700,
-                          color: "#1e293b",
-                        }}
-                      >
+                      <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b" }}>
                         Service Type
                       </label>
                       <span
@@ -584,6 +806,7 @@ export default function AgentPortalPage() {
                           <button
                             key={opt.id}
                             type="button"
+                            disabled={isAgentLockedForPeriod}
                             onClick={() => setServiceType(opt.id)}
                             style={{
                               padding: "0.6rem 0.4rem",
@@ -593,113 +816,78 @@ export default function AgentPortalPage() {
                               color: isSelected ? "#1d4ed8" : "#334155",
                               fontWeight: isSelected ? 800 : 600,
                               fontSize: "0.82rem",
-                              cursor: "pointer",
-                              transition: "all 0.15s ease",
+                              cursor: isAgentLockedForPeriod ? "not-allowed" : "pointer",
                               display: "flex",
                               flexDirection: "column",
                               alignItems: "center",
                               justifyContent: "center",
-                              gap: "2px",
-                              textAlign: "center",
-                              boxShadow: isSelected ? "0 2px 5px rgba(37,99,235,0.15)" : "none",
                             }}
                           >
-                            <span style={{ fontSize: "0.92rem", fontWeight: 800 }}>{opt.id}</span>
-                            <span
-                              style={{
-                                fontSize: "0.68rem",
-                                color: isSelected ? "#2563eb" : "#64748b",
-                                lineHeight: 1.1,
-                              }}
-                            >
-                              {opt.label}
-                            </span>
+                            <span>{opt.id}</span>
+                            <span style={{ fontSize: "0.65rem", opacity: 0.8 }}>{opt.label}</span>
                           </button>
                         );
                       })}
                     </div>
                   </div>
 
-                  {/* Optional Notes */}
+                  {/* Notes */}
                   <div style={{ marginBottom: "1.1rem" }}>
-                    <label
-                      htmlFor="visit-notes"
-                      style={{
-                        display: "block",
-                        fontSize: "0.85rem",
-                        fontWeight: 700,
-                        color: "#1e293b",
-                        marginBottom: "0.4rem",
-                      }}
-                    >
+                    <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.4rem" }}>
                       Additional Notes (Optional)
                     </label>
                     <textarea
-                      id="visit-notes"
                       rows={2}
-                      placeholder="e.g. Morning visit completed, signature pending..."
+                      disabled={isAgentLockedForPeriod}
+                      placeholder="e.g. Evaluated shoulder mobility, home program updated..."
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
                       style={{
                         width: "100%",
-                        padding: "0.6rem 0.85rem",
+                        padding: "0.65rem 0.85rem",
                         borderRadius: "10px",
                         border: "1.5px solid #cbd5e1",
-                        fontSize: "0.88rem",
+                        fontSize: "0.85rem",
                         color: "#0f172a",
-                        backgroundColor: "#ffffff",
+                        backgroundColor: isAgentLockedForPeriod ? "#f1f5f9" : "#ffffff",
                         outline: "none",
                         resize: "none",
                       }}
                     />
                   </div>
 
-                  {/* Submit CTA Button (Desktop left-aligned, full width on mobile) */}
+                  {/* Submit CTA */}
                   <button
                     type="submit"
-                    disabled={submitting || selectedDates.length === 0}
+                    disabled={submitting || selectedDates.length === 0 || isAgentLockedForPeriod || !selectedPeriodId}
                     style={{
                       width: "100%",
                       padding: "0.85rem",
                       borderRadius: "12px",
                       border: "none",
                       backgroundColor:
-                        selectedDates.length === 0 ? "#94a3b8" : "#2563eb",
+                        selectedDates.length === 0 || isAgentLockedForPeriod ? "#94a3b8" : "#2563eb",
                       color: "#ffffff",
                       fontSize: "0.95rem",
                       fontWeight: 700,
-                      cursor: selectedDates.length === 0 ? "not-allowed" : "pointer",
+                      cursor:
+                        selectedDates.length === 0 || isAgentLockedForPeriod
+                          ? "not-allowed"
+                          : "pointer",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       gap: "0.5rem",
-                      boxShadow:
-                        selectedDates.length === 0
-                          ? "none"
-                          : "0 4px 12px rgba(37,99,235,0.3)",
-                      transition: "background-color 0.15s ease",
                       marginTop: "auto",
                     }}
                   >
                     {submitting ? (
-                      <>
-                        <div
-                          style={{
-                            width: "18px",
-                            height: "18px",
-                            border: "2px solid #ffffff",
-                            borderTopColor: "transparent",
-                            borderRadius: "50%",
-                            animation: "spin 0.6s linear infinite",
-                          }}
-                        />
-                        <span>Saving visits...</span>
-                      </>
+                      <span>Saving visits...</span>
                     ) : (
                       <>
                         <Check size={18} />
                         <span>
-                          Save Visits ({selectedDates.length}{" "}
+                          Save Patient Visits ({selectedDates.length}{" "}
                           {selectedDates.length === 1 ? "day" : "days"})
                         </span>
                       </>
@@ -707,7 +895,7 @@ export default function AgentPortalPage() {
                   </button>
                 </div>
 
-                {/* Column 2: Interactive Multi-Week Calendar Picker */}
+                {/* Column 2: Period Days Calendar */}
                 <div className="agent-col-calendar">
                   <div
                     style={{
@@ -728,9 +916,9 @@ export default function AgentPortalPage() {
                       }}
                     >
                       <CalendarIcon size={16} style={{ color: "#2563eb" }} />
-                      Visit Dates (Multiple Selection) <span style={{ color: "#dc2626" }}>*</span>
+                      Treatment Dates for {activePeriod?.lotCode || "Period"} <span style={{ color: "#dc2626" }}>*</span>
                     </label>
-                    {selectedDates.length > 0 && (
+                    {selectedDates.length > 0 && !isAgentLockedForPeriod && (
                       <button
                         type="button"
                         onClick={() => setSelectedDates([])}
@@ -748,138 +936,87 @@ export default function AgentPortalPage() {
                   </div>
 
                   <p style={{ fontSize: "0.76rem", color: "#64748b", marginBottom: "0.5rem" }}>
-                    Tap the day(s) when you provided treatment to this patient:
+                    Select the days this patient was treated during this billing window ({formatDateShort(activePeriod?.periodStart)} to {formatDateShort(activePeriod?.periodEnd)}):
                   </p>
 
-                  {/* Calendar Grid Container */}
+                  {/* Period Days Grid */}
                   <div className="agent-calendar-box">
-                    {/* Days Header */}
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(7, 1fr)",
-                        textAlign: "center",
-                        fontWeight: 700,
-                        fontSize: "0.72rem",
-                        color: "#64748b",
-                        marginBottom: "0.35rem",
-                      }}
-                    >
-                      {dayHeaders.map((dh, idx) => (
-                        <div key={idx}>{dh}</div>
-                      ))}
-                    </div>
-
-                    {/* Weeks Rows */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-                      {calendarWeeks.map((week) => (
-                        <div key={week.weekIndex}>
-                          <div
-                            style={{
-                              fontSize: "0.68rem",
-                              fontWeight: 700,
-                              color: week.isCurrentWeek ? "#2563eb" : "#94a3b8",
-                              textTransform: "uppercase",
-                              letterSpacing: "0.03em",
-                              marginBottom: "0.2rem",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "0.3rem",
-                            }}
-                          >
-                            {week.isCurrentWeek && (
-                              <span
-                                style={{
-                                  width: "6px",
-                                  height: "6px",
-                                  borderRadius: "50%",
-                                  backgroundColor: "#2563eb",
-                                }}
-                              />
-                            )}
-                            {week.label}
-                          </div>
-
-                          <div
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: "repeat(7, 1fr)",
-                              gap: "0.25rem",
-                            }}
-                          >
-                            {week.days.map((day) => {
-                              const isSelected = selectedDates.includes(day.key);
-                              return (
-                                <button
-                                  key={day.key}
-                                  type="button"
-                                  onClick={() => toggleDateSelection(day.key)}
-                                  className="agent-day-btn"
-                                  style={{
-                                    borderRadius: "8px",
-                                    border: isSelected
-                                      ? "2px solid #2563eb"
-                                      : day.isToday
-                                      ? "1.5px solid #93c5fd"
-                                      : "1px solid #e2e8f0",
-                                    backgroundColor: isSelected
-                                      ? "#2563eb"
-                                      : day.isToday
-                                      ? "#eff6ff"
-                                      : "#ffffff",
-                                    color: isSelected
-                                      ? "#ffffff"
-                                      : day.isToday
-                                      ? "#1d4ed8"
-                                      : "#1e293b",
-                                    fontWeight: isSelected || day.isToday ? 800 : 500,
-                                    fontSize: "0.85rem",
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    cursor: "pointer",
-                                    transition: "all 0.1s ease",
-                                    boxShadow: isSelected
-                                      ? "0 2px 4px rgba(37,99,235,0.2)"
-                                      : "none",
-                                    position: "relative",
-                                  }}
-                                >
-                                  <span>{day.date.getDate()}</span>
-                                  {day.isToday && !isSelected && (
-                                    <span
-                                      style={{
-                                        fontSize: "0.55rem",
-                                        lineHeight: 1,
-                                        fontWeight: 700,
-                                        color: "#2563eb",
-                                        marginTop: "1px",
-                                      }}
-                                    >
-                                      TODAY
-                                    </span>
-                                  )}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    {periodDays.length === 0 ? (
+                      <div style={{ padding: "2rem", textAlign: "center", color: "#64748b", fontSize: "0.85rem" }}>
+                        Please select an active billing period to view valid days.
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fill, minmax(70px, 1fr))",
+                          gap: "0.5rem",
+                        }}
+                      >
+                        {periodDays.map((d) => {
+                          const isSelected = selectedDates.includes(d.key);
+                          return (
+                            <button
+                              key={d.key}
+                              type="button"
+                              disabled={isAgentLockedForPeriod}
+                              onClick={() => toggleDateSelection(d.key)}
+                              className="agent-day-btn"
+                              style={{
+                                borderRadius: "10px",
+                                border: isSelected
+                                  ? "2px solid #2563eb"
+                                  : d.isToday
+                                  ? "1.5px solid #93c5fd"
+                                  : "1px solid #cbd5e1",
+                                backgroundColor: isSelected
+                                  ? "#2563eb"
+                                  : d.isToday
+                                  ? "#eff6ff"
+                                  : "#ffffff",
+                                color: isSelected
+                                  ? "#ffffff"
+                                  : d.isToday
+                                  ? "#1d4ed8"
+                                  : "#1e293b",
+                                fontWeight: isSelected || d.isToday ? 800 : 600,
+                                fontSize: "0.85rem",
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                padding: "0.6rem 0.2rem",
+                                cursor: isAgentLockedForPeriod ? "not-allowed" : "pointer",
+                                transition: "all 0.1s ease",
+                              }}
+                            >
+                              <span style={{ fontSize: "0.68rem", textTransform: "uppercase", opacity: 0.85 }}>
+                                {d.dayOfWeek}
+                              </span>
+                              <span style={{ fontSize: "1.05rem", fontWeight: 800 }}>
+                                {d.dayNumber}
+                              </span>
+                              {d.isToday && !isSelected && (
+                                <span style={{ fontSize: "0.58rem", color: "#2563eb", fontWeight: 700 }}>
+                                  TODAY
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Selected Dates Badges Summary */}
+                  {/* Selected badges summary */}
                   {selectedDates.length > 0 && (
                     <div
                       style={{
-                        marginTop: "0.6rem",
+                        marginTop: "0.75rem",
                         display: "flex",
                         flexWrap: "wrap",
                         gap: "0.35rem",
                         alignItems: "center",
-                        maxHeight: "65px",
-                        overflowY: "auto",
                       }}
                     >
                       <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#334155" }}>
@@ -902,7 +1039,6 @@ export default function AgentPortalPage() {
                             borderRadius: "9999px",
                             cursor: "pointer",
                           }}
-                          title="Click to remove"
                         >
                           {formatDisplayDate(dKey)}
                           <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#2563eb" }}>
@@ -951,43 +1087,12 @@ export default function AgentPortalPage() {
             </div>
 
             {loadingVisits ? (
-              <div
-                style={{
-                  backgroundColor: "#ffffff",
-                  borderRadius: "14px",
-                  padding: "2.5rem",
-                  textAlign: "center",
-                  color: "#64748b",
-                  border: "1px solid #e2e8f0",
-                }}
-              >
+              <div style={{ textAlign: "center", padding: "2.5rem", color: "#64748b" }}>
                 Loading visit history...
               </div>
             ) : visits.length === 0 ? (
-              <div
-                style={{
-                  backgroundColor: "#ffffff",
-                  borderRadius: "14px",
-                  padding: "3rem 1.5rem",
-                  textAlign: "center",
-                  border: "1px solid #e2e8f0",
-                }}
-              >
-                <div
-                  style={{
-                    width: "48px",
-                    height: "48px",
-                    borderRadius: "50%",
-                    backgroundColor: "#eff6ff",
-                    color: "#2563eb",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    margin: "0 auto 0.75rem",
-                  }}
-                >
-                  <CalendarCheck size={24} />
-                </div>
+              <div style={{ textAlign: "center", padding: "3rem 1.5rem" }}>
+                <CalendarCheck size={28} style={{ color: "#2563eb", margin: "0 auto 0.75rem" }} />
                 <h3 style={{ fontSize: "1.05rem", fontWeight: 700, marginBottom: "0.35rem" }}>
                   No visit records found yet
                 </h3>
@@ -1038,6 +1143,12 @@ export default function AgentPortalPage() {
                             <span style={{ fontWeight: 600, color: "#2563eb" }}>{v.serviceType || "Visit"}</span>
                             <span>•</span>
                             <span>{v.visitDates.length} {v.visitDates.length === 1 ? "visit" : "visits"}</span>
+                            {v.lotCode && (
+                              <>
+                                <span>•</span>
+                                <span style={{ fontWeight: 700, color: "#0f172a" }}>{v.lotCode}</span>
+                              </>
+                            )}
                           </div>
                         </div>
 
@@ -1076,7 +1187,7 @@ export default function AgentPortalPage() {
                               : "Pending"}
                           </span>
 
-                          {v.status !== "invoiced" && (
+                          {v.status !== "invoiced" && !isAgentLockedForPeriod && (
                             <button
                               type="button"
                               onClick={() => handleDeleteVisit(v._id)}
@@ -1135,7 +1246,6 @@ export default function AgentPortalPage() {
           100% { transform: rotate(360deg); }
         }
 
-        /* Mobile First defaults */
         .agent-header {
           position: sticky;
           top: 0;
@@ -1195,10 +1305,10 @@ export default function AgentPortalPage() {
         .agent-tab-badge {
           background-color: #2563eb;
           color: #ffffff;
-          font-size: 0.72rem;
+          fontSize: 0.72rem;
           padding: 1px 6px;
-          border-radius: 9999px;
-          font-weight: 800;
+          borderRadius: 9999px;
+          fontWeight: 800;
         }
 
         .agent-form-card,
@@ -1241,13 +1351,8 @@ export default function AgentPortalPage() {
         .agent-calendar-box {
           background-color: #f8fafc;
           border: 1px solid #e2e8f0;
-          borderRadius: 12px;
-          padding: 0.65rem;
-        }
-
-        .agent-day-btn {
-          aspect-ratio: 1/1;
-          min-height: 38px;
+          border-radius: 12px;
+          padding: 0.85rem;
         }
 
         .agent-history-grid {
@@ -1333,19 +1438,11 @@ export default function AgentPortalPage() {
             flex: 1;
             display: flex;
             flex-direction: column;
-            justify-content: space-evenly;
-            padding: 0.75rem 1rem;
+            overflow-y: auto;
+            padding: 1rem;
             border-radius: 14px;
-            overflow: hidden;
           }
 
-          .agent-day-btn {
-            min-height: 34px !important;
-            aspect-ratio: auto !important;
-            height: 38px;
-          }
-
-          /* History Tab Desktop Optimization */
           .agent-history-card {
             flex: 1;
             height: 100%;
@@ -1365,7 +1462,6 @@ export default function AgentPortalPage() {
           }
         }
 
-        /* Extra Large Desktop Adaptations (>= 1400px) */
         @media (min-width: 1400px) {
           .agent-form-split {
             grid-template-columns: 440px 1fr;

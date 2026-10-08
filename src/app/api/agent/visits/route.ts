@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { AgentVisit } from "@/models/AgentVisit";
+import { Lot } from "@/models/Lot";
 import { getUserFromRequest } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
@@ -10,15 +11,24 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { searchParams } = new URL(req.url);
+    const lotId = searchParams.get("lotId");
+    const agentId = searchParams.get("agentId");
+
     await connectDB();
 
-    // If role is agent, show only their visits. Admin & manager can view all.
     const query: any = {};
     if (auth.role === "agent") {
       query.agentId = auth.userId;
+    } else if (agentId) {
+      query.agentId = agentId;
     }
 
-    const visits = await AgentVisit.find(query).sort({ createdAt: -1 }).limit(100);
+    if (lotId && lotId !== "all") {
+      query.lotId = lotId;
+    }
+
+    const visits = await AgentVisit.find(query).sort({ createdAt: -1 }).limit(200);
 
     return NextResponse.json({ success: true, visits });
   } catch (error: any) {
@@ -38,7 +48,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { patientName, visitDates, serviceType = "Physical Therapy Visit", notes } = body;
+    const { patientName, visitDates, serviceType = "Physical Therapy Visit", notes, lotId } = body;
 
     if (!patientName || !patientName.trim()) {
       return NextResponse.json(
@@ -54,21 +64,70 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    await connectDB();
+
+    let targetLot = null;
+    if (lotId) {
+      targetLot = await Lot.findById(lotId);
+      if (!targetLot) {
+        return NextResponse.json({ error: "Selected billing period was not found" }, { status: 404 });
+      }
+
+      if (targetLot.status === "closed") {
+        return NextResponse.json(
+          { error: "This billing period has been closed. No further changes can be submitted." },
+          { status: 403 }
+        );
+      }
+
+      // Check if this agent is already marked completed in this lot
+      if (auth.role === "agent" && targetLot.agentStatuses) {
+        const agentStatusObj = targetLot.agentStatuses.find(
+          (as: any) => as.agentId.toString() === auth.userId
+        );
+        if (agentStatusObj && agentStatusObj.status === "completed") {
+          return NextResponse.json(
+            { error: "Your submissions for this billing period have been finalized and locked by the manager. Contact your manager if changes are needed." },
+            { status: 403 }
+          );
+        }
+      }
+    }
+
     // Sort dates chronologically
     const sortedDates = [...visitDates].sort();
-
-    await connectDB();
 
     const newVisit = await AgentVisit.create({
       agentId: auth.userId,
       agentName: auth.name,
       agentEmail: auth.email,
+      lotId: targetLot ? targetLot._id : undefined,
+      lotCode: targetLot ? targetLot.lotCode : undefined,
       patientName: patientName.trim(),
       serviceType: serviceType.trim(),
       visitDates: sortedDates,
       notes: notes?.trim() || "",
       status: "pending",
     });
+
+    // Auto-update lot agentStatuses to "in_progress" or maintain submitted
+    if (targetLot) {
+      if (!Array.isArray(targetLot.agentStatuses)) {
+        targetLot.agentStatuses = [];
+      }
+      const existing = targetLot.agentStatuses.find(
+        (as: any) => as.agentId.toString() === auth.userId
+      );
+      if (!existing) {
+        targetLot.agentStatuses.push({
+          agentId: auth.userId as any,
+          agentName: auth.name,
+          agentEmail: auth.email.toLowerCase(),
+          status: "in_progress",
+        });
+        await targetLot.save();
+      }
+    }
 
     return NextResponse.json(
       { success: true, visit: newVisit },
@@ -114,6 +173,30 @@ export async function DELETE(req: NextRequest) {
         { error: "Cannot delete a visit record that has already been invoiced" },
         { status: 400 }
       );
+    }
+
+    // Check if lot is closed or completed for this agent
+    if (visit.lotId) {
+      const lot = await Lot.findById(visit.lotId);
+      if (lot) {
+        if (lot.status === "closed") {
+          return NextResponse.json(
+            { error: "Cannot delete visits in a closed billing period" },
+            { status: 403 }
+          );
+        }
+        if (auth.role === "agent" && lot.agentStatuses) {
+          const agentStatus = lot.agentStatuses.find(
+            (as: any) => as.agentId.toString() === auth.userId
+          );
+          if (agentStatus && agentStatus.status === "completed") {
+            return NextResponse.json(
+              { error: "Cannot delete visits after the manager has finalized your submission for this period" },
+              { status: 403 }
+            );
+          }
+        }
+      }
     }
 
     await AgentVisit.findByIdAndDelete(id);
