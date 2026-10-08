@@ -16,14 +16,11 @@ import {
   Send,
   Lock,
   History,
-  Building2,
-  FileCheck2,
   Search,
   Sparkles,
 } from "lucide-react";
 import { IAgentVisit, IUser, ILot } from "@/lib/types";
 
-// Helper to format date to "YYYY-MM-DD"
 function toDateKey(date: Date): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -31,7 +28,6 @@ function toDateKey(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-// Helper to format date for display
 function formatDisplayDate(dateKey: string): string {
   if (!dateKey) return "";
   const [y, m, d] = dateKey.split("-").map(Number);
@@ -56,9 +52,7 @@ function formatDateRange(start: string | Date | undefined, end: string | Date | 
   if (!start || !end) return "";
   const s = new Date(start);
   const e = new Date(end);
-  const sStr = s.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  const eStr = e.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-  return `${sStr} — ${eStr}`;
+  return `${s.toLocaleDateString("en-US", { month: "short", day: "numeric" })} — ${e.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
 }
 
 export default function AgentPortalPage() {
@@ -66,12 +60,10 @@ export default function AgentPortalPage() {
   const [currentUser, setCurrentUser] = useState<IUser | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
 
-  // Billing Cycles state
   const [allPeriods, setAllPeriods] = useState<ILot[]>([]);
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>("");
   const [loadingPeriods, setLoadingPeriods] = useState(true);
 
-  // Form states
   const [patientName, setPatientName] = useState("");
   const [serviceType, setServiceType] = useState("PT Visit");
   const [notes, setNotes] = useState("");
@@ -81,50 +73,42 @@ export default function AgentPortalPage() {
   const [formSuccess, setFormSuccess] = useState(false);
   const [submittingPeriod, setSubmittingPeriod] = useState(false);
 
-  // Autocomplete state
   const [showSuggestions, setShowSuggestions] = useState(false);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
-  // Visits list state
   const [visits, setVisits] = useState<IAgentVisit[]>([]);
   const [loadingVisits, setLoadingVisits] = useState(true);
 
-  // Tab State: "active_cycle" vs "past_cycles"
   const [activeTab, setActiveTab] = useState<"active_cycle" | "past_cycles">("active_cycle");
-
-  // Filter for past cycles tab
   const [pastSearchQuery, setPastSearchQuery] = useState("");
 
   const agentRole = (currentUser as any)?.agentType === "PTA" ? "PTA" : "PT";
   const isPTA = agentRole === "PTA";
 
-  // Fast service definitions
   const serviceOptions = useMemo(() => {
     if (isPTA) {
       return [
-        { id: "Visit", label: "Standard Visit" },
-        { id: "Missed Visit", label: "Missed Visit" },
-        { id: "Special Rate", label: "Special Rate" },
+        { id: "Visit", label: "Visit" },
+        { id: "Missed Visit", label: "Missed" },
+        { id: "Special Rate", label: "Special" },
       ];
     }
     return [
-      { id: "SOC", label: "Start of Care" },
-      { id: "Eval", label: "Evaluation" },
-      { id: "ReEval", label: "Re-Evaluation" },
-      { id: "ReCert", label: "Recertification" },
-      { id: "Disch", label: "Discharge" },
-      { id: "Missed Visit", label: "Missed Visit" },
+      { id: "SOC", label: "SOC" },
+      { id: "Eval", label: "Eval" },
+      { id: "ReEval", label: "ReEval" },
+      { id: "ReCert", label: "ReCert" },
+      { id: "Disch", label: "Disch" },
+      { id: "Missed Visit", label: "Missed" },
     ];
   }, [isPTA]);
 
-  // Set initial serviceType when options change
   useEffect(() => {
     if (serviceOptions.length > 0 && !serviceOptions.some((s) => s.id === serviceType)) {
       setServiceType(serviceOptions[0].id);
     }
   }, [serviceOptions, serviceType]);
 
-  // Load User Info
   useEffect(() => {
     fetch("/api/auth/me")
       .then((res) => {
@@ -142,7 +126,6 @@ export default function AgentPortalPage() {
       .finally(() => setLoadingUser(false));
   }, [router]);
 
-  // Load Billing Cycles
   const loadPeriods = async () => {
     setLoadingPeriods(true);
     try {
@@ -158,7 +141,7 @@ export default function AgentPortalPage() {
         }
       }
     } catch (err) {
-      console.error("Error loading billing cycles:", err);
+      console.error(err);
     } finally {
       setLoadingPeriods(false);
     }
@@ -168,7 +151,6 @@ export default function AgentPortalPage() {
     loadPeriods();
   }, []);
 
-  // Filter open vs past cycles
   const openPeriods = useMemo(() => {
     return allPeriods.filter((p) => p.status === "open");
   }, [allPeriods]);
@@ -177,19 +159,16 @@ export default function AgentPortalPage() {
     return allPeriods.filter((p) => p.status === "closed");
   }, [allPeriods]);
 
-  // Selected period object
   const activePeriod = useMemo(() => {
     return allPeriods.find((p) => p._id === selectedPeriodId) || null;
   }, [allPeriods, selectedPeriodId]);
 
-  // Format cycle display title without ever using the word "LOT"
   const getCycleDisplayTitle = (p: ILot) => {
     const num = p.lotNumber ? String(p.lotNumber).padStart(3, "0") : (p.lotCode ? p.lotCode.replace(/LOT\s*/i, "") : "");
     const namePart = num ? `Cycle #${num}` : "Billing Cycle";
-    return `${namePart} — ${p.agencyName || "Agency"} (${formatDateShort(p.periodStart)} to ${formatDateShort(p.periodEnd)})`;
+    return `${namePart} — ${p.agencyName || "Agency"} (${formatDateShort(p.periodStart)} - ${formatDateShort(p.periodEnd)})`;
   };
 
-  // Check if current agent is completed/locked for this period
   const isAgentLockedForPeriod = useMemo(() => {
     if (!activePeriod || !currentUser) return false;
     const currentId = (currentUser as any).id || (currentUser as any)._id;
@@ -202,7 +181,6 @@ export default function AgentPortalPage() {
     return myStatus?.status === "completed" || activePeriod.status !== "open";
   }, [activePeriod, currentUser]);
 
-  // Check if current agent has marked submitted
   const isAgentSubmittedForPeriod = useMemo(() => {
     if (!activePeriod || !currentUser) return false;
     const currentId = (currentUser as any).id || (currentUser as any)._id;
@@ -215,7 +193,6 @@ export default function AgentPortalPage() {
     return myStatus?.status === "submitted";
   }, [activePeriod, currentUser]);
 
-  // Load Visits
   const loadVisits = async () => {
     try {
       const res = await fetch("/api/agent/visits");
@@ -224,7 +201,7 @@ export default function AgentPortalPage() {
         setVisits(data.visits);
       }
     } catch (err) {
-      console.error("Error loading visits:", err);
+      console.error(err);
     } finally {
       setLoadingVisits(false);
     }
@@ -234,7 +211,6 @@ export default function AgentPortalPage() {
     loadVisits();
   }, []);
 
-  // Distinct Patient Names for Smart Autocomplete Recommendations
   const distinctPatientNames = useMemo(() => {
     const map = new Map<string, string>();
     visits.forEach((v) => {
@@ -249,16 +225,14 @@ export default function AgentPortalPage() {
     return Array.from(map.values()).sort((a, b) => a.localeCompare(b));
   }, [visits]);
 
-  // Filtered Patient Suggestions based on what agent is typing
   const patientSuggestions = useMemo(() => {
-    if (!patientName.trim()) return distinctPatientNames.slice(0, 8);
+    if (!patientName.trim()) return distinctPatientNames.slice(0, 6);
     const q = patientName.toLowerCase().trim();
     return distinctPatientNames
       .filter((name) => name.toLowerCase().includes(q))
-      .slice(0, 8);
+      .slice(0, 6);
   }, [distinctPatientNames, patientName]);
 
-  // Close suggestions on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (suggestionsRef.current && !suggestionsRef.current.contains(e.target as Node)) {
@@ -278,7 +252,6 @@ export default function AgentPortalPage() {
     }
   };
 
-  // Generate Calendar Days exclusively for the selected Billing Cycle
   const periodDays = useMemo(() => {
     if (!activePeriod || !activePeriod.periodStart || !activePeriod.periodEnd) {
       return [];
@@ -322,7 +295,6 @@ export default function AgentPortalPage() {
     return days;
   }, [activePeriod]);
 
-  // Visits logged exclusively in the CURRENT active cycle
   const currentCycleVisits = useMemo(() => {
     if (!selectedPeriodId) return [];
     return visits.filter((v) => {
@@ -334,7 +306,6 @@ export default function AgentPortalPage() {
     });
   }, [visits, selectedPeriodId, activePeriod]);
 
-  // Visits logged in PAST cycles
   const pastCycleVisits = useMemo(() => {
     return visits.filter((v) => {
       if (v.lotId && v.lotId.toString() === selectedPeriodId) return false;
@@ -343,7 +314,6 @@ export default function AgentPortalPage() {
     });
   }, [visits, selectedPeriodId, activePeriod]);
 
-  // Filtered past cycles for Tab 2
   const filteredPastCycles = useMemo(() => {
     if (!pastSearchQuery.trim()) return pastPeriods;
     const q = pastSearchQuery.toLowerCase();
@@ -354,7 +324,6 @@ export default function AgentPortalPage() {
     });
   }, [pastPeriods, pastSearchQuery]);
 
-  // Toggle date selection
   const toggleDateSelection = (key: string) => {
     if (isAgentLockedForPeriod) return;
     setFormError("");
@@ -367,29 +336,28 @@ export default function AgentPortalPage() {
     });
   };
 
-  // Submit Visit Form
   const handleSubmitVisit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError("");
     setFormSuccess(false);
 
     if (isAgentLockedForPeriod) {
-      setFormError("This billing cycle has been finalized by your manager and locked for editing.");
+      setFormError("This billing cycle is locked.");
       return;
     }
 
     if (!selectedPeriodId) {
-      setFormError("Please select a billing cycle first.");
+      setFormError("Please select a billing cycle.");
       return;
     }
 
     if (!patientName.trim()) {
-      setFormError("Please enter the patient's name.");
+      setFormError("Please enter patient name.");
       return;
     }
 
     if (selectedDates.length === 0) {
-      setFormError("Please select at least one treatment day from this billing cycle.");
+      setFormError("Select at least one treatment date.");
       return;
     }
 
@@ -423,7 +391,7 @@ export default function AgentPortalPage() {
 
       setTimeout(() => {
         setFormSuccess(false);
-      }, 3500);
+      }, 3000);
     } catch (err: any) {
       setFormError(err.message || "Failed to submit visit");
     } finally {
@@ -431,7 +399,6 @@ export default function AgentPortalPage() {
     }
   };
 
-  // Agent submits all records for manager review
   const handleNotifyManagerReady = async () => {
     if (!selectedPeriodId || !currentUser) return;
     const currentId = (currentUser as any).id || (currentUser as any)._id;
@@ -452,10 +419,10 @@ export default function AgentPortalPage() {
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || "Failed to submit billing cycle");
+        throw new Error(err.error || "Failed to submit cycle");
       }
 
-      alert("Awesome! Your visits for this billing cycle have been submitted to the manager for review.");
+      alert("Submitted to manager for review!");
       loadPeriods();
     } catch (err: any) {
       alert(err.message || "Network error");
@@ -464,10 +431,9 @@ export default function AgentPortalPage() {
     }
   };
 
-  // Delete a pending visit
   const handleDeleteVisit = async (id?: string) => {
     if (!id) return;
-    if (!confirm("Are you sure you want to delete this visit record?")) return;
+    if (!confirm("Delete this visit record?")) return;
 
     try {
       const res = await fetch(`/api/agent/visits?id=${id}`, {
@@ -477,216 +443,96 @@ export default function AgentPortalPage() {
         setVisits((prev) => prev.filter((v) => v._id !== id));
       } else {
         const data = await res.json();
-        alert(data.error || "Failed to delete visit");
+        alert(data.error || "Failed to delete");
       }
     } catch {
-      alert("Failed to delete visit record");
+      alert("Failed to delete record");
     }
   };
 
   if (loadingUser) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: "#f8fafc",
-          color: "#64748b",
-        }}
-      >
-        <div style={{ textAlign: "center" }}>
-          <div
-            style={{
-              width: "40px",
-              height: "40px",
-              border: "3px solid #cbd5e1",
-              borderTopColor: "#2563eb",
-              borderRadius: "50%",
-              animation: "spin 0.8s linear infinite",
-              margin: "0 auto 12px",
-            }}
-          />
-          <p style={{ fontSize: "0.9rem", fontWeight: 500 }}>Loading Agent Portal...</p>
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#f8fafc" }}>
+        <div style={{ textAlign: "center", color: "#64748b" }}>
+          <div style={{ width: "36px", height: "36px", border: "3px solid #cbd5e1", borderTopColor: "#2563eb", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 8px" }} />
+          <p style={{ fontSize: "0.85rem", fontWeight: 500 }}>Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#f8fafc",
-        display: "flex",
-        flexDirection: "column",
-        color: "#0f172a",
-        fontFamily: "var(--font-body, -apple-system, sans-serif)",
-      }}
-    >
-      {/* Top Bar with Responsive Optimization */}
+    <div className="agent-shell">
+      {/* Top Header */}
       <header className="agent-header">
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <div
-            style={{
-              width: "36px",
-              height: "36px",
-              borderRadius: "10px",
-              backgroundColor: "#2563eb",
-              color: "#ffffff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: 800,
-              fontSize: "1rem",
-              boxShadow: "0 2px 4px rgba(37,99,235,0.25)",
-            }}
-          >
-            T
-          </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+          <div className="agent-brand-logo">T</div>
           <div>
-            <div style={{ fontWeight: 800, fontSize: "1.05rem", lineHeight: 1.2 }}>
-              THER-INV
-            </div>
-            <div
-              style={{
-                fontSize: "0.72rem",
-                color: "#059669",
-                fontWeight: 600,
-                display: "flex",
-                alignItems: "center",
-                gap: "4px",
-              }}
-            >
-              <span
-                style={{
-                  width: "6px",
-                  height: "6px",
-                  borderRadius: "50%",
-                  backgroundColor: "#059669",
-                  display: "inline-block",
-                }}
-              />
+            <div style={{ fontWeight: 800, fontSize: "1rem", lineHeight: 1.1 }}>THER-INV</div>
+            <div style={{ fontSize: "0.7rem", color: "#059669", fontWeight: 600, display: "flex", alignItems: "center", gap: "4px" }}>
+              <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#059669" }} />
               Agent Portal
             </div>
           </div>
         </div>
 
-        {/* User Info & Logout Pill */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.4rem",
-              padding: "0.35rem 0.65rem",
-              borderRadius: "9999px",
-              backgroundColor: "#f1f5f9",
-              fontSize: "0.8rem",
-              fontWeight: 600,
-              color: "#334155",
-            }}
-          >
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <div className="agent-user-pill">
             <User size={13} style={{ color: "#2563eb" }} />
-            <span style={{ maxWidth: "160px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <span style={{ maxWidth: "150px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {currentUser?.name || "Agent"}
             </span>
           </div>
 
-          <button
-            type="button"
-            onClick={handleLogout}
-            title="Log out"
-            style={{
-              padding: "0.45rem",
-              borderRadius: "8px",
-              backgroundColor: "#fef2f2",
-              color: "#dc2626",
-              border: "1px solid #fee2e2",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-            }}
-          >
-            <LogOut size={15} />
+          <button type="button" onClick={handleLogout} title="Log out" className="agent-logout-btn">
+            <LogOut size={14} />
           </button>
         </div>
       </header>
 
-      {/* Main Full-Width Container */}
-      <main className="agent-portal-main">
-        {/* Navigation Tabs (Single Tab for Active Cycle + One for Past Cycles History) */}
-        <div className="agent-tabs-container">
+      {/* Main Content Area */}
+      <main className="agent-main">
+        {/* Compact Nav Tabs */}
+        <div className="agent-tabs-bar">
           <button
             type="button"
             onClick={() => setActiveTab("active_cycle")}
-            className={`agent-tab-btn ${activeTab === "active_cycle" ? "active" : ""}`}
+            className={`agent-tab-item ${activeTab === "active_cycle" ? "active" : ""}`}
           >
-            <Plus size={16} />
+            <Plus size={15} />
             <span>Active Billing Cycle</span>
-            {currentCycleVisits.length > 0 && (
-              <span className="agent-tab-badge">
-                {currentCycleVisits.length}
-              </span>
-            )}
+            {currentCycleVisits.length > 0 && <span className="agent-tab-count">{currentCycleVisits.length}</span>}
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("past_cycles")}
-            className={`agent-tab-btn ${activeTab === "past_cycles" ? "active" : ""}`}
+            className={`agent-tab-item ${activeTab === "past_cycles" ? "active" : ""}`}
           >
-            <History size={16} />
+            <History size={15} />
             <span>Past Cycles & History</span>
-            {pastCycleVisits.length > 0 && (
-              <span
-                style={{
-                  backgroundColor: "#64748b",
-                  color: "#ffffff",
-                  fontSize: "0.72rem",
-                  padding: "1px 6px",
-                  borderRadius: "9999px",
-                  fontWeight: 800,
-                }}
-              >
-                {pastCycleVisits.length}
-              </span>
-            )}
+            {pastCycleVisits.length > 0 && <span className="agent-tab-count count-muted">{pastCycleVisits.length}</span>}
           </button>
         </div>
 
         {activeTab === "active_cycle" ? (
-          /* TAB 1: ALL-IN-ONE ACTIVE BILLING CYCLE (TOP ENTRY + BOTTOM RECORDED VISITS) */
-          <div className="agent-view-scrollable">
-            {/* Cycle Header & Submission Controls */}
-            <div className="agent-cycle-banner">
-              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
-                <Layers size={19} style={{ color: "#2563eb", flexShrink: 0 }} />
-                <div>
-                  <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "#1e40af", textTransform: "uppercase", letterSpacing: "0.03em" }}>
-                    Active Billing Cycle
-                  </div>
+          <div className="agent-stack">
+            {/* Integrated Top Control Bar: Cycle Selector + Status / Submit Action */}
+            <div className="agent-control-banner">
+              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flex: "1 1 300px" }}>
+                <Layers size={17} style={{ color: "#2563eb", flexShrink: 0 }} />
+                <div style={{ display: "flex", flexDirection: "column", width: "100%", maxWidth: "480px" }}>
+                  <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "#1e40af", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                    Billing Cycle
+                  </span>
                   {openPeriods.length === 0 ? (
-                    <span style={{ fontSize: "0.85rem", color: "#b45309", fontWeight: 600 }}>
-                      No open billing cycles available right now
+                    <span style={{ fontSize: "0.82rem", color: "#b45309", fontWeight: 600 }}>
+                      No active billing cycle open
                     </span>
                   ) : (
                     <select
                       value={selectedPeriodId}
                       onChange={(e) => setSelectedPeriodId(e.target.value)}
-                      style={{
-                        backgroundColor: "#ffffff",
-                        border: "1.5px solid #93c5fd",
-                        borderRadius: "8px",
-                        padding: "0.35rem 0.65rem",
-                        fontSize: "0.88rem",
-                        fontWeight: 700,
-                        color: "#0f172a",
-                        cursor: "pointer",
-                        outline: "none",
-                        marginTop: "2px",
-                      }}
+                      className="agent-cycle-select"
                     >
                       {openPeriods.map((p) => (
                         <option key={p._id} value={p._id}>
@@ -698,65 +544,25 @@ export default function AgentPortalPage() {
                 </div>
               </div>
 
-              {/* Status & Submit CTA */}
+              {/* Status or Submission CTA */}
               {activePeriod && (
-                <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                   {isAgentLockedForPeriod ? (
-                    <span
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "5px",
-                        fontSize: "0.78rem",
-                        fontWeight: 700,
-                        padding: "0.3rem 0.75rem",
-                        borderRadius: "8px",
-                        backgroundColor: "#ecfdf5",
-                        color: "#065f46",
-                        border: "1px solid #a7f3d0",
-                      }}
-                    >
-                      <Lock size={13} /> Finalized & Invoiced
+                    <span className="agent-status-tag tag-locked">
+                      <Lock size={12} /> Cycle Finalized
                     </span>
                   ) : isAgentSubmittedForPeriod ? (
-                    <span
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "5px",
-                        fontSize: "0.78rem",
-                        fontWeight: 700,
-                        padding: "0.3rem 0.75rem",
-                        borderRadius: "8px",
-                        backgroundColor: "#fffbeb",
-                        color: "#b45309",
-                        border: "1px solid #fde68a",
-                      }}
-                    >
-                      <Clock size={13} /> Under Manager Review
+                    <span className="agent-status-tag tag-review">
+                      <Clock size={12} /> Under Manager Review
                     </span>
                   ) : (
                     <button
                       type="button"
                       onClick={handleNotifyManagerReady}
                       disabled={submittingPeriod || currentCycleVisits.length === 0}
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "5px",
-                        fontSize: "0.8rem",
-                        fontWeight: 700,
-                        padding: "0.4rem 0.9rem",
-                        borderRadius: "8px",
-                        backgroundColor: currentCycleVisits.length === 0 ? "#94a3b8" : "#2563eb",
-                        color: "#ffffff",
-                        border: "none",
-                        cursor: currentCycleVisits.length === 0 ? "not-allowed" : "pointer",
-                        boxShadow: "0 2px 5px rgba(37,99,235,0.2)",
-                      }}
-                      title="Submit your logged visits to the manager for review"
+                      className="agent-submit-btn"
                     >
-                      <Send size={13} />
+                      <Send size={12} />
                       <span>{submittingPeriod ? "Submitting..." : "Submit to Manager"}</span>
                     </button>
                   )}
@@ -764,136 +570,51 @@ export default function AgentPortalPage() {
               )}
             </div>
 
-            {/* Lock notification */}
+            {/* Notification Toasts if any */}
             {isAgentLockedForPeriod && (
-              <div
-                style={{
-                  backgroundColor: "#ecfdf5",
-                  border: "1px solid #a7f3d0",
-                  color: "#065f46",
-                  padding: "0.75rem 1rem",
-                  borderRadius: "10px",
-                  marginBottom: "1rem",
-                  fontSize: "0.85rem",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                }}
-              >
-                <Lock size={16} style={{ color: "#059669", flexShrink: 0 }} />
-                <span>
-                  <strong>Cycle finalized:</strong> The manager has completed this billing cycle and generated your invoice. Records below are read-only.
-                </span>
+              <div className="agent-notice notice-locked">
+                <Lock size={15} style={{ flexShrink: 0 }} />
+                <span>This billing cycle is finalized and invoiced. New submissions are closed.</span>
               </div>
             )}
-
-            {/* Form Success/Error */}
             {formSuccess && (
-              <div
-                style={{
-                  backgroundColor: "#ecfdf5",
-                  border: "1px solid #a7f3d0",
-                  color: "#065f46",
-                  borderRadius: "10px",
-                  padding: "0.75rem 1rem",
-                  marginBottom: "1rem",
-                  fontSize: "0.85rem",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.6rem",
-                }}
-              >
-                <Check size={18} style={{ color: "#059669", flexShrink: 0 }} />
-                <span>
-                  <strong>Patient visit recorded successfully!</strong> Added to current billing cycle.
-                </span>
+              <div className="agent-notice notice-success">
+                <Check size={15} style={{ flexShrink: 0 }} />
+                <span>Visit saved successfully!</span>
               </div>
             )}
-
             {formError && (
-              <div
-                style={{
-                  backgroundColor: "#fef2f2",
-                  border: "1px solid #fecaca",
-                  color: "#991b1b",
-                  borderRadius: "10px",
-                  padding: "0.75rem 1rem",
-                  marginBottom: "1rem",
-                  fontSize: "0.85rem",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.6rem",
-                }}
-              >
-                <AlertCircle size={18} style={{ color: "#dc2626", flexShrink: 0 }} />
+              <div className="agent-notice notice-error">
+                <AlertCircle size={15} style={{ flexShrink: 0 }} />
                 <span>{formError}</span>
               </div>
             )}
 
-            {/* TOP CARD: ADD NEW PATIENT & SELECT DATES */}
-            <div className="agent-card" style={{ marginBottom: "1.25rem" }}>
-              <div style={{ marginBottom: "1rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div>
-                  <h2 style={{ fontSize: "1.1rem", fontWeight: 800, color: "#0f172a", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <Plus size={18} style={{ color: "#2563eb" }} />
-                    Add Patient & Treatment Dates
-                  </h2>
-                  <p style={{ fontSize: "0.8rem", color: "#64748b" }}>
-                    Type the patient name, select the service type and pick visit dates in this cycle.
-                  </p>
-                </div>
-
-                <span
-                  style={{
-                    fontSize: "0.75rem",
-                    fontWeight: 700,
-                    padding: "3px 10px",
-                    borderRadius: "6px",
-                    backgroundColor: isPTA ? "#fef3c7" : "#eff6ff",
-                    color: isPTA ? "#b45309" : "#1d4ed8",
-                    border: isPTA ? "1px solid #fde68a" : "1px solid #bfdbfe",
-                  }}
-                >
-                  Role: {agentRole}
-                </span>
-              </div>
-
+            {/* Compact Form Card: Entry Line & Dates */}
+            <div className="agent-panel">
               <form onSubmit={handleSubmitVisit}>
-                <div className="agent-form-split">
-                  {/* Left Column: Patient Name with Autocomplete, Service Type, Notes, Submit */}
-                  <div className="agent-col-fields">
-                    {/* Patient Name with Smart Autocomplete Recommendations */}
-                    <div style={{ marginBottom: "1rem", position: "relative" }} ref={suggestionsRef}>
-                      <label
-                        htmlFor="patient-name-input"
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          fontSize: "0.85rem",
-                          fontWeight: 700,
-                          color: "#1e293b",
-                          marginBottom: "0.35rem",
-                        }}
-                      >
-                        <span>
+                <div className="agent-panel-grid">
+                  {/* Left Column: Patient, Service Type, Notes, Submit */}
+                  <div className="agent-panel-left">
+                    {/* Patient Name with Autocomplete */}
+                    <div className="agent-field-block" ref={suggestionsRef}>
+                      <div className="agent-field-header">
+                        <label htmlFor="patient-input" className="agent-label">
                           Patient Name <span style={{ color: "#dc2626" }}>*</span>
-                        </span>
+                        </label>
                         {distinctPatientNames.length > 0 && (
-                          <span style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 500, display: "flex", alignItems: "center", gap: "3px" }}>
-                            <Sparkles size={11} style={{ color: "#2563eb" }} />
-                            Past patients recommended
+                          <span className="agent-hint">
+                            <Sparkles size={11} style={{ color: "#2563eb" }} /> Suggestions active
                           </span>
                         )}
-                      </label>
-
+                      </div>
                       <div style={{ position: "relative" }}>
                         <input
-                          id="patient-name-input"
+                          id="patient-input"
                           type="text"
                           required
                           disabled={isAgentLockedForPeriod}
-                          placeholder="e.g. Maria Gonzalez or John Doe"
+                          placeholder="e.g. Maria Gonzalez"
                           value={patientName}
                           autoComplete="off"
                           onFocus={() => setShowSuggestions(true)}
@@ -901,50 +622,13 @@ export default function AgentPortalPage() {
                             setPatientName(e.target.value);
                             setShowSuggestions(true);
                           }}
-                          style={{
-                            width: "100%",
-                            padding: "0.7rem 1rem 0.7rem 2.4rem",
-                            borderRadius: "10px",
-                            border: "1.5px solid #cbd5e1",
-                            fontSize: "0.95rem",
-                            color: "#0f172a",
-                            backgroundColor: isAgentLockedForPeriod ? "#f1f5f9" : "#ffffff",
-                            outline: "none",
-                          }}
+                          className="agent-input"
                         />
-                        <User
-                          size={17}
-                          style={{
-                            position: "absolute",
-                            left: "0.8rem",
-                            top: "50%",
-                            transform: "translateY(-50%)",
-                            color: "#94a3b8",
-                          }}
-                        />
+                        <User size={15} className="agent-input-icon" />
                       </div>
 
-                      {/* Autocomplete Suggestions Dropdown */}
                       {showSuggestions && !isAgentLockedForPeriod && patientSuggestions.length > 0 && (
-                        <div
-                          style={{
-                            position: "absolute",
-                            top: "calc(100% + 4px)",
-                            left: 0,
-                            right: 0,
-                            zIndex: 50,
-                            backgroundColor: "#ffffff",
-                            border: "1px solid #cbd5e1",
-                            borderRadius: "10px",
-                            boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)",
-                            maxHeight: "220px",
-                            overflowY: "auto",
-                            padding: "0.35rem 0",
-                          }}
-                        >
-                          <div style={{ padding: "0.3rem 0.75rem", fontSize: "0.7rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>
-                            Previous Patients ({patientSuggestions.length})
-                          </div>
+                        <div className="agent-suggest-menu">
                           {patientSuggestions.map((name) => (
                             <button
                               key={name}
@@ -953,39 +637,23 @@ export default function AgentPortalPage() {
                                 setPatientName(name);
                                 setShowSuggestions(false);
                               }}
-                              style={{
-                                width: "100%",
-                                textAlign: "left",
-                                padding: "0.55rem 0.75rem",
-                                fontSize: "0.85rem",
-                                color: "#0f172a",
-                                background: "none",
-                                border: "none",
-                                cursor: "pointer",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                transition: "background-color 0.1s ease",
-                              }}
-                              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#eff6ff")}
-                              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                              className="agent-suggest-item"
                             >
-                              <span style={{ fontWeight: 600 }}>{name}</span>
-                              <span style={{ fontSize: "0.72rem", color: "#2563eb", fontWeight: 600 }}>
-                                Select ↵
-                              </span>
+                              <span>{name}</span>
+                              <span style={{ fontSize: "0.68rem", color: "#2563eb" }}>Select ↵</span>
                             </button>
                           ))}
                         </div>
                       )}
                     </div>
 
-                    {/* Service Type Buttons */}
-                    <div style={{ marginBottom: "1rem" }}>
-                      <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.35rem" }}>
-                        Evaluation / Service Type
-                      </label>
-                      <div className="agent-service-grid">
+                    {/* Service Type Selection */}
+                    <div className="agent-field-block">
+                      <div className="agent-field-header">
+                        <label className="agent-label">Service Type</label>
+                        <span className="agent-role-tag">Role: {agentRole}</span>
+                      </div>
+                      <div className="agent-btn-group">
                         {serviceOptions.map((opt) => {
                           const isSelected = serviceType === opt.id;
                           return (
@@ -994,23 +662,9 @@ export default function AgentPortalPage() {
                               type="button"
                               disabled={isAgentLockedForPeriod}
                               onClick={() => setServiceType(opt.id)}
-                              style={{
-                                padding: "0.55rem 0.35rem",
-                                borderRadius: "10px",
-                                border: isSelected ? "2px solid #2563eb" : "1px solid #cbd5e1",
-                                backgroundColor: isSelected ? "#eff6ff" : "#ffffff",
-                                color: isSelected ? "#1d4ed8" : "#334155",
-                                fontWeight: isSelected ? 800 : 600,
-                                fontSize: "0.82rem",
-                                cursor: isAgentLockedForPeriod ? "not-allowed" : "pointer",
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "center",
-                                justifyContent: "center",
-                              }}
+                              className={`agent-service-btn ${isSelected ? "selected" : ""}`}
                             >
-                              <span>{opt.id}</span>
-                              <span style={{ fontSize: "0.64rem", opacity: 0.8 }}>{opt.label}</span>
+                              {opt.id}
                             </button>
                           );
                         })}
@@ -1018,27 +672,15 @@ export default function AgentPortalPage() {
                     </div>
 
                     {/* Notes */}
-                    <div style={{ marginBottom: "1rem" }}>
-                      <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.35rem" }}>
-                        Additional Notes (Optional)
-                      </label>
-                      <textarea
-                        rows={2}
+                    <div className="agent-field-block">
+                      <label className="agent-label">Notes (Optional)</label>
+                      <input
+                        type="text"
                         disabled={isAgentLockedForPeriod}
-                        placeholder="e.g. Evaluated shoulder mobility, home exercises assigned..."
+                        placeholder="Evaluation summary, progress..."
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
-                        style={{
-                          width: "100%",
-                          padding: "0.6rem 0.8rem",
-                          borderRadius: "10px",
-                          border: "1.5px solid #cbd5e1",
-                          fontSize: "0.85rem",
-                          color: "#0f172a",
-                          backgroundColor: isAgentLockedForPeriod ? "#f1f5f9" : "#ffffff",
-                          outline: "none",
-                          resize: "none",
-                        }}
+                        className="agent-input agent-input-sm"
                       />
                     </div>
 
@@ -1046,99 +688,46 @@ export default function AgentPortalPage() {
                     <button
                       type="submit"
                       disabled={submitting || selectedDates.length === 0 || isAgentLockedForPeriod || !selectedPeriodId}
-                      style={{
-                        width: "100%",
-                        padding: "0.75rem",
-                        borderRadius: "12px",
-                        border: "none",
-                        backgroundColor:
-                          selectedDates.length === 0 || isAgentLockedForPeriod ? "#94a3b8" : "#2563eb",
-                        color: "#ffffff",
-                        fontSize: "0.92rem",
-                        fontWeight: 700,
-                        cursor:
-                          selectedDates.length === 0 || isAgentLockedForPeriod
-                            ? "not-allowed"
-                            : "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "0.5rem",
-                        marginTop: "auto",
-                      }}
+                      className="agent-save-btn"
                     >
-                      {submitting ? (
-                        <span>Saving visits...</span>
-                      ) : (
-                        <>
-                          <Check size={18} />
-                          <span>
-                            Save Patient Visits ({selectedDates.length}{" "}
-                            {selectedDates.length === 1 ? "day" : "days"})
-                          </span>
-                        </>
-                      )}
+                      <Check size={16} />
+                      <span>
+                        Save Visit ({selectedDates.length} {selectedDates.length === 1 ? "day" : "days"})
+                      </span>
                     </button>
                   </div>
 
-                  {/* Right Column: Treatment Dates for Active Billing Cycle */}
-                  <div className="agent-col-calendar">
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        marginBottom: "0.35rem",
-                      }}
-                    >
-                      <label
-                        style={{
-                          fontSize: "0.85rem",
-                          fontWeight: 700,
-                          color: "#1e293b",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "0.35rem",
-                        }}
-                      >
-                        <CalendarIcon size={16} style={{ color: "#2563eb" }} />
-                        Treatment Dates in this Cycle <span style={{ color: "#dc2626" }}>*</span>
+                  {/* Right Column: Dates Selector */}
+                  <div className="agent-panel-right">
+                    <div className="agent-field-header" style={{ marginBottom: "0.35rem" }}>
+                      <label className="agent-label" style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                        <CalendarIcon size={14} style={{ color: "#2563eb" }} />
+                        Treatment Dates <span style={{ color: "#dc2626" }}>*</span>
                       </label>
-                      {selectedDates.length > 0 && !isAgentLockedForPeriod && (
-                        <button
-                          type="button"
-                          onClick={() => setSelectedDates([])}
-                          style={{
-                            fontSize: "0.75rem",
-                            color: "#dc2626",
-                            fontWeight: 600,
-                            cursor: "pointer",
-                            textDecoration: "underline",
-                          }}
-                        >
-                          Clear ({selectedDates.length})
-                        </button>
-                      )}
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <span className="agent-period-range">
+                          {formatDateRange(activePeriod?.periodStart, activePeriod?.periodEnd)}
+                        </span>
+                        {selectedDates.length > 0 && !isAgentLockedForPeriod && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedDates([])}
+                            className="agent-clear-link"
+                          >
+                            Clear ({selectedDates.length})
+                          </button>
+                        )}
+                      </div>
                     </div>
 
-                    <p style={{ fontSize: "0.76rem", color: "#64748b", marginBottom: "0.5rem" }}>
-                      Agency: <strong>{activePeriod?.agencyName || "N/A"}</strong> — Range: <strong>{formatDateRange(activePeriod?.periodStart, activePeriod?.periodEnd)}</strong>
-                    </p>
-
-                    {/* Calendar Days Box */}
-                    <div className="agent-calendar-box">
+                    {/* Days Grid */}
+                    <div className="agent-days-container">
                       {periodDays.length === 0 ? (
-                        <div style={{ padding: "2rem", textAlign: "center", color: "#64748b", fontSize: "0.85rem" }}>
-                          No active billing cycle selected.
+                        <div style={{ textAlign: "center", padding: "1.5rem", color: "#64748b", fontSize: "0.8rem" }}>
+                          No dates available for this cycle.
                         </div>
                       ) : (
-                        <div
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns: "repeat(auto-fill, minmax(72px, 1fr))",
-                            gap: "0.5rem",
-                          }}
-                        >
+                        <div className="agent-days-grid">
                           {periodDays.map((d) => {
                             const isSelected = selectedDates.includes(d.key);
                             return (
@@ -1147,46 +736,11 @@ export default function AgentPortalPage() {
                                 type="button"
                                 disabled={isAgentLockedForPeriod}
                                 onClick={() => toggleDateSelection(d.key)}
-                                className="agent-day-btn"
-                                style={{
-                                  borderRadius: "10px",
-                                  border: isSelected
-                                    ? "2px solid #2563eb"
-                                    : d.isToday
-                                    ? "1.5px solid #93c5fd"
-                                    : "1px solid #cbd5e1",
-                                  backgroundColor: isSelected
-                                    ? "#2563eb"
-                                    : d.isToday
-                                    ? "#eff6ff"
-                                    : "#ffffff",
-                                  color: isSelected
-                                    ? "#ffffff"
-                                    : d.isToday
-                                    ? "#1d4ed8"
-                                    : "#1e293b",
-                                  fontWeight: isSelected || d.isToday ? 800 : 600,
-                                  fontSize: "0.85rem",
-                                  display: "flex",
-                                  flexDirection: "column",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  padding: "0.6rem 0.2rem",
-                                  cursor: isAgentLockedForPeriod ? "not-allowed" : "pointer",
-                                  transition: "all 0.1s ease",
-                                }}
+                                className={`agent-day-cell ${isSelected ? "selected" : ""} ${d.isToday ? "today" : ""}`}
                               >
-                                <span style={{ fontSize: "0.68rem", textTransform: "uppercase", opacity: 0.85 }}>
-                                  {d.dayOfWeek}
-                                </span>
-                                <span style={{ fontSize: "1.05rem", fontWeight: 800 }}>
-                                  {d.dayNumber}
-                                </span>
-                                {d.isToday && !isSelected && (
-                                  <span style={{ fontSize: "0.58rem", color: "#2563eb", fontWeight: 700 }}>
-                                    TODAY
-                                  </span>
-                                )}
+                                <span className="agent-day-name">{d.dayOfWeek}</span>
+                                <span className="agent-day-num">{d.dayNumber}</span>
+                                {d.isToday && !isSelected && <span className="agent-day-badge">TODAY</span>}
                               </button>
                             );
                           })}
@@ -1194,42 +748,12 @@ export default function AgentPortalPage() {
                       )}
                     </div>
 
-                    {/* Selected Badges */}
+                    {/* Selected Tags */}
                     {selectedDates.length > 0 && (
-                      <div
-                        style={{
-                          marginTop: "0.75rem",
-                          display: "flex",
-                          flexWrap: "wrap",
-                          gap: "0.35rem",
-                          alignItems: "center",
-                        }}
-                      >
-                        <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#334155" }}>
-                          Selected ({selectedDates.length}):
-                        </span>
+                      <div className="agent-selected-tags">
                         {selectedDates.map((dKey) => (
-                          <span
-                            key={dKey}
-                            onClick={() => toggleDateSelection(dKey)}
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: "4px",
-                              backgroundColor: "#eff6ff",
-                              border: "1px solid #bfdbfe",
-                              color: "#1d4ed8",
-                              fontSize: "0.75rem",
-                              fontWeight: 600,
-                              padding: "0.15rem 0.5rem",
-                              borderRadius: "9999px",
-                              cursor: "pointer",
-                            }}
-                          >
-                            {formatDisplayDate(dKey)}
-                            <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#2563eb" }}>
-                              ×
-                            </span>
+                          <span key={dKey} onClick={() => toggleDateSelection(dKey)} className="agent-date-pill">
+                            {formatDisplayDate(dKey)} ✕
                           </span>
                         ))}
                       </div>
@@ -1239,156 +763,64 @@ export default function AgentPortalPage() {
               </form>
             </div>
 
-            {/* BOTTOM SECTION: RECORDED PATIENTS IN THIS BILLING CYCLE */}
-            <div className="agent-card">
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginBottom: "1rem",
-                  flexWrap: "wrap",
-                  gap: "0.5rem",
-                }}
-              >
-                <div>
-                  <h3 style={{ fontSize: "1.05rem", fontWeight: 800, color: "#0f172a" }}>
-                    Patients Recorded in this Billing Cycle ({currentCycleVisits.length})
+            {/* Bottom Records Table */}
+            <div className="agent-panel">
+              <div className="agent-records-header">
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <h3 style={{ fontSize: "0.95rem", fontWeight: 800, margin: 0, color: "#0f172a" }}>
+                    Recorded Patients in this Cycle
                   </h3>
-                  <p style={{ fontSize: "0.8rem", color: "#64748b" }}>
-                    Visits submitted so far for {activePeriod ? getCycleDisplayTitle(activePeriod) : "this cycle"}
-                  </p>
+                  <span className="agent-tab-count">{currentCycleVisits.length}</span>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={loadVisits}
-                  style={{
-                    fontSize: "0.8rem",
-                    color: "#2563eb",
-                    fontWeight: 600,
-                    padding: "0.35rem 0.75rem",
-                    borderRadius: "8px",
-                    backgroundColor: "#eff6ff",
-                    border: "1px solid #bfdbfe",
-                    cursor: "pointer",
-                  }}
-                >
+                <button type="button" onClick={loadVisits} className="agent-refresh-link">
                   Refresh
                 </button>
               </div>
 
               {loadingVisits ? (
-                <div style={{ textAlign: "center", padding: "2rem", color: "#64748b" }}>
-                  Loading recorded visits...
+                <div style={{ textAlign: "center", padding: "1.5rem", color: "#64748b", fontSize: "0.85rem" }}>
+                  Loading records...
                 </div>
               ) : currentCycleVisits.length === 0 ? (
-                <div
-                  style={{
-                    textAlign: "center",
-                    padding: "2.5rem 1rem",
-                    backgroundColor: "#f8fafc",
-                    borderRadius: "12px",
-                    border: "1px dashed #cbd5e1",
-                  }}
-                >
-                  <CalendarCheck size={28} style={{ color: "#94a3b8", margin: "0 auto 0.5rem" }} />
-                  <p style={{ fontSize: "0.9rem", fontWeight: 600, color: "#475569" }}>
-                    No patient visits logged for this billing cycle yet.
-                  </p>
-                  <p style={{ fontSize: "0.78rem", color: "#64748b" }}>
-                    Use the form above to add your first patient treatment session.
+                <div className="agent-empty-box">
+                  <CalendarCheck size={24} style={{ color: "#94a3b8", marginBottom: "0.35rem" }} />
+                  <p style={{ margin: 0, fontWeight: 600, fontSize: "0.85rem", color: "#475569" }}>
+                    No patient visits logged yet for this cycle.
                   </p>
                 </div>
               ) : (
-                <div className="agent-visits-table-container">
+                <div className="agent-table-wrapper">
                   <table className="agent-table">
                     <thead>
                       <tr>
-                        <th>Patient Name</th>
-                        <th>Service Type</th>
-                        <th>Treatment Dates</th>
+                        <th>Patient</th>
+                        <th>Service</th>
+                        <th>Dates</th>
                         <th>Notes</th>
                         <th style={{ textAlign: "center" }}>Status</th>
-                        <th style={{ textAlign: "right" }}>Actions</th>
+                        <th style={{ textAlign: "right" }}>Action</th>
                       </tr>
                     </thead>
                     <tbody>
                       {currentCycleVisits.map((v) => (
                         <tr key={v._id}>
-                          <td style={{ fontWeight: 700, color: "#0f172a" }}>
-                            {v.patientName}
+                          <td style={{ fontWeight: 700, color: "#0f172a" }}>{v.patientName}</td>
+                          <td>
+                            <span className="agent-service-tag">{v.serviceType || "Visit"}</span>
                           </td>
                           <td>
-                            <span
-                              style={{
-                                fontSize: "0.75rem",
-                                fontWeight: 700,
-                                padding: "2px 8px",
-                                borderRadius: "6px",
-                                backgroundColor: "#eff6ff",
-                                color: "#1d4ed8",
-                                border: "1px solid #bfdbfe",
-                              }}
-                            >
-                              {v.serviceType || "Visit"}
-                            </span>
-                          </td>
-                          <td>
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem" }}>
+                            <div className="agent-table-dates">
                               {v.visitDates.map((dt) => (
-                                <span
-                                  key={dt}
-                                  style={{
-                                    fontSize: "0.72rem",
-                                    backgroundColor: "#f1f5f9",
-                                    color: "#334155",
-                                    padding: "0.15rem 0.45rem",
-                                    borderRadius: "6px",
-                                    fontWeight: 600,
-                                  }}
-                                >
+                                <span key={dt} className="agent-table-date-pill">
                                   {formatDisplayDate(dt)}
                                 </span>
                               ))}
                             </div>
                           </td>
-                          <td style={{ fontSize: "0.8rem", color: "#64748b", maxWidth: "200px" }}>
-                            {v.notes || "—"}
-                          </td>
+                          <td style={{ color: "#64748b", fontSize: "0.78rem" }}>{v.notes || "—"}</td>
                           <td style={{ textAlign: "center" }}>
-                            <span
-                              style={{
-                                fontSize: "0.7rem",
-                                fontWeight: 700,
-                                padding: "0.2rem 0.5rem",
-                                borderRadius: "6px",
-                                backgroundColor:
-                                  v.status === "invoiced"
-                                    ? "#ecfdf5"
-                                    : v.status === "approved"
-                                    ? "#eff6ff"
-                                    : "#fffbeb",
-                                color:
-                                  v.status === "invoiced"
-                                    ? "#065f46"
-                                    : v.status === "approved"
-                                    ? "#1d4ed8"
-                                    : "#b45309",
-                                border:
-                                  v.status === "invoiced"
-                                    ? "1px solid #a7f3d0"
-                                    : v.status === "approved"
-                                    ? "1px solid #bfdbfe"
-                                    : "1px solid #fde68a",
-                                textTransform: "uppercase",
-                              }}
-                            >
-                              {v.status === "invoiced"
-                                ? "Invoiced"
-                                : v.status === "approved"
-                                ? "Approved"
-                                : "Pending"}
+                            <span className={`agent-row-status status-${v.status || "pending"}`}>
+                              {v.status === "invoiced" ? "Invoiced" : v.status === "approved" ? "Approved" : "Pending"}
                             </span>
                           </td>
                           <td style={{ textAlign: "right" }}>
@@ -1396,26 +828,13 @@ export default function AgentPortalPage() {
                               <button
                                 type="button"
                                 onClick={() => handleDeleteVisit(v._id)}
-                                title="Delete visit record"
-                                style={{
-                                  padding: "0.35rem 0.6rem",
-                                  borderRadius: "6px",
-                                  color: "#dc2626",
-                                  cursor: "pointer",
-                                  border: "1px solid #fee2e2",
-                                  backgroundColor: "#fef2f2",
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: "4px",
-                                  fontSize: "0.75rem",
-                                  fontWeight: 600,
-                                }}
+                                className="agent-delete-btn"
+                                title="Delete"
                               >
                                 <Trash2 size={13} />
-                                <span>Delete</span>
                               </button>
                             ) : (
-                              <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>Locked</span>
+                              <span style={{ fontSize: "0.72rem", color: "#94a3b8" }}>Locked</span>
                             )}
                           </td>
                         </tr>
@@ -1428,210 +847,102 @@ export default function AgentPortalPage() {
           </div>
         ) : (
           /* TAB 2: PAST BILLING CYCLES & HISTORICAL RECORDS */
-          <div className="agent-view-scrollable">
-            <div className="agent-card">
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginBottom: "1.25rem",
-                  flexWrap: "wrap",
-                  gap: "0.75rem",
-                }}
-              >
-                <div>
-                  <h2 style={{ fontSize: "1.2rem", fontWeight: 800, color: "#0f172a", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <History size={20} style={{ color: "#2563eb" }} />
-                    Past Billing Cycles History
-                  </h2>
-                  <p style={{ fontSize: "0.82rem", color: "#64748b" }}>
-                    Review completed cycles, past patient treatment sessions, and archived invoices
-                  </p>
-                </div>
-
-                <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                  <div style={{ position: "relative" }}>
-                    <Search
-                      size={14}
-                      style={{
-                        position: "absolute",
-                        left: "0.65rem",
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        color: "#94a3b8",
-                      }}
-                    />
-                    <input
-                      type="text"
-                      placeholder="Search agency or cycle..."
-                      value={pastSearchQuery}
-                      onChange={(e) => setPastSearchQuery(e.target.value)}
-                      style={{
-                        padding: "0.4rem 0.75rem 0.4rem 2rem",
-                        borderRadius: "8px",
-                        border: "1px solid #cbd5e1",
-                        fontSize: "0.82rem",
-                        outline: "none",
-                        width: "220px",
-                      }}
-                    />
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      loadPeriods();
-                      loadVisits();
-                    }}
-                    style={{
-                      fontSize: "0.8rem",
-                      color: "#2563eb",
-                      fontWeight: 600,
-                      padding: "0.4rem 0.8rem",
-                      borderRadius: "8px",
-                      backgroundColor: "#eff6ff",
-                      border: "1px solid #bfdbfe",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Refresh
-                  </button>
-                </div>
+          <div className="agent-panel">
+            <div className="agent-records-header" style={{ marginBottom: "0.85rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <History size={17} style={{ color: "#2563eb" }} />
+                <h3 style={{ fontSize: "0.95rem", fontWeight: 800, margin: 0, color: "#0f172a" }}>
+                  Past Billing Cycles
+                </h3>
+                <span className="agent-tab-count count-muted">{filteredPastCycles.length}</span>
               </div>
 
-              {loadingPeriods ? (
-                <div style={{ textAlign: "center", padding: "3rem", color: "#64748b" }}>
-                  Loading billing cycle history...
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <div style={{ position: "relative" }}>
+                  <Search size={13} style={{ position: "absolute", left: "0.6rem", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+                  <input
+                    type="text"
+                    placeholder="Search past cycles..."
+                    value={pastSearchQuery}
+                    onChange={(e) => setPastSearchQuery(e.target.value)}
+                    className="agent-search-input"
+                  />
                 </div>
-              ) : filteredPastCycles.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "3.5rem 1.5rem" }}>
-                  <History size={32} style={{ color: "#94a3b8", margin: "0 auto 0.75rem" }} />
-                  <h3 style={{ fontSize: "1.05rem", fontWeight: 700, marginBottom: "0.35rem" }}>
-                    No past billing cycles found
-                  </h3>
-                  <p style={{ fontSize: "0.85rem", color: "#64748b" }}>
-                    Once managers complete and archive previous billing cycles, they will appear here with full records.
-                  </p>
-                </div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                  {filteredPastCycles.map((p) => {
-                    const num = p.lotNumber ? String(p.lotNumber).padStart(3, "0") : (p.lotCode ? p.lotCode.replace(/LOT\s*/i, "") : "");
-                    const cycleVisits = visits.filter(
-                      (v) => (v.lotId && v.lotId.toString() === p._id) || (p.lotCode && v.lotCode === p.lotCode)
-                    );
+                <button
+                  type="button"
+                  onClick={() => {
+                    loadPeriods();
+                    loadVisits();
+                  }}
+                  className="agent-refresh-link"
+                >
+                  Refresh
+                </button>
+              </div>
+            </div>
 
-                    return (
-                      <div
-                        key={p._id}
-                        style={{
-                          backgroundColor: "#ffffff",
-                          border: "1px solid #e2e8f0",
-                          borderRadius: "12px",
-                          padding: "1.1rem",
-                          boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            flexWrap: "wrap",
-                            gap: "0.6rem",
-                            marginBottom: "0.75rem",
-                            borderBottom: "1px solid #f1f5f9",
-                            paddingBottom: "0.75rem",
-                          }}
-                        >
-                          <div>
-                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                              <span style={{ fontWeight: 800, fontSize: "1.05rem", color: "#0f172a" }}>
-                                Billing Cycle #{num}
-                              </span>
-                              <span
-                                style={{
-                                  fontSize: "0.7rem",
-                                  fontWeight: 700,
-                                  padding: "2px 8px",
-                                  borderRadius: "6px",
-                                  backgroundColor: "#ecfdf5",
-                                  color: "#065f46",
-                                  border: "1px solid #a7f3d0",
-                                }}
-                              >
-                                Completed
-                              </span>
-                            </div>
-                            <div style={{ fontSize: "0.82rem", color: "#64748b", marginTop: "2px" }}>
-                              <strong>Agency:</strong> {p.agencyName || "N/A"} • <strong>Dates:</strong> {formatDateRange(p.periodStart, p.periodEnd)}
-                            </div>
-                          </div>
+            {loadingPeriods ? (
+              <div style={{ textAlign: "center", padding: "2rem", color: "#64748b", fontSize: "0.85rem" }}>
+                Loading past cycles...
+              </div>
+            ) : filteredPastCycles.length === 0 ? (
+              <div className="agent-empty-box">
+                <History size={26} style={{ color: "#94a3b8", marginBottom: "0.35rem" }} />
+                <p style={{ margin: 0, fontWeight: 600, fontSize: "0.85rem", color: "#475569" }}>
+                  No closed billing cycles found.
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                {filteredPastCycles.map((p) => {
+                  const num = p.lotNumber ? String(p.lotNumber).padStart(3, "0") : (p.lotCode ? p.lotCode.replace(/LOT\s*/i, "") : "");
+                  const cycleVisits = visits.filter(
+                    (v) => (v.lotId && v.lotId.toString() === p._id) || (p.lotCode && v.lotCode === p.lotCode)
+                  );
 
-                          <div style={{ textAlign: "right" }}>
-                            <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1e293b" }}>
-                              {cycleVisits.length} {cycleVisits.length === 1 ? "patient session" : "patient sessions"}
+                  return (
+                    <div key={p._id} className="agent-history-card">
+                      <div className="agent-history-top">
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                            <span style={{ fontWeight: 800, fontSize: "0.95rem", color: "#0f172a" }}>
+                              Billing Cycle #{num}
                             </span>
+                            <span className="agent-status-tag tag-closed">Closed</span>
+                          </div>
+                          <div style={{ fontSize: "0.78rem", color: "#64748b", marginTop: "2px" }}>
+                            <strong>{p.agencyName || "Agency"}</strong> • {formatDateRange(p.periodStart, p.periodEnd)}
                           </div>
                         </div>
-
-                        {/* List of visits recorded in this cycle */}
-                        {cycleVisits.length === 0 ? (
-                          <div style={{ fontSize: "0.8rem", color: "#94a3b8", fontStyle: "italic", padding: "0.5rem 0" }}>
-                            No visits recorded by you during this billing cycle.
-                          </div>
-                        ) : (
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "0.65rem" }}>
-                            {cycleVisits.map((v) => (
-                              <div
-                                key={v._id}
-                                style={{
-                                  backgroundColor: "#f8fafc",
-                                  border: "1px solid #e2e8f0",
-                                  borderRadius: "8px",
-                                  padding: "0.75rem",
-                                }}
-                              >
-                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.3rem" }}>
-                                  <span style={{ fontWeight: 700, fontSize: "0.88rem", color: "#0f172a" }}>
-                                    {v.patientName}
-                                  </span>
-                                  <span
-                                    style={{
-                                      fontSize: "0.68rem",
-                                      fontWeight: 700,
-                                      padding: "1px 6px",
-                                      borderRadius: "4px",
-                                      backgroundColor: "#eff6ff",
-                                      color: "#1d4ed8",
-                                    }}
-                                  >
-                                    {v.serviceType || "Visit"}
-                                  </span>
-                                </div>
-                                <div style={{ fontSize: "0.72rem", color: "#64748b", display: "flex", flexWrap: "wrap", gap: "0.25rem" }}>
-                                  {v.visitDates.map((dt) => (
-                                    <span key={dt} style={{ backgroundColor: "#ffffff", padding: "1px 4px", borderRadius: "4px", border: "1px solid #e2e8f0" }}>
-                                      {formatDisplayDate(dt)}
-                                    </span>
-                                  ))}
-                                </div>
-                                {v.notes && (
-                                  <p style={{ fontSize: "0.72rem", color: "#64748b", marginTop: "0.35rem", fontStyle: "italic" }}>
-                                    &quot;{v.notes}&quot;
-                                  </p>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                        <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#334155" }}>
+                          {cycleVisits.length} {cycleVisits.length === 1 ? "record" : "records"}
+                        </span>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+
+                      {cycleVisits.length > 0 && (
+                        <div className="agent-history-grid">
+                          {cycleVisits.map((v) => (
+                            <div key={v._id} className="agent-history-subitem">
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                <span style={{ fontWeight: 700, fontSize: "0.82rem", color: "#0f172a" }}>{v.patientName}</span>
+                                <span className="agent-service-tag">{v.serviceType || "Visit"}</span>
+                              </div>
+                              <div style={{ fontSize: "0.7rem", color: "#64748b", display: "flex", flexWrap: "wrap", gap: "0.2rem", marginTop: "0.25rem" }}>
+                                {v.visitDates.map((dt) => (
+                                  <span key={dt} style={{ backgroundColor: "#ffffff", padding: "1px 4px", borderRadius: "3px", border: "1px solid #e2e8f0" }}>
+                                    {formatDisplayDate(dt)}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </main>
@@ -1642,135 +953,512 @@ export default function AgentPortalPage() {
           100% { transform: rotate(360deg); }
         }
 
+        .agent-shell {
+          min-height: 100vh;
+          background-color: #f8fafc;
+          display: flex;
+          flex-direction: column;
+          color: "#0f172a";
+          font-family: var(--font-body, -apple-system, sans-serif);
+        }
+
         .agent-header {
           position: sticky;
           top: 0;
           z-index: 40;
           background-color: #ffffff;
           border-bottom: 1px solid #e2e8f0;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-          padding: 0.75rem 1.5rem;
+          padding: 0.5rem 1.25rem;
           display: flex;
           align-items: center;
-          justifyContent: space-between;
+          justify-content: space-between;
           width: 100%;
-          flex-shrink: 0;
+          box-sizing: border-box;
         }
 
-        .agent-portal-main {
+        .agent-brand-logo {
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          background-color: #2563eb;
+          color: #ffffff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 800;
+          font-size: 0.95rem;
+        }
+
+        .agent-user-pill {
+          display: flex;
+          align-items: center;
+          gap: 0.35rem;
+          padding: 0.25rem 0.55rem;
+          border-radius: 9999px;
+          background-color: #f1f5f9;
+          font-size: 0.78rem;
+          font-weight: 600;
+          color: #334155;
+        }
+
+        .agent-logout-btn {
+          padding: 0.35rem;
+          border-radius: 6px;
+          background-color: #fef2f2;
+          color: #dc2626;
+          border: 1px solid #fee2e2;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+        }
+
+        .agent-main {
           flex: 1;
           width: 100%;
           max-width: 100%;
-          margin: 0;
-          padding: 1rem 1.5rem 2.5rem 1.5rem;
+          padding: 0.75rem 1.25rem 2rem 1.25rem;
           box-sizing: border-box;
           display: flex;
           flex-direction: column;
+          gap: 0.75rem;
         }
 
-        .agent-tabs-container {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
+        .agent-tabs-bar {
+          display: inline-flex;
           background-color: #e2e8f0;
-          padding: 3px;
-          border-radius: 12px;
-          margin-bottom: 1rem;
-          max-width: 520px;
+          padding: 2px;
+          border-radius: 10px;
+          max-width: 440px;
           width: 100%;
-          flex-shrink: 0;
         }
 
-        .agent-tab-btn {
-          padding: 0.65rem;
-          border-radius: 9px;
-          font-size: 0.88rem;
+        .agent-tab-item {
+          flex: 1;
+          padding: 0.45rem 0.6rem;
+          border-radius: 8px;
+          font-size: 0.82rem;
           font-weight: 700;
           border: none;
           cursor: pointer;
-          transition: all 0.15s ease;
           background-color: transparent;
           color: #64748b;
           display: flex;
           align-items: center;
-          justifyContent: center;
-          gap: 0.45rem;
+          justify-content: center;
+          gap: 0.35rem;
+          transition: all 0.1s ease;
         }
 
-        .agent-tab-btn.active {
+        .agent-tab-item.active {
           background-color: #ffffff;
-          color: #1e293b;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+          color: #0f172a;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.06);
         }
 
-        .agent-tab-badge {
+        .agent-tab-count {
           background-color: #2563eb;
           color: #ffffff;
-          font-size: 0.72rem;
-          padding: 1px 6px;
+          font-size: 0.68rem;
+          padding: 1px 5px;
           border-radius: 9999px;
           font-weight: 800;
         }
 
-        .agent-view-scrollable {
-          flex: 1;
+        .count-muted {
+          background-color: #64748b !important;
+        }
+
+        .agent-stack {
           display: flex;
           flex-direction: column;
+          gap: 0.75rem;
           width: 100%;
         }
 
-        .agent-cycle-banner {
-          background-color: #eff6ff;
-          border: 1px solid #bfdbfe;
+        .agent-control-banner {
+          background-color: #ffffff;
+          border: 1px solid #cbd5e1;
           border-radius: 12px;
-          padding: 0.85rem 1.25rem;
-          margin-bottom: 1rem;
+          padding: 0.5rem 0.85rem;
           display: flex;
           align-items: center;
-          justifyContent: space-between;
+          justify-content: space-between;
           flex-wrap: wrap;
-          gap: 0.75rem;
+          gap: 0.5rem;
         }
 
-        .agent-card {
+        .agent-cycle-select {
+          background-color: #f8fafc;
+          border: 1px solid #cbd5e1;
+          border-radius: 6px;
+          padding: 0.3rem 0.5rem;
+          font-size: 0.85rem;
+          font-weight: 700;
+          color: #0f172a;
+          cursor: pointer;
+          outline: none;
+          width: 100%;
+        }
+
+        .agent-status-tag {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 0.75rem;
+          font-weight: 700;
+          padding: 0.25rem 0.6rem;
+          border-radius: 6px;
+        }
+
+        .tag-locked {
+          background-color: #ecfdf5;
+          color: #065f46;
+          border: 1px solid #a7f3d0;
+        }
+
+        .tag-review {
+          background-color: #fffbeb;
+          color: #b45309;
+          border: 1px solid #fde68a;
+        }
+
+        .tag-closed {
+          background-color: #f1f5f9;
+          color: #475569;
+          border: 1px solid #cbd5e1;
+        }
+
+        .agent-submit-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 0.78rem;
+          font-weight: 700;
+          padding: 0.35rem 0.75rem;
+          border-radius: 6px;
+          background-color: #2563eb;
+          color: #ffffff;
+          border: none;
+          cursor: pointer;
+        }
+
+        .agent-submit-btn:disabled {
+          background-color: #94a3b8;
+          cursor: not-allowed;
+        }
+
+        .agent-notice {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.8rem;
+          padding: 0.5rem 0.75rem;
+          border-radius: 8px;
+        }
+
+        .notice-locked {
+          background-color: #ecfdf5;
+          color: #065f46;
+          border: 1px solid #a7f3d0;
+        }
+
+        .notice-success {
+          background-color: #ecfdf5;
+          color: #065f46;
+          border: 1px solid #a7f3d0;
+        }
+
+        .notice-error {
+          background-color: #fef2f2;
+          color: #991b1b;
+          border: 1px solid #fecaca;
+        }
+
+        .agent-panel {
           background-color: #ffffff;
-          border-radius: 16px;
+          border-radius: 12px;
           border: 1px solid #e2e8f0;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-          padding: 1.25rem 1.5rem;
+          padding: 0.85rem 1rem;
           box-sizing: border-box;
           width: 100%;
         }
 
-        .agent-form-split {
+        .agent-panel-grid {
           display: grid;
           grid-template-columns: 1fr;
-          gap: 1.5rem;
+          gap: 1rem;
         }
 
-        .agent-col-fields {
+        .agent-panel-left {
+          display: flex;
+          flex-direction: column;
+          gap: 0.65rem;
+        }
+
+        .agent-panel-right {
           display: flex;
           flex-direction: column;
         }
 
-        .agent-col-calendar {
+        .agent-field-block {
+          position: relative;
+        }
+
+        .agent-field-header {
           display: flex;
-          flex-direction: column;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 0.25rem;
         }
 
-        .agent-service-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 0.45rem;
+        .agent-label {
+          font-size: 0.8rem;
+          font-weight: 700;
+          color: #1e293b;
         }
 
-        .agent-calendar-box {
+        .agent-hint {
+          font-size: 0.7rem;
+          color: #64748b;
+          display: flex;
+          align-items: center;
+          gap: 3px;
+        }
+
+        .agent-role-tag {
+          font-size: 0.7rem;
+          font-weight: 700;
+          padding: 1px 6px;
+          border-radius: 4px;
+          background-color: #eff6ff;
+          color: #1d4ed8;
+          border: 1px solid #bfdbfe;
+        }
+
+        .agent-input {
+          width: 100%;
+          padding: 0.5rem 0.75rem 0.5rem 2rem;
+          border-radius: 8px;
+          border: 1.5px solid #cbd5e1;
+          font-size: 0.88rem;
+          color: #0f172a;
+          background-color: #ffffff;
+          outline: none;
+          box-sizing: border-box;
+        }
+
+        .agent-input-sm {
+          padding: 0.45rem 0.7rem !important;
+          font-size: 0.82rem !important;
+        }
+
+        .agent-input-icon {
+          position: absolute;
+          left: 0.65rem;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #94a3b8;
+        }
+
+        .agent-suggest-menu {
+          position: absolute;
+          top: calc(100% + 2px);
+          left: 0;
+          right: 0;
+          z-index: 50;
+          background-color: #ffffff;
+          border: 1px solid #cbd5e1;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+          max-height: 180px;
+          overflow-y: auto;
+          padding: 0.25rem 0;
+        }
+
+        .agent-suggest-item {
+          width: 100%;
+          text-align: left;
+          padding: 0.45rem 0.65rem;
+          font-size: 0.82rem;
+          color: #0f172a;
+          background: none;
+          border: none;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+
+        .agent-suggest-item:hover {
+          background-color: #eff6ff;
+        }
+
+        .agent-btn-group {
+          display: flex;
+          gap: 0.35rem;
+          flex-wrap: wrap;
+        }
+
+        .agent-service-btn {
+          flex: 1 1 70px;
+          padding: 0.45rem 0.3rem;
+          border-radius: 8px;
+          border: 1px solid #cbd5e1;
+          background-color: #ffffff;
+          color: #334155;
+          font-weight: 700;
+          font-size: 0.8rem;
+          cursor: pointer;
+          text-align: center;
+        }
+
+        .agent-service-btn.selected {
+          border: 2px solid #2563eb;
+          background-color: #eff6ff;
+          color: #1d4ed8;
+        }
+
+        .agent-save-btn {
+          width: 100%;
+          padding: 0.6rem;
+          border-radius: 10px;
+          border: none;
+          background-color: #2563eb;
+          color: #ffffff;
+          font-size: 0.88rem;
+          font-weight: 700;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.4rem;
+          margin-top: 0.2rem;
+        }
+
+        .agent-save-btn:disabled {
+          background-color: #94a3b8;
+          cursor: not-allowed;
+        }
+
+        .agent-period-range {
+          font-size: 0.72rem;
+          color: #64748b;
+          font-weight: 600;
+        }
+
+        .agent-clear-link {
+          font-size: 0.72rem;
+          color: #dc2626;
+          font-weight: 700;
+          cursor: pointer;
+          background: none;
+          border: none;
+          padding: 0;
+          text-decoration: underline;
+        }
+
+        .agent-days-container {
           background-color: #f8fafc;
           border: 1px solid #e2e8f0;
-          border-radius: 12px;
-          padding: 0.85rem;
+          border-radius: 10px;
+          padding: 0.5rem;
         }
 
-        .agent-visits-table-container {
+        .agent-days-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+          gap: 0.35rem;
+        }
+
+        .agent-day-cell {
+          border-radius: 8px;
+          border: 1px solid #cbd5e1;
+          background-color: #ffffff;
+          color: #1e293b;
+          font-weight: 600;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 0.4rem 0.15rem;
+          cursor: pointer;
+          transition: all 0.1s ease;
+        }
+
+        .agent-day-cell.selected {
+          border: 2px solid #2563eb;
+          background-color: #2563eb;
+          color: #ffffff;
+          font-weight: 800;
+        }
+
+        .agent-day-cell.today:not(.selected) {
+          border: 1.5px solid #93c5fd;
+          background-color: #eff6ff;
+          color: #1d4ed8;
+        }
+
+        .agent-day-name {
+          font-size: 0.64rem;
+          text-transform: uppercase;
+          opacity: 0.85;
+        }
+
+        .agent-day-num {
+          font-size: 0.95rem;
+          font-weight: 800;
+        }
+
+        .agent-day-badge {
+          font-size: 0.52rem;
+          color: #2563eb;
+          font-weight: 800;
+        }
+
+        .agent-selected-tags {
+          margin-top: 0.4rem;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.25rem;
+        }
+
+        .agent-date-pill {
+          background-color: #eff6ff;
+          border: 1px solid #bfdbfe;
+          color: #1d4ed8;
+          font-size: 0.7rem;
+          font-weight: 600;
+          padding: 0.1rem 0.4rem;
+          border-radius: 9999px;
+          cursor: pointer;
+        }
+
+        .agent-records-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 0.6rem;
+        }
+
+        .agent-refresh-link {
+          font-size: 0.75rem;
+          color: #2563eb;
+          font-weight: 700;
+          cursor: pointer;
+          background: none;
+          border: none;
+        }
+
+        .agent-empty-box {
+          text-align: center;
+          padding: 1.5rem 1rem;
+          background-color: #f8fafc;
+          border-radius: 8px;
+          border: 1px dashed #cbd5e1;
+        }
+
+        .agent-table-wrapper {
           overflow-x: auto;
           width: 100%;
         }
@@ -1778,13 +1466,13 @@ export default function AgentPortalPage() {
         .agent-table {
           width: 100%;
           border-collapse: collapse;
-          font-size: 0.85rem;
+          font-size: 0.82rem;
         }
 
         .agent-table th {
           text-align: left;
-          padding: 0.65rem 0.75rem;
-          font-size: 0.75rem;
+          padding: 0.45rem 0.6rem;
+          font-size: 0.7rem;
           font-weight: 700;
           color: #64748b;
           text-transform: uppercase;
@@ -1793,35 +1481,129 @@ export default function AgentPortalPage() {
         }
 
         .agent-table td {
-          padding: 0.75rem;
+          padding: 0.55rem 0.6rem;
           border-bottom: 1px solid #f1f5f9;
           vertical-align: middle;
         }
 
-        .agent-table tr:hover td {
-          background-color: #f8fafc;
+        .agent-service-tag {
+          font-size: 0.7rem;
+          font-weight: 700;
+          padding: 1px 6px;
+          border-radius: 4px;
+          background-color: #eff6ff;
+          color: #1d4ed8;
+          border: 1px solid #bfdbfe;
         }
 
-        /* Desktop Optimization: Full Width Two-Column Split (>= 1024px) */
+        .agent-table-dates {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.2rem;
+        }
+
+        .agent-table-date-pill {
+          font-size: 0.68rem;
+          background-color: #f1f5f9;
+          color: #334155;
+          padding: 0.1rem 0.35rem;
+          border-radius: 4px;
+          font-weight: 600;
+        }
+
+        .agent-row-status {
+          font-size: 0.68rem;
+          font-weight: 700;
+          padding: 1px 6px;
+          border-radius: 4px;
+          text-transform: uppercase;
+        }
+
+        .status-invoiced {
+          background-color: #ecfdf5;
+          color: #065f46;
+          border: 1px solid #a7f3d0;
+        }
+
+        .status-approved {
+          background-color: #eff6ff;
+          color: #1d4ed8;
+          border: 1px solid #bfdbfe;
+        }
+
+        .status-pending {
+          background-color: #fffbeb;
+          color: #b45309;
+          border: 1px solid #fde68a;
+        }
+
+        .agent-delete-btn {
+          padding: 0.25rem 0.45rem;
+          border-radius: 4px;
+          color: #dc2626;
+          cursor: pointer;
+          border: 1px solid #fee2e2;
+          background-color: #fef2f2;
+        }
+
+        .agent-search-input {
+          padding: 0.3rem 0.5rem 0.3rem 1.7rem;
+          border-radius: 6px;
+          border: 1px solid #cbd5e1;
+          font-size: 0.78rem;
+          outline: none;
+          width: 180px;
+        }
+
+        .agent-history-card {
+          background-color: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          padding: 0.75rem;
+        }
+
+        .agent-history-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          border-bottom: 1px solid #f1f5f9;
+          padding-bottom: 0.45rem;
+          margin-bottom: 0.45rem;
+        }
+
+        .agent-history-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+          gap: 0.5rem;
+        }
+
+        .agent-history-subitem {
+          background-color: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 6px;
+          padding: 0.5rem;
+        }
+
+        /* Desktop Optimization (>= 1024px) */
         @media (min-width: 1024px) {
           .agent-header {
-            padding: 0.75rem 2rem;
+            padding: 0.5rem 2rem;
           }
 
-          .agent-portal-main {
-            padding: 1.25rem 2rem 2.5rem 2rem;
+          .agent-main {
+            padding: 0.85rem 2rem 2rem 2rem;
           }
 
-          .agent-form-split {
-            grid-template-columns: 400px 1fr;
-            gap: 2.5rem;
+          .agent-panel-grid {
+            grid-template-columns: 360px 1fr;
+            gap: 1.5rem;
           }
         }
 
         @media (min-width: 1400px) {
-          .agent-form-split {
-            grid-template-columns: 460px 1fr;
-            gap: 3rem;
+          .agent-panel-grid {
+            grid-template-columns: 400px 1fr;
+            gap: 2rem;
           }
         }
       `}</style>
