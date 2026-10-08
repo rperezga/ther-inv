@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { NextRequest, NextResponse } from "next/server";
-import { IUser } from "./types";
+import { IUser, UserRole } from "./types";
 import { User } from "@/models/User";
 import { connectDB } from "./db";
 
@@ -12,7 +12,7 @@ export interface JWTPayload {
   userId: string;
   name: string;
   email: string;
-  role: "admin" | "manager" | "viewer";
+  role: UserRole;
 }
 
 export function hashPassword(password: string): string {
@@ -70,7 +70,7 @@ export function clearAuthCookie(response: NextResponse) {
 
 export async function verifyUserHasRole(
   req: NextRequest,
-  allowedRoles: Array<"admin" | "manager" | "viewer">
+  allowedRoles: Array<UserRole>
 ): Promise<
   | { user: JWTPayload; errorResponse: null }
   | { user: null; errorResponse: NextResponse }

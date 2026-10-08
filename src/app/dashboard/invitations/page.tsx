@@ -22,9 +22,10 @@ export default function InvitationsPage() {
 
   // Form State
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"manager" | "viewer">("viewer");
+  const [role, setRole] = useState<"agent" | "manager" | "viewer">("agent");
   const [sending, setSending] = useState(false);
   const [formError, setFormError] = useState("");
+  const [emailStatus, setEmailStatus] = useState<{ sent: boolean; message: string } | null>(null);
   const [lastCreatedUrl, setLastCreatedUrl] = useState<string | null>(null);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
@@ -51,6 +52,7 @@ export default function InvitationsPage() {
   const handleCreateInvitation = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError("");
+    setEmailStatus(null);
     setLastCreatedUrl(null);
 
     if (!email.trim()) {
@@ -64,7 +66,7 @@ export default function InvitationsPage() {
       const res = await fetch("/api/invitations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, role }),
+        body: JSON.stringify({ email, role, expirationHours: 24 }),
       });
 
       const data = await res.json();
@@ -73,8 +75,19 @@ export default function InvitationsPage() {
         throw new Error(data.error || "Failed to generate invitation");
       }
 
-      const fullUrl = `${window.location.origin}${data.inviteUrl}`;
+      const fullUrl = data.fullInviteUrl || `${window.location.origin}${data.inviteUrl}`;
       setLastCreatedUrl(fullUrl);
+      if (data.emailSent) {
+        setEmailStatus({
+          sent: true,
+          message: `Invitación enviada por email a ${email} vía Resend (válida por 24 horas).`,
+        });
+      } else if (data.emailError) {
+        setEmailStatus({
+          sent: false,
+          message: `Enlace generado con éxito. (Aviso de email: ${data.emailError}). Puedes copiar el link abajo.`,
+        });
+      }
       setEmail("");
       fetchInvitations();
     } catch (err: any) {
@@ -104,7 +117,7 @@ export default function InvitationsPage() {
     }
   };
 
-  const handleRoleChange = async (userId: string, newRole: "manager" | "viewer") => {
+  const handleRoleChange = async (userId: string, newRole: "agent" | "manager" | "viewer") => {
     try {
       const res = await fetch("/api/invitations", {
         method: "PATCH",
@@ -199,21 +212,41 @@ export default function InvitationsPage() {
             </div>
           )}
 
+          {emailStatus && (
+            <div
+              style={{
+                backgroundColor: emailStatus.sent ? "var(--success-subtle)" : "#fef3c7",
+                color: emailStatus.sent ? "var(--success)" : "#92400e",
+                border: emailStatus.sent ? "1px solid var(--success-border)" : "1px solid #fde68a",
+                borderRadius: "var(--radius-md)",
+                padding: "0.75rem 1rem",
+                marginBottom: "1rem",
+                fontSize: "0.85rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+              }}
+            >
+              <Mail size={16} />
+              <span>{emailStatus.message}</span>
+            </div>
+          )}
+
           {lastCreatedUrl && (
             <div
               style={{
-                backgroundColor: "var(--success-subtle)",
-                border: "1px solid var(--success-border)",
+                backgroundColor: "var(--bg-subtle)",
+                border: "1px solid var(--border-color)",
                 borderRadius: "var(--radius-md)",
                 padding: "1rem",
                 marginBottom: "1.25rem",
               }}
             >
-              <p style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--success)", marginBottom: "0.5rem" }}>
-                Invitation link generated successfully!
+              <p style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: "0.35rem" }}>
+                Enlace de invitación seguro (expira en 24 horas):
               </p>
               <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.5rem" }}>
-                Share this secure link directly with the user:
+                Comparte este enlace directamente o el usuario puede abrir el email recibido:
               </p>
               <div style={{ display: "flex", gap: "0.5rem" }}>
                 <input
@@ -271,8 +304,11 @@ export default function InvitationsPage() {
               <select
                 className="form-select"
                 value={role}
-                onChange={(e) => setRole(e.target.value as "manager" | "viewer")}
+                onChange={(e) => setRole(e.target.value as "agent" | "manager" | "viewer")}
               >
+                <option value="agent">
+                  Clinical Agent (Direct invoice drafting, timesheets, personal access)
+                </option>
                 <option value="viewer">
                   Viewer (Read-only access to invoices and reports)
                 </option>
@@ -289,7 +325,7 @@ export default function InvitationsPage() {
               className="btn btn-primary"
               style={{ width: "100%", marginTop: "0.5rem" }}
             >
-              {sending ? "Generating Invitation..." : "Generate Invitation Link"}
+              {sending ? "Sending Invitation via Resend..." : "Send Invitation via Email"}
             </button>
           </form>
         </div>
@@ -370,17 +406,33 @@ export default function InvitationsPage() {
                       fontWeight: 600,
                       borderRadius: "6px",
                       cursor: "pointer",
-                      backgroundColor: u.role === "manager" ? "#f0fdf4" : "#f1f5f9",
-                      borderColor: u.role === "manager" ? "#bbf7d0" : "#cbd5e1",
-                      color: u.role === "manager" ? "#166534" : "#334155",
+                      backgroundColor:
+                        u.role === "manager"
+                          ? "#f0fdf4"
+                          : u.role === "agent"
+                          ? "#ecfdf5"
+                          : "#f1f5f9",
+                      borderColor:
+                        u.role === "manager"
+                          ? "#bbf7d0"
+                          : u.role === "agent"
+                          ? "#a7f3d0"
+                          : "#cbd5e1",
+                      color:
+                        u.role === "manager"
+                          ? "#166534"
+                          : u.role === "agent"
+                          ? "#065f46"
+                          : "#334155",
                     }}
-                    value={u.role || "viewer"}
+                    value={u.role || "agent"}
                     onChange={(e) => {
                       if (u._id) {
-                        handleRoleChange(u._id, e.target.value as "manager" | "viewer");
+                        handleRoleChange(u._id, e.target.value as "agent" | "manager" | "viewer");
                       }
                     }}
                   >
+                    <option value="agent">AGENT</option>
                     <option value="viewer">VIEWER</option>
                     <option value="manager">MANAGER</option>
                   </select>
@@ -427,7 +479,11 @@ export default function InvitationsPage() {
                     <td style={{ fontWeight: 600 }}>{inv.email}</td>
                     <td>
                       <span className={`badge badge-role-${inv.role}`}>
-                        {inv.role === "manager" ? "Manager" : "Viewer"}
+                        {inv.role === "manager"
+                          ? "Manager"
+                          : inv.role === "agent"
+                          ? "Agent"
+                          : "Viewer"}
                       </span>
                     </td>
                     <td style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>

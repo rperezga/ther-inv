@@ -3,7 +3,7 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 export interface IInvitationDocument extends Document {
   token: string;
   email: string;
-  role: "admin" | "manager" | "viewer";
+  role: "admin" | "manager" | "viewer" | "agent";
   status: "pending" | "accepted" | "expired";
   invitedBy: mongoose.Types.ObjectId;
   expiresAt: Date;
@@ -17,8 +17,8 @@ const InvitationSchema = new Schema<IInvitationDocument>(
     email: { type: String, required: true, lowercase: true, trim: true },
     role: {
       type: String,
-      enum: ["admin", "manager", "viewer"],
-      default: "viewer",
+      enum: ["admin", "manager", "viewer", "agent"],
+      default: "agent",
     },
     status: {
       type: String,

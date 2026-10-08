@@ -4,7 +4,7 @@ export interface IUserDocument extends Document {
   name: string;
   email: string;
   password?: string;
-  role: "admin" | "manager" | "viewer";
+  role: "admin" | "manager" | "viewer" | "agent";
   isActive: boolean;
   invitedBy?: mongoose.Types.ObjectId;
   createdAt: Date;
@@ -18,8 +18,8 @@ const UserSchema = new Schema<IUserDocument>(
     password: { type: String, required: true },
     role: {
       type: String,
-      enum: ["admin", "manager", "viewer"],
-      default: "viewer",
+      enum: ["admin", "manager", "viewer", "agent"],
+      default: "agent",
     },
     isActive: { type: Boolean, default: true },
     invitedBy: { type: Schema.Types.ObjectId, ref: "User" },

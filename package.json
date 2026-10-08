@@ -21,7 +21,8 @@
     "next": "^15.1.7",
     "openai": "^7.28.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "resend": "^6.32.1"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

@@ -4,6 +4,8 @@ import { connectDB } from "@/lib/db";
 import { Invitation } from "@/models/Invitation";
 import { User } from "@/models/User";
 import { verifyUserHasRole } from "@/lib/auth";
+import { sendInvitationEmail } from "@/lib/email";
+import { UserRole } from "@/lib/types";
 
 export async function GET(req: NextRequest) {
   try {
@@ -54,9 +56,9 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    if (role !== "viewer" && role !== "manager") {
+    if (role !== "viewer" && role !== "manager" && role !== "agent") {
       return NextResponse.json(
-        { error: "Role can only be changed to viewer or manager" },
+        { error: "Role can only be changed to agent, viewer or manager" },
         { status: 400 }
       );
     }
@@ -76,7 +78,7 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    targetUser.role = role;
+    targetUser.role = role as UserRole;
     await targetUser.save();
 
     return NextResponse.json({
@@ -106,7 +108,7 @@ export async function POST(req: NextRequest) {
     if (errorResponse) return errorResponse;
 
     const body = await req.json();
-    const { email, role = "viewer", expirationDays = 7 } = body;
+    const { email, role = "agent", expirationHours = 24 } = body;
 
     if (!email) {
       return NextResponse.json(
@@ -138,8 +140,10 @@ export async function POST(req: NextRequest) {
 
     // Generate unique secure token
     const token = crypto.randomBytes(24).toString("hex");
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + Number(expirationDays));
+    
+    // Default expiration: exactly 24 hours from creation
+    const hoursNum = Number(expirationHours) || 24;
+    const expiresAt = new Date(Date.now() + hoursNum * 60 * 60 * 1000);
 
     // Invalidate existing pending invites for this email
     await Invitation.deleteMany({ email: normalizedEmail, status: "pending" });
@@ -147,7 +151,7 @@ export async function POST(req: NextRequest) {
     const newInvite = await Invitation.create({
       token,
       email: normalizedEmail,
-      role,
+      role: role as UserRole,
       status: "pending",
       invitedBy: user.userId,
       expiresAt,
@@ -158,11 +162,32 @@ export async function POST(req: NextRequest) {
       "name email"
     );
 
+    // Construct full URL using request origin or configured app URL
+    const appOrigin =
+      req.nextUrl?.origin ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      "http://localhost:3000";
+    const inviteRelativePath = `/register?invite=${token}`;
+    const fullInviteUrl = `${appOrigin}${inviteRelativePath}`;
+
+    // Send invitation email via Resend
+    const inviterObj = populated?.invitedBy as any;
+    const inviterName = inviterObj?.name || user.name || "Equipo THER-INV";
+    const emailResult = await sendInvitationEmail({
+      to: normalizedEmail,
+      role: role,
+      invitationUrl: fullInviteUrl,
+      invitedByName: inviterName,
+    });
+
     return NextResponse.json(
       {
         success: true,
         invitation: populated,
-        inviteUrl: `/register?invite=${token}`,
+        inviteUrl: inviteRelativePath,
+        fullInviteUrl,
+        emailSent: emailResult.success,
+        emailError: emailResult.error,
       },
       { status: 201 }
     );

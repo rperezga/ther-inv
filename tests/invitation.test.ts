@@ -24,13 +24,23 @@ describe("Invitation System & Lifecycle Logic", () => {
   });
 
   it("should validate allowed invitation roles", () => {
-    const validRoles = ["manager", "viewer"];
+    const validRoles = ["agent", "manager", "viewer"];
     const isValidRole = (r: string) => validRoles.includes(r);
 
+    expect(isValidRole("agent")).toBe(true);
     expect(isValidRole("manager")).toBe(true);
     expect(isValidRole("viewer")).toBe(true);
     expect(isValidRole("admin")).toBe(false); // Admin cannot be given via public invite
     expect(isValidRole("hacker")).toBe(false);
+  });
+
+  it("should set expiration to exactly 24 hours by default", () => {
+    const now = Date.now();
+    const defaultHours = 24;
+    const expiresAt = new Date(now + defaultHours * 60 * 60 * 1000);
+
+    const diffHours = (expiresAt.getTime() - now) / (1000 * 60 * 60);
+    expect(diffHours).toBeCloseTo(24, 1);
   });
 
   it("should format invitation URLs properly", () => {

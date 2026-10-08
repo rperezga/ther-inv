@@ -186,21 +186,21 @@ export default function DashboardLayout({
       href: "/dashboard/workers",
       icon: Users,
       active: pathname === "/dashboard/workers",
-      hidden: user?.role === "viewer",
+      hidden: user?.role === "viewer" || user?.role === "agent",
     },
     {
       label: "Agency Assignments",
       href: "/dashboard/assignments",
       icon: Building2,
       active: pathname === "/dashboard/assignments",
-      hidden: user?.role === "viewer",
+      hidden: user?.role === "viewer" || user?.role === "agent",
     },
     {
       label: "Team & Invites",
       href: "/dashboard/invitations",
       icon: UserPlus,
       active: pathname === "/dashboard/invitations",
-      hidden: user?.role === "viewer",
+      hidden: user?.role === "viewer" || user?.role === "agent",
     },
     {
       label: "Viewer Portal",
@@ -369,7 +369,13 @@ export default function DashboardLayout({
                   className={`badge badge-role-${user?.role || "viewer"}`}
                   style={{ fontSize: "0.68rem", padding: "0.15rem 0.45rem" }}
                 >
-                  {user?.role === "admin" ? "Admin" : user?.role === "manager" ? "Manager" : "Viewer"}
+                  {user?.role === "admin"
+                    ? "Admin"
+                    : user?.role === "manager"
+                    ? "Manager"
+                    : user?.role === "agent"
+                    ? "Agent"
+                    : "Viewer"}
                 </span>
                 <ChevronDown
                   size={14}

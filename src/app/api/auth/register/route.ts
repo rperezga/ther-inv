@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
 import { Invitation } from "@/models/Invitation";
 import { hashPassword, setAuthCookie, signToken } from "@/lib/auth";
+import { UserRole } from "@/lib/types";
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
     }
 
     const totalUsers = await User.countDocuments();
-    let role: "admin" | "manager" | "viewer" = "viewer";
+    let role: UserRole = "agent";
     let invitedBy = undefined;
 
     // First user becomes Admin automatically

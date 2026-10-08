@@ -326,6 +326,12 @@ input, select, textarea {
   border: 1px solid #e2e8f0;
 }
 
+.badge-role-agent {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
 /* Form Controls */
 .form-group {
   display: flex;
