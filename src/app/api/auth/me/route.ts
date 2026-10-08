@@ -17,13 +17,34 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ user: null }, { status: 401 });
     }
 
+    let effectiveAgentType = user.agentType;
+
+    // Cross-check with linked Worker profile by email to always reflect latest role changes immediately
+    if (user.email) {
+      try {
+        const { Worker } = await import("@/models/Worker");
+        const linkedWorker = await Worker.findOne({ email: user.email.toLowerCase().trim() });
+        if (linkedWorker && linkedWorker.role) {
+          const lower = linkedWorker.role.toLowerCase();
+          const detected: "PT" | "PTA" = (lower.includes("pta") || lower.includes("assistant")) ? "PTA" : "PT";
+          effectiveAgentType = detected;
+          // If out of sync in database, persist update asynchronously
+          if (user.agentType !== detected) {
+            await User.updateOne({ _id: user._id }, { $set: { agentType: detected } });
+          }
+        }
+      } catch (workerErr) {
+        console.error("Error cross-checking worker agentType in /api/auth/me:", workerErr);
+      }
+    }
+
     return NextResponse.json({
       user: {
         userId: user._id.toString(),
         name: user.name,
         email: user.email,
         role: user.role,
-        agentType: user.agentType,
+        agentType: effectiveAgentType || "PT",
       },
     });
   } catch (error) {

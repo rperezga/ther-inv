@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { Worker } from "@/models/Worker";
+import { User } from "@/models/User";
 import { verifyUserHasRole } from "@/lib/auth";
 
 export async function GET(
@@ -71,6 +72,20 @@ export async function PUT(
         { error: "Worker not found" },
         { status: 404 }
       );
+    }
+
+    // If role changed and worker has an email, sync agentType with linked User account
+    if (body.role && updated.email) {
+      try {
+        const lower = body.role.toLowerCase();
+        const newAgentType: "PT" | "PTA" = (lower.includes("pta") || lower.includes("assistant")) ? "PTA" : "PT";
+        await User.updateMany(
+          { email: updated.email.toLowerCase().trim() },
+          { $set: { agentType: newAgentType } }
+        );
+      } catch (syncErr) {
+        console.error("Failed to sync User agentType on Worker role update:", syncErr);
+      }
     }
 
     return NextResponse.json({ success: true, worker: updated });
