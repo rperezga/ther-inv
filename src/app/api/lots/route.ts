@@ -16,12 +16,8 @@ export async function GET(req: NextRequest) {
 
     await connectDB();
 
-    // If agent, return open lots or lots where they have status
+    // Agents can see open lots and any lots (to view past cycles history)
     const query: any = {};
-    if (user.role === "agent") {
-      query.status = "open";
-    }
-
     const lots = await Lot.find(query).sort({ lotNumber: -1 });
 
     // Aggregate statistics per lot: invoice count and total amount

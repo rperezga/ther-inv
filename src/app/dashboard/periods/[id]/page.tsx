@@ -259,7 +259,7 @@ export default function PeriodDetailPage() {
   const isOpen = lot.status === "open";
 
   return (
-    <div style={{ width: "100%", maxWidth: "1280px", margin: "0 auto" }}>
+    <div style={{ width: "100%", maxWidth: "100%", margin: "0" }}>
       {/* Back Link */}
       <div style={{ marginBottom: "1rem" }}>
         <Link

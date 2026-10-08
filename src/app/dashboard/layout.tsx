@@ -675,7 +675,8 @@ export default function DashboardLayout({
             pathname === "/dashboard/invoices" ||
             pathname === "/dashboard/invoices/new" ||
             pathname === "/dashboard/invitations" ||
-            pathname === "/dashboard/viewer"
+            pathname === "/dashboard/viewer" ||
+            pathname.startsWith("/dashboard/periods")
               ? "content-body-full"
               : "content-body"
           }

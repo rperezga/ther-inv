@@ -211,7 +211,7 @@ export default function PeriodsPage() {
   }, [periods, statusFilter, agencyFilter, search]);
 
   return (
-    <div style={{ width: "100%", maxWidth: "1280px", margin: "0 auto" }}>
+    <div style={{ width: "100%", maxWidth: "100%", margin: "0" }}>
       {/* Toast Notification */}
       {successToast && (
         <div
