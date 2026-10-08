@@ -39,11 +39,11 @@ export async function sendInvitationEmail({
 
   const htmlContent = `
     <!DOCTYPE html>
-    <html lang="es">
+    <html lang="en">
     <head>
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Invitación a THER-INV</title>
+      <title>Invitation to THER-INV</title>
     </head>
     <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px; color: #1e293b;">
       <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 580px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
@@ -63,21 +63,21 @@ export async function sendInvitationEmail({
         <tr>
           <td style="padding: 32px;">
             <h2 style="font-size: 19px; font-weight: 700; color: #0f172a; margin: 0 0 14px 0;">
-              Has sido invitado a unirte a THER-INV
+              You have been invited to join THER-INV
             </h2>
 
             <p style="font-size: 15px; line-height: 1.6; color: #334155; margin: 0 0 16px 0;">
-              Hola, <strong>${invitedByName}</strong> te ha invitado a formar parte del sistema THER-INV con el rol de <strong style="color: #2563eb;">${roleDisplay}</strong>.
+              Hello, <strong>${invitedByName}</strong> has invited you to join the THER-INV platform with the role of <strong style="color: #2563eb;">${roleDisplay}</strong>.
             </p>
 
             <div style="background-color: #eff6ff; border-left: 4px solid #2563eb; padding: 14px 16px; border-radius: 4px; margin: 20px 0;">
               <p style="margin: 0; font-size: 13.5px; color: #1e40af; font-weight: 600;">
-                ⏱️ Este enlace es personal y expirará en <strong>24 horas</strong>.
+                ⏱️ This personal invitation link will expire in <strong>24 hours</strong>.
               </p>
             </div>
 
             <p style="font-size: 14.5px; line-height: 1.6; color: #334155; margin: 0 0 24px 0;">
-              Al hacer clic en el siguiente botón podrás acceder a la plataforma y crear tu contraseña para iniciar sesión en tu cuenta:
+              Click the button below to activate your account and set up your password:
             </p>
 
             <!-- Call to action button -->
@@ -85,14 +85,14 @@ export async function sendInvitationEmail({
               <tr>
                 <td align="center" style="padding: 8px 0 28px 0;">
                   <a href="${invitationUrl}" target="_blank" style="background-color: #2563eb; color: #ffffff; display: inline-block; padding: 14px 32px; font-size: 15px; font-weight: 700; text-decoration: none; border-radius: 8px; box-shadow: 0 2px 4px rgba(37,99,235,0.25);">
-                    Crear Contraseña y Aceptar Invitación
+                    Set Password & Accept Invitation
                   </a>
                 </td>
               </tr>
             </table>
 
             <p style="font-size: 13px; line-height: 1.5; color: #64748b; margin: 0 0 8px 0;">
-              Si el botón no funciona, copia y pega el siguiente enlace directamente en tu navegador:
+              If the button does not work, copy and paste the following link directly into your browser:
             </p>
             <p style="font-size: 12px; color: #2563eb; word-break: break-all; margin: 0 0 24px 0; background-color: #f8fafc; padding: 10px; border-radius: 6px; border: 1px dashed #cbd5e1;">
               <a href="${invitationUrl}" target="_blank" style="color: #2563eb; text-decoration: underline;">
@@ -103,7 +103,7 @@ export async function sendInvitationEmail({
             <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
 
             <p style="font-size: 12px; color: #94a3b8; margin: 0; line-height: 1.5;">
-              Si no esperabas recibir esta invitación, puedes ignorar este mensaje de forma segura.
+              If you did not expect to receive this invitation, you can safely ignore this email.
             </p>
           </td>
         </tr>
@@ -112,7 +112,7 @@ export async function sendInvitationEmail({
         <tr>
           <td style="background-color: #f8fafc; padding: 18px 32px; border-top: 1px solid #e2e8f0; text-align: center;">
             <p style="font-size: 12px; color: #64748b; margin: 0;">
-              © ${new Date().getFullYear()} THER-INV Portal. Todos los derechos reservados.
+              © ${new Date().getFullYear()} THER-INV Portal. All rights reserved.
             </p>
           </td>
         </tr>
@@ -125,12 +125,12 @@ export async function sendInvitationEmail({
     const data = await resend.emails.send({
       from: resendFromEmail,
       to,
-      subject: `Invitación a THER-INV - Crea tu contraseña (${roleDisplay})`,
+      subject: `Invitation to THER-INV - Set Your Password (${roleDisplay})`,
       html: htmlContent,
     });
 
     if (data.error) {
-      console.error("[RESEND] Error enviando correo:", data.error);
+      console.error("[RESEND] Error sending email:", data.error);
       return {
         success: false,
         error: data.error.message,
@@ -142,10 +142,10 @@ export async function sendInvitationEmail({
       id: data.data?.id,
     };
   } catch (error: any) {
-    console.error("[RESEND] Excepción enviando correo:", error);
+    console.error("[RESEND] Exception sending email:", error);
     return {
       success: false,
-      error: error?.message || "Error al enviar correo con Resend",
+      error: error?.message || "Failed to send email via Resend",
     };
   }
 }

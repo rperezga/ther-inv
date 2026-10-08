@@ -28,12 +28,12 @@ function toDateKey(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-// Helper to format date for display in Spanish/English
+// Helper to format date for display
 function formatDisplayDate(dateKey: string): string {
   if (!dateKey) return "";
   const [y, m, d] = dateKey.split("-").map(Number);
   const date = new Date(y, m - 1, d);
-  return date.toLocaleDateString("es-ES", {
+  return date.toLocaleDateString("en-US", {
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -92,7 +92,7 @@ export default function AgentPortalPage() {
   useEffect(() => {
     fetch("/api/auth/me")
       .then((res) => {
-        if (!res.ok) throw new Error("No autenticado");
+        if (!res.ok) throw new Error("Unauthorized");
         return res.json();
       })
       .then((data) => {
@@ -182,12 +182,12 @@ export default function AgentPortalPage() {
         });
       }
 
-      let label = `Semana ${w + 1}`;
-      if (w === 0) label = "Hace 3 semanas";
-      else if (w === 1) label = "Hace 2 semanas";
-      else if (w === 2) label = "Semana anterior";
-      else if (w === 3) label = "Semana actual";
-      else if (w === 4) label = "Semana próxima";
+      let label = `Week ${w + 1}`;
+      if (w === 0) label = "3 Weeks Ago";
+      else if (w === 1) label = "2 Weeks Ago";
+      else if (w === 2) label = "Previous Week";
+      else if (w === 3) label = "Current Week";
+      else if (w === 4) label = "Next Week";
 
       weeks.push({
         weekIndex: w,
@@ -219,12 +219,12 @@ export default function AgentPortalPage() {
     setFormSuccess(false);
 
     if (!patientName.trim()) {
-      setFormError("Por favor escribe el nombre del paciente.");
+      setFormError("Please enter the patient's name.");
       return;
     }
 
     if (selectedDates.length === 0) {
-      setFormError("Debes seleccionar al menos un día en el calendario.");
+      setFormError("Please select at least one day in the calendar.");
       return;
     }
 
@@ -244,7 +244,7 @@ export default function AgentPortalPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "Error al registrar la visita");
+        throw new Error(data.error || "Failed to record visit");
       }
 
       setFormSuccess(true);
@@ -257,7 +257,7 @@ export default function AgentPortalPage() {
         setFormSuccess(false);
       }, 3500);
     } catch (err: any) {
-      setFormError(err.message || "Error al enviar la visita");
+      setFormError(err.message || "Failed to submit visit");
     } finally {
       setSubmitting(false);
     }
@@ -266,7 +266,7 @@ export default function AgentPortalPage() {
   // Delete a pending visit
   const handleDeleteVisit = async (id?: string) => {
     if (!id) return;
-    if (!confirm("¿Deseas eliminar este registro de visita?")) return;
+    if (!confirm("Are you sure you want to delete this visit record?")) return;
 
     try {
       const res = await fetch(`/api/agent/visits?id=${id}`, {
@@ -276,7 +276,7 @@ export default function AgentPortalPage() {
         setVisits((prev) => prev.filter((v) => v._id !== id));
       }
     } catch {
-      alert("Error al eliminar la visita");
+      alert("Failed to delete visit record");
     }
   };
 
@@ -304,13 +304,13 @@ export default function AgentPortalPage() {
               margin: "0 auto 12px",
             }}
           />
-          <p style={{ fontSize: "0.9rem", fontWeight: 500 }}>Cargando portal de agente...</p>
+          <p style={{ fontSize: "0.9rem", fontWeight: 500 }}>Loading Agent Portal...</p>
         </div>
       </div>
     );
   }
 
-  const dayHeaders = ["D", "L", "M", "M", "J", "V", "S"];
+  const dayHeaders = ["S", "M", "T", "W", "T", "F", "S"];
 
   return (
     <div
@@ -366,7 +366,7 @@ export default function AgentPortalPage() {
                   display: "inline-block",
                 }}
               />
-              Portal de Agente
+              Agent Portal
             </div>
           </div>
         </div>
@@ -388,14 +388,14 @@ export default function AgentPortalPage() {
           >
             <User size={13} style={{ color: "#2563eb" }} />
             <span style={{ maxWidth: "140px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {currentUser?.name || "Agente"}
+              {currentUser?.name || "Agent"}
             </span>
           </div>
 
           <button
             type="button"
             onClick={handleLogout}
-            title="Cerrar sesión"
+            title="Log out"
             style={{
               padding: "0.45rem",
               borderRadius: "8px",
@@ -423,7 +423,7 @@ export default function AgentPortalPage() {
             className={`agent-tab-btn ${activeTab === "form" ? "active" : ""}`}
           >
             <Plus size={16} />
-            Registrar Visita
+            Log Visit
           </button>
           <button
             type="button"
@@ -431,7 +431,7 @@ export default function AgentPortalPage() {
             className={`agent-tab-btn ${activeTab === "history" ? "active" : ""}`}
           >
             <CalendarCheck size={16} />
-            Mis Registros
+            My Records
             {visits.length > 0 && (
               <span className="agent-tab-badge">
                 {visits.length}
@@ -446,10 +446,10 @@ export default function AgentPortalPage() {
             {/* Header info */}
             <div style={{ marginBottom: "1.25rem" }}>
               <h1 style={{ fontSize: "1.25rem", fontWeight: 800, color: "#0f172a", marginBottom: "0.25rem" }}>
-                Registro Rápido de Visitas
+                Quick Visit Log
               </h1>
               <p style={{ fontSize: "0.82rem", color: "#64748b" }}>
-                Ingresa el paciente y toca en el calendario los días en que fue atendido.
+                Enter the patient's name and tap the dates on the calendar when care was provided.
               </p>
             </div>
 
@@ -471,7 +471,7 @@ export default function AgentPortalPage() {
               >
                 <Check size={18} style={{ color: "#059669", flexShrink: 0 }} />
                 <span>
-                  <strong>¡Visita registrada con éxito!</strong> Los días fueron guardados y quedan listos para su facturación semanal.
+                  <strong>Visit recorded successfully!</strong> The dates have been saved and are ready for weekly invoicing.
                 </span>
               </div>
             )}
@@ -513,14 +513,14 @@ export default function AgentPortalPage() {
                         marginBottom: "0.4rem",
                       }}
                     >
-                      Nombre del Paciente <span style={{ color: "#dc2626" }}>*</span>
+                      Patient Name <span style={{ color: "#dc2626" }}>*</span>
                     </label>
                     <div style={{ position: "relative" }}>
                       <input
                         id="patient-name-input"
                         type="text"
                         required
-                        placeholder="Ej. Juan Pérez o Smith, John"
+                        placeholder="e.g. John Doe or Smith, John"
                         value={patientName}
                         onChange={(e) => setPatientName(e.target.value)}
                         style={{
@@ -560,7 +560,7 @@ export default function AgentPortalPage() {
                           color: "#1e293b",
                         }}
                       >
-                        Tipo de Servicio
+                        Service Type
                       </label>
                       <span
                         style={{
@@ -573,7 +573,7 @@ export default function AgentPortalPage() {
                           border: isPTA ? "1px solid #fde68a" : "1px solid #bfdbfe",
                         }}
                       >
-                        Rol: {agentRole}
+                        Role: {agentRole}
                       </span>
                     </div>
 
@@ -632,12 +632,12 @@ export default function AgentPortalPage() {
                         marginBottom: "0.4rem",
                       }}
                     >
-                      Notas adicionales (opcional)
+                      Additional Notes (Optional)
                     </label>
                     <textarea
                       id="visit-notes"
                       rows={2}
-                      placeholder="Ej. Visita realizada en la mañana, notas pendientes..."
+                      placeholder="e.g. Morning visit completed, signature pending..."
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
                       style={{
@@ -693,14 +693,14 @@ export default function AgentPortalPage() {
                             animation: "spin 0.6s linear infinite",
                           }}
                         />
-                        <span>Guardando visitas...</span>
+                        <span>Saving visits...</span>
                       </>
                     ) : (
                       <>
                         <Check size={18} />
                         <span>
-                          Guardar Visitas ({selectedDates.length}{" "}
-                          {selectedDates.length === 1 ? "día" : "días"})
+                          Save Visits ({selectedDates.length}{" "}
+                          {selectedDates.length === 1 ? "day" : "days"})
                         </span>
                       </>
                     )}
@@ -728,7 +728,7 @@ export default function AgentPortalPage() {
                       }}
                     >
                       <CalendarIcon size={16} style={{ color: "#2563eb" }} />
-                      Días de Visita (Selección Múltiple) <span style={{ color: "#dc2626" }}>*</span>
+                      Visit Dates (Multiple Selection) <span style={{ color: "#dc2626" }}>*</span>
                     </label>
                     {selectedDates.length > 0 && (
                       <button
@@ -742,13 +742,13 @@ export default function AgentPortalPage() {
                           textDecoration: "underline",
                         }}
                       >
-                        Limpiar ({selectedDates.length})
+                        Clear ({selectedDates.length})
                       </button>
                     )}
                   </div>
 
                   <p style={{ fontSize: "0.76rem", color: "#64748b", marginBottom: "0.5rem" }}>
-                    Toca uno o varios días en los que atendiste a este paciente:
+                    Tap the day(s) when you provided treatment to this patient:
                   </p>
 
                   {/* Calendar Grid Container */}
@@ -857,7 +857,7 @@ export default function AgentPortalPage() {
                                         marginTop: "1px",
                                       }}
                                     >
-                                      HOY
+                                      TODAY
                                     </span>
                                   )}
                                 </button>
@@ -883,7 +883,7 @@ export default function AgentPortalPage() {
                       }}
                     >
                       <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#334155" }}>
-                        Seleccionados ({selectedDates.length}):
+                        Selected ({selectedDates.length}):
                       </span>
                       {selectedDates.map((dKey) => (
                         <span
@@ -902,7 +902,7 @@ export default function AgentPortalPage() {
                             borderRadius: "9999px",
                             cursor: "pointer",
                           }}
-                          title="Haz clic para quitar"
+                          title="Click to remove"
                         >
                           {formatDisplayDate(dKey)}
                           <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#2563eb" }}>
@@ -922,10 +922,10 @@ export default function AgentPortalPage() {
             <div style={{ marginBottom: "1rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
                 <h2 style={{ fontSize: "1.2rem", fontWeight: 800, color: "#0f172a" }}>
-                  Mis Visitas Guardadas
+                  My Saved Visits
                 </h2>
                 <p style={{ fontSize: "0.82rem", color: "#64748b" }}>
-                  Historial de registros enviados para facturación semanal
+                  Record history submitted for weekly billing
                 </p>
               </div>
 
@@ -946,7 +946,7 @@ export default function AgentPortalPage() {
                   gap: "0.35rem",
                 }}
               >
-                Actualizar
+                Refresh
               </button>
             </div>
 
@@ -961,7 +961,7 @@ export default function AgentPortalPage() {
                   border: "1px solid #e2e8f0",
                 }}
               >
-                Cargando historial de visitas...
+                Loading visit history...
               </div>
             ) : visits.length === 0 ? (
               <div
@@ -989,10 +989,10 @@ export default function AgentPortalPage() {
                   <CalendarCheck size={24} />
                 </div>
                 <h3 style={{ fontSize: "1.05rem", fontWeight: 700, marginBottom: "0.35rem" }}>
-                  No tienes visitas registradas aún
+                  No visit records found yet
                 </h3>
                 <p style={{ fontSize: "0.85rem", color: "#64748b", marginBottom: "1.25rem" }}>
-                  Usa la pestaña &quot;Registrar Visita&quot; para enviar tu primera atención con los días del calendario.
+                  Use the &quot;Log Visit&quot; tab to submit your first patient treatment session.
                 </p>
                 <button
                   type="button"
@@ -1008,7 +1008,7 @@ export default function AgentPortalPage() {
                     border: "none",
                   }}
                 >
-                  Registrar mi primera visita
+                  Log My First Visit
                 </button>
               </div>
             ) : (
@@ -1037,7 +1037,7 @@ export default function AgentPortalPage() {
                           <div style={{ fontSize: "0.78rem", color: "#64748b", display: "flex", alignItems: "center", gap: "0.35rem" }}>
                             <span style={{ fontWeight: 600, color: "#2563eb" }}>{v.serviceType || "Visit"}</span>
                             <span>•</span>
-                            <span>{v.visitDates.length} {v.visitDates.length === 1 ? "visita" : "visitas"}</span>
+                            <span>{v.visitDates.length} {v.visitDates.length === 1 ? "visit" : "visits"}</span>
                           </div>
                         </div>
 
@@ -1070,17 +1070,17 @@ export default function AgentPortalPage() {
                             }}
                           >
                             {v.status === "invoiced"
-                              ? "Facturado"
+                              ? "Invoiced"
                               : v.status === "approved"
-                              ? "Aprobado"
-                              : "Pendiente"}
+                              ? "Approved"
+                              : "Pending"}
                           </span>
 
                           {v.status !== "invoiced" && (
                             <button
                               type="button"
                               onClick={() => handleDeleteVisit(v._id)}
-                              title="Eliminar registro"
+                              title="Delete record"
                               style={{
                                 padding: "0.35rem",
                                 borderRadius: "6px",

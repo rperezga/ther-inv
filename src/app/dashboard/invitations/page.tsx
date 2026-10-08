@@ -62,7 +62,7 @@ export default function InvitationsPage() {
     }
 
     if (role === "agent" && (!agentType || (agentType !== "PT" && agentType !== "PTA"))) {
-      setFormError("Debes seleccionar obligatoriamente si el Agente es PT o PTA");
+      setFormError("Please select whether the Agent is PT or PTA");
       return;
     }
 
@@ -91,12 +91,12 @@ export default function InvitationsPage() {
       if (data.emailSent) {
         setEmailStatus({
           sent: true,
-          message: `Invitación enviada por email a ${email} como ${role === "agent" ? `Agente (${agentType})` : role} vía Resend (válida por 24 horas).`,
+          message: `Invitation sent via email to ${email} as ${role === "agent" ? `Agent (${agentType})` : role} via Resend (valid for 24 hours).`,
         });
       } else if (data.emailError) {
         setEmailStatus({
           sent: false,
-          message: `Enlace generado con éxito. (Aviso de email: ${data.emailError}). Puedes copiar el link abajo.`,
+          message: `Link created successfully. (Email notice: ${data.emailError}). You can copy the link below.`,
         });
       }
       setEmail("");
@@ -274,10 +274,10 @@ export default function InvitationsPage() {
               }}
             >
               <p style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: "0.35rem" }}>
-                Enlace de invitación seguro (expira en 24 horas):
+                Secure invitation link (expires in 24 hours):
               </p>
               <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.5rem" }}>
-                Comparte este enlace directamente o el usuario puede abrir el email recibido:
+                Share this link directly or have the user check their email inbox:
               </p>
               <div style={{ display: "flex", gap: "0.5rem" }}>
                 <input

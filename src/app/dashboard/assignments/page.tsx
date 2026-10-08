@@ -33,19 +33,19 @@ interface ServiceDefinition {
 }
 
 const PT_SERVICE_DEFINITIONS: ServiceDefinition[] = [
-  { id: "SOC", label: "SOC", description: "Start of Care (Inicio de atención)", isBillable: true },
-  { id: "ReCert", label: "ReCert", description: "Recertification (Recertificación)", isBillable: true },
-  { id: "ReEval", label: "ReEval", description: "Re-evaluation (Reevaluación)", isBillable: true },
-  { id: "Eval", label: "Eval", description: "Initial Evaluation (Evaluación)", isBillable: true },
-  { id: "Disch", label: "Disch", description: "Discharge (Alta)", isBillable: true },
-  { id: "Missed Visit", label: "Missed Visit", description: "Visita perdida / No concretada", isBillable: true },
+  { id: "SOC", label: "SOC", description: "Start of Care evaluation", isBillable: true },
+  { id: "ReCert", label: "ReCert", description: "Recertification visit", isBillable: true },
+  { id: "ReEval", label: "ReEval", description: "Comprehensive re-evaluation", isBillable: true },
+  { id: "Eval", label: "Eval", description: "Initial evaluation visit", isBillable: true },
+  { id: "Disch", label: "Disch", description: "Discharge assessment", isBillable: true },
+  { id: "Missed Visit", label: "Missed Visit", description: "Missed visit session", isBillable: true },
   { id: "Special Rate", label: "Special Rate", description: "Custom agreed special visit rate", isBillable: true },
   { id: "NoBill", label: "NoBill", description: "Non-billable administrative service", isBillable: false },
 ];
 
 const PTA_SERVICE_DEFINITIONS: ServiceDefinition[] = [
   { id: "Visit", label: "Visit", description: "Standard Physical Therapy Assistant Visit", isBillable: true },
-  { id: "Missed Visit", label: "Missed Visit", description: "Visita perdida / No concretada", isBillable: true },
+  { id: "Missed Visit", label: "Missed Visit", description: "Missed visit session", isBillable: true },
   { id: "Special Rate", label: "Special Rate", description: "Custom agreed special visit rate", isBillable: true },
 ];
 

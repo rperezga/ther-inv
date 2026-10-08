@@ -42,14 +42,14 @@ export async function POST(req: NextRequest) {
 
     if (!patientName || !patientName.trim()) {
       return NextResponse.json(
-        { error: "El nombre del paciente es obligatorio" },
+        { error: "Patient name is required" },
         { status: 400 }
       );
     }
 
     if (!Array.isArray(visitDates) || visitDates.length === 0) {
       return NextResponse.json(
-        { error: "Debes seleccionar al menos 1 día de visita en el calendario" },
+        { error: "Please select at least 1 visit date in the calendar" },
         { status: 400 }
       );
     }
@@ -111,14 +111,14 @@ export async function DELETE(req: NextRequest) {
 
     if (visit.status === "invoiced") {
       return NextResponse.json(
-        { error: "No se puede eliminar una visita que ya ha sido facturada" },
+        { error: "Cannot delete a visit record that has already been invoiced" },
         { status: 400 }
       );
     }
 
     await AgentVisit.findByIdAndDelete(id);
 
-    return NextResponse.json({ success: true, message: "Visita eliminada" });
+    return NextResponse.json({ success: true, message: "Visit record deleted successfully" });
   } catch (error: any) {
     console.error("DELETE /api/agent/visits error:", error);
     return NextResponse.json(

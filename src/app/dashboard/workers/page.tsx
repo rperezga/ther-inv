@@ -13,8 +13,33 @@ import {
   X,
   AlertCircle,
   Plus,
+  Send,
+  Key,
+  Check,
+  ShieldCheck,
+  Clock,
+  Sparkles,
 } from "lucide-react";
 import { IWorker } from "@/lib/types";
+
+// Extended worker interface for Staff Directory with linked user and invitation status
+interface IEnrichedWorker extends IWorker {
+  userAccount?: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    agentType?: string;
+    hasAccount: boolean;
+  } | null;
+  pendingInvite?: {
+    token: string;
+    role: string;
+    agentType?: string;
+    expiresAt: string;
+    isPending: boolean;
+  } | null;
+}
 
 const DEFAULT_ROLES = [
   "Physical Therapy (PT)",
@@ -84,12 +109,11 @@ function formatPhoneNumber(val?: string): string {
   if (cleaned.length === 11 && cleaned.startsWith("1")) {
     return `${cleaned.slice(1, 4)}-${cleaned.slice(4, 7)}-${cleaned.slice(7)}`;
   }
-  // If not standard 10 digits, replace spaces and formatting or return as-is
   return val;
 }
 
 export default function WorkersPage() {
-  const [workers, setWorkers] = useState<IWorker[]>([]);
+  const [workers, setWorkers] = useState<IEnrichedWorker[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
@@ -98,9 +122,9 @@ export default function WorkersPage() {
   const [isAddingNewRole, setIsAddingNewRole] = useState(false);
   const [customRoleInput, setCustomRoleInput] = useState("");
 
-  // Modal State
+  // Worker Edit / Create Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingWorker, setEditingWorker] = useState<IWorker | null>(null);
+  const [editingWorker, setEditingWorker] = useState<IEnrichedWorker | null>(null);
 
   // Form Fields
   const [firstName, setFirstName] = useState("");
@@ -112,6 +136,18 @@ export default function WorkersPage() {
 
   const [saving, setSaving] = useState(false);
   const [modalError, setModalError] = useState("");
+
+  // Inviting / Action feedback
+  const [invitingEmail, setInvitingEmail] = useState<string | null>(null);
+  const [actionSuccessMsg, setActionSuccessMsg] = useState("");
+
+  // Change Password Modal State
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [selectedWorkerForPassword, setSelectedWorkerForPassword] = useState<IEnrichedWorker | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmFirstNameInput, setConfirmFirstNameInput] = useState("");
+  const [passwordModalError, setPasswordModalError] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
 
   // Load custom roles from localStorage and initialize
   useEffect(() => {
@@ -138,7 +174,7 @@ export default function WorkersPage() {
       const res = await fetch(url.toString());
       const data = await res.json();
       if (res.ok) {
-        const list: IWorker[] = data.workers || [];
+        const list: IEnrichedWorker[] = data.workers || [];
         setWorkers(list);
 
         // Merge any existing roles from workers into available roles
@@ -180,7 +216,7 @@ export default function WorkersPage() {
     setIsModalOpen(true);
   };
 
-  const openEditModal = (worker: IWorker) => {
+  const openEditModal = (worker: IEnrichedWorker) => {
     setEditingWorker(worker);
     setFirstName(worker.firstName);
     setLastName(worker.lastName);
@@ -192,7 +228,6 @@ export default function WorkersPage() {
     setCustomRoleInput("");
     setModalError("");
 
-    // Ensure worker's role is in available list
     if (worker.role && !availableRoles.includes(worker.role)) {
       setAvailableRoles((prev) => [...prev, worker.role]);
     }
@@ -271,6 +306,11 @@ export default function WorkersPage() {
 
       setIsModalOpen(false);
       fetchWorkers(search);
+
+      if (data.autoInvite?.sent) {
+        setActionSuccessMsg(`Staff member created and invitation email automatically sent to ${email.trim()}!`);
+        setTimeout(() => setActionSuccessMsg(""), 5000);
+      }
     } catch (err: any) {
       setModalError(err.message || "Failed to process staff member");
     } finally {
@@ -292,6 +332,107 @@ export default function WorkersPage() {
       }
     } catch {
       alert("Connection error");
+    }
+  };
+
+  // Send or resend invitation email
+  const handleSendInvite = async (worker: IEnrichedWorker) => {
+    const workerEmail = worker.email?.trim();
+    if (!workerEmail) {
+      alert("This staff member does not have an email address configured. Please edit the member first to add an email.");
+      return;
+    }
+
+    const abbr = getRoleAbbreviation(worker.role).toUpperCase();
+    const agentType = abbr === "PTA" ? "PTA" : "PT";
+
+    setInvitingEmail(workerEmail);
+    try {
+      const res = await fetch("/api/invitations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: workerEmail,
+          role: "agent",
+          agentType,
+          expirationHours: 24,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Failed to send invitation");
+        return;
+      }
+
+      setActionSuccessMsg(`Invitation successfully sent to ${workerEmail}!`);
+      setTimeout(() => setActionSuccessMsg(""), 5000);
+      fetchWorkers(search);
+    } catch (err: any) {
+      alert("Error sending invitation email: " + (err.message || "Network error"));
+    } finally {
+      setInvitingEmail(null);
+    }
+  };
+
+  // Open Change Password modal
+  const openPasswordModal = (worker: IEnrichedWorker) => {
+    setSelectedWorkerForPassword(worker);
+    setNewPassword("");
+    setConfirmFirstNameInput("");
+    setPasswordModalError("");
+    setPasswordModalOpen(true);
+  };
+
+  // Submit Password Change
+  const handleSubmitPasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordModalError("");
+
+    if (!selectedWorkerForPassword || !selectedWorkerForPassword.userAccount) {
+      setPasswordModalError("No linked user account found for this worker.");
+      return;
+    }
+
+    const expectedFirstName = selectedWorkerForPassword.firstName.trim().toLowerCase();
+    const providedFirstName = confirmFirstNameInput.trim().toLowerCase();
+
+    if (expectedFirstName !== providedFirstName) {
+      setPasswordModalError(`Please type "${selectedWorkerForPassword.firstName}" exactly to confirm this action.`);
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setPasswordModalError("Password must be at least 6 characters long.");
+      return;
+    }
+
+    setChangingPassword(true);
+
+    try {
+      const res = await fetch("/api/users/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: selectedWorkerForPassword.userAccount.id,
+          newPassword,
+          confirmFirstName: confirmFirstNameInput.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to reset password");
+      }
+
+      setPasswordModalOpen(false);
+      setActionSuccessMsg(`Password for ${selectedWorkerForPassword.firstName} ${selectedWorkerForPassword.lastName} updated successfully!`);
+      setTimeout(() => setActionSuccessMsg(""), 5000);
+      fetchWorkers(search);
+    } catch (err: any) {
+      setPasswordModalError(err.message || "Failed to change password");
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -326,6 +467,28 @@ export default function WorkersPage() {
           <span>Add Staff Member</span>
         </button>
       </div>
+
+      {/* Global Success Notification Toast */}
+      {actionSuccessMsg && (
+        <div
+          style={{
+            backgroundColor: "#ecfdf5",
+            border: "1px solid #a7f3d0",
+            color: "#065f46",
+            borderRadius: "10px",
+            padding: "0.85rem 1.25rem",
+            marginBottom: "1.25rem",
+            fontSize: "0.9rem",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.6rem",
+            boxShadow: "0 2px 5px rgba(5,150,105,0.1)",
+          }}
+        >
+          <Check size={18} style={{ color: "#059669", flexShrink: 0 }} />
+          <span>{actionSuccessMsg}</span>
+        </div>
+      )}
 
       {/* Real-time Search Bar */}
       <div
@@ -401,7 +564,7 @@ export default function WorkersPage() {
                   <th>Role</th>
                   <th>Phone</th>
                   <th>Email</th>
-                  <th>Notes</th>
+                  <th>Access & Account</th>
                   <th style={{ textAlign: "right" }}>Actions</th>
                 </tr>
               </thead>
@@ -409,6 +572,9 @@ export default function WorkersPage() {
                 {workers.map((w) => {
                   const badgeStyle = getRoleBadgeStyle(w.role);
                   const abbr = getRoleAbbreviation(w.role);
+                  const hasUserAccount = Boolean(w.userAccount?.hasAccount);
+                  const hasPendingInvite = Boolean(w.pendingInvite?.isPending);
+                  const isInvitingThis = invitingEmail === w.email;
 
                   return (
                     <tr key={w._id}>
@@ -416,6 +582,21 @@ export default function WorkersPage() {
                         <div style={{ fontWeight: 700, color: "var(--text-primary)", fontSize: "0.95rem" }}>
                           {w.firstName} {w.lastName}
                         </div>
+                        {w.notes && (
+                          <div
+                            style={{
+                              fontSize: "0.76rem",
+                              color: "var(--text-muted)",
+                              maxWidth: "240px",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              marginTop: "2px",
+                            }}
+                          >
+                            {w.notes}
+                          </div>
+                        )}
                       </td>
                       <td>
                         <span
@@ -475,20 +656,112 @@ export default function WorkersPage() {
                           <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>-</span>
                         )}
                       </td>
-                      <td style={{ maxWidth: "260px" }}>
-                        <span
-                          style={{
-                            fontSize: "0.85rem",
-                            color: "var(--text-muted)",
-                            display: "block",
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                          }}
-                        >
-                          {w.notes || "-"}
-                        </span>
+
+                      {/* Access & Account Column */}
+                      <td>
+                        {hasUserAccount ? (
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                fontSize: "0.75rem",
+                                fontWeight: 700,
+                                padding: "0.2rem 0.55rem",
+                                borderRadius: "6px",
+                                backgroundColor: "#ecfdf5",
+                                color: "#065f46",
+                                border: "1px solid #a7f3d0",
+                              }}
+                            >
+                              <ShieldCheck size={12} style={{ color: "#059669" }} />
+                              Active Account
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => openPasswordModal(w)}
+                              className="btn btn-secondary btn-sm"
+                              style={{
+                                fontSize: "0.75rem",
+                                padding: "0.25rem 0.6rem",
+                                gap: "0.3rem",
+                                borderColor: "#cbd5e1",
+                              }}
+                              title="Reset user login password"
+                            >
+                              <Key size={13} style={{ color: "#475569" }} />
+                              <span>Change Password</span>
+                            </button>
+                          </div>
+                        ) : (
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                            {hasPendingInvite ? (
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "4px",
+                                  fontSize: "0.75rem",
+                                  fontWeight: 700,
+                                  padding: "0.2rem 0.55rem",
+                                  borderRadius: "6px",
+                                  backgroundColor: "#fffbeb",
+                                  color: "#b45309",
+                                  border: "1px solid #fde68a",
+                                }}
+                              >
+                                <Clock size={12} style={{ color: "#d97706" }} />
+                                Invite Sent
+                              </span>
+                            ) : (
+                              <span
+                                style={{
+                                  fontSize: "0.75rem",
+                                  fontWeight: 600,
+                                  color: "var(--text-muted)",
+                                }}
+                              >
+                                No Account
+                              </span>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => handleSendInvite(w)}
+                              disabled={!w.email || isInvitingThis}
+                              className="btn btn-sm"
+                              style={{
+                                fontSize: "0.75rem",
+                                padding: "0.25rem 0.65rem",
+                                gap: "0.3rem",
+                                backgroundColor: !w.email ? "#f1f5f9" : "#eff6ff",
+                                color: !w.email ? "#94a3b8" : "#1d4ed8",
+                                border: !w.email ? "1px solid #e2e8f0" : "1px solid #bfdbfe",
+                                cursor: !w.email ? "not-allowed" : "pointer",
+                                fontWeight: 700,
+                              }}
+                              title={
+                                !w.email
+                                  ? "Add an email to enable invitations"
+                                  : hasPendingInvite
+                                  ? "Resend 24-hour invitation link"
+                                  : "Send invitation to create an Agent user account"
+                              }
+                            >
+                              <Send size={12} />
+                              <span>
+                                {isInvitingThis
+                                  ? "Sending..."
+                                  : hasPendingInvite
+                                  ? "Resend Invite"
+                                  : "Send Invite"}
+                              </span>
+                            </button>
+                          </div>
+                        )}
                       </td>
+
                       <td style={{ textAlign: "right" }}>
                         <div
                           style={{
@@ -528,6 +801,362 @@ export default function WorkersPage() {
           </div>
         )}
       </div>
+
+      {/* Change Password Confirmation Modal */}
+      {passwordModalOpen && selectedWorkerForPassword && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: "480px" }}>
+            <div className="modal-header">
+              <div>
+                <h3 style={{ fontSize: "1.2rem", fontWeight: 800 }}>
+                  Change Agent Password
+                </h3>
+                <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginTop: "2px" }}>
+                  Reset login credentials for {selectedWorkerForPassword.firstName} {selectedWorkerForPassword.lastName}
+                </p>
+              </div>
+              <button
+                onClick={() => setPasswordModalOpen(false)}
+                style={{ color: "var(--text-muted)" }}
+                aria-label="Close modal"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitPasswordChange}>
+              <div className="modal-body" style={{ display: "flex", flexDirection: "column", gap: "1.1rem" }}>
+                {passwordModalError && (
+                  <div
+                    style={{
+                      backgroundColor: "var(--danger-subtle)",
+                      color: "var(--danger)",
+                      border: "1px solid var(--danger-border)",
+                      borderRadius: "var(--radius-md)",
+                      padding: "0.65rem 1rem",
+                      fontSize: "0.85rem",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    <AlertCircle size={16} />
+                    <span>{passwordModalError}</span>
+                  </div>
+                )}
+
+                <div
+                  style={{
+                    backgroundColor: "#fef3c7",
+                    border: "1px solid #fde68a",
+                    color: "#92400e",
+                    padding: "0.75rem 1rem",
+                    borderRadius: "8px",
+                    fontSize: "0.83rem",
+                    lineHeight: 1.4,
+                  }}
+                >
+                  ⚠️ <strong>Security confirmation:</strong> To prevent accidental password changes, please confirm the staff member&apos;s first name below before updating.
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">
+                    Confirm First Name (Type &quot;<strong>{selectedWorkerForPassword.firstName}</strong>&quot;) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    className="form-input"
+                    placeholder={`Type ${selectedWorkerForPassword.firstName} to confirm`}
+                    value={confirmFirstNameInput}
+                    onChange={(e) => setConfirmFirstNameInput(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">New Password *</label>
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    className="form-input"
+                    placeholder="Enter new secure password (min. 6 characters)"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="modal-footer" style={{ marginTop: "1.25rem" }}>
+                <button
+                  type="button"
+                  onClick={() => setPasswordModalOpen(false)}
+                  className="btn btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={
+                    changingPassword ||
+                    !newPassword ||
+                    confirmFirstNameInput.trim().toLowerCase() !==
+                      selectedWorkerForPassword.firstName.trim().toLowerCase()
+                  }
+                  className="btn btn-primary"
+                >
+                  {changingPassword ? "Updating Password..." : "Confirm & Update Password"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add / Edit Worker Modal */}
+      {isModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: "520px" }}>
+            <div className="modal-header">
+              <div>
+                <h3 style={{ fontSize: "1.25rem", fontWeight: 700 }}>
+                  {editingWorker ? "Edit Staff Member" : "New Agency Staff Member"}
+                </h3>
+                <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginTop: "2px" }}>
+                  Enter staff details for the agency active roster
+                </p>
+              </div>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                style={{ color: "var(--text-muted)" }}
+                aria-label="Close modal"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveWorker}>
+              <div className="modal-body" style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
+                {modalError && (
+                  <div
+                    style={{
+                      backgroundColor: "var(--danger-subtle)",
+                      color: "var(--danger)",
+                      border: "1px solid var(--danger-border)",
+                      borderRadius: "var(--radius-md)",
+                      padding: "0.65rem 1rem",
+                      fontSize: "0.85rem",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    <AlertCircle size={16} />
+                    <span>{modalError}</span>
+                  </div>
+                )}
+
+                {/* Row 1: First Name & Last Name */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "1rem",
+                  }}
+                >
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label">First Name *</label>
+                    <input
+                      type="text"
+                      required
+                      className="form-input"
+                      placeholder="e.g. Camila"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label">Last Name *</label>
+                    <input
+                      type="text"
+                      required
+                      className="form-input"
+                      placeholder="e.g. Rodriguez"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Row 2: Role / Clinical Specialty Dropdown */}
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Role / Clinical Specialty *</label>
+                  <select
+                    className="form-select"
+                    required
+                    value={isAddingNewRole ? "__ADD_NEW__" : role}
+                    onChange={handleRoleSelectChange}
+                  >
+                    <option value="" disabled>
+                      Select a role / clinical specialty...
+                    </option>
+                    {availableRoles.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                    <option value="__ADD_NEW__">✨ + Add New Role...</option>
+                  </select>
+
+                  {/* Inline Add New Role Box */}
+                  {isAddingNewRole && (
+                    <div
+                      style={{
+                        marginTop: "0.75rem",
+                        padding: "0.85rem 1rem",
+                        backgroundColor: "var(--primary-subtle)",
+                        border: "1px solid var(--primary-border)",
+                        borderRadius: "var(--radius-md)",
+                      }}
+                    >
+                      <label
+                        style={{
+                          fontSize: "0.8rem",
+                          fontWeight: 700,
+                          color: "var(--primary)",
+                          display: "block",
+                          marginBottom: "0.4rem",
+                        }}
+                      >
+                        Enter New Role or Specialty Name
+                      </label>
+                      <div style={{ display: "flex", gap: "0.5rem" }}>
+                        <input
+                          type="text"
+                          autoFocus
+                          className="form-input"
+                          placeholder="e.g. Occupational Therapy (OT)"
+                          value={customRoleInput}
+                          onChange={(e) => setCustomRoleInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleAddNewRole();
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddNewRole}
+                          disabled={!customRoleInput.trim()}
+                          className="btn btn-primary btn-sm"
+                          style={{ whiteSpace: "nowrap" }}
+                        >
+                          <Plus size={14} /> Add
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsAddingNewRole(false);
+                            setCustomRoleInput("");
+                          }}
+                          className="btn btn-secondary btn-sm"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Row 3: Phone Number & Email Address */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "1rem",
+                  }}
+                >
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label">Phone Number</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="305-555-0100"
+                      value={phone}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        const cleaned = raw.replace(/\D/g, "").slice(0, 10);
+                        if (cleaned.length > 6) {
+                          setPhone(`${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6)}`);
+                        } else if (cleaned.length > 3) {
+                          setPhone(`${cleaned.slice(0, 3)}-${cleaned.slice(3)}`);
+                        } else {
+                          setPhone(cleaned);
+                        }
+                      }}
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <label className="form-label">Email Address</label>
+                      {!editingWorker && (
+                        <span style={{ fontSize: "0.72rem", color: "#2563eb", fontWeight: 600 }}>
+                          ✨ Sends auto-invite
+                        </span>
+                      )}
+                    </div>
+                    <input
+                      type="email"
+                      className="form-input"
+                      placeholder="staff@agency.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                    {!editingWorker && (
+                      <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "4px" }}>
+                        Entering an email automatically creates an Agent invitation for portal access.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Row 4: Notes & Preferences */}
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Notes & Preferences</label>
+                  <textarea
+                    className="form-textarea"
+                    rows={3}
+                    placeholder="Certifications, shift availability, license details..."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="modal-footer" style={{ marginTop: "1.25rem" }}>
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="btn btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button type="submit" disabled={saving} className="btn btn-primary">
+                  {saving
+                    ? "Saving..."
+                    : editingWorker
+                    ? "Save Changes"
+                    : "Create Staff Member"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Add / Edit Worker Modal */}
       {isModalOpen && (

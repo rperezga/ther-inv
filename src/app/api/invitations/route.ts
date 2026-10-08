@@ -138,7 +138,7 @@ export async function POST(req: NextRequest) {
     if (role === "agent") {
       if (!agentType || (agentType !== "PT" && agentType !== "PTA")) {
         return NextResponse.json(
-          { error: "Para el rol de Agente, es obligatorio seleccionar el tipo de agente (PT o PTA)." },
+          { error: "For the Agent role, selecting an agent type (PT or PTA) is required." },
           { status: 400 }
         );
       }
@@ -218,7 +218,7 @@ export async function POST(req: NextRequest) {
 
     // Send invitation email via Resend
     const inviterObj = populated?.invitedBy as any;
-    const inviterName = inviterObj?.name || user.name || "Equipo THER-INV";
+    const inviterName = inviterObj?.name || user.name || "THER-INV Team";
     const emailResult = await sendInvitationEmail({
       to: normalizedEmail,
       role: role,
