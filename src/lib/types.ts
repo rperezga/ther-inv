@@ -112,3 +112,17 @@ export interface IInvitation {
   expiresAt: string | Date;
   createdAt?: string | Date;
 }
+
+export interface IAgentVisit {
+  _id?: string;
+  agentId?: string;
+  agentName: string;
+  agentEmail: string;
+  patientName: string;
+  serviceType?: string;
+  visitDates: string[];
+  notes?: string;
+  status?: "pending" | "approved" | "invoiced";
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+}

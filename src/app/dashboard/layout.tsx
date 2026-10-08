@@ -52,6 +52,9 @@ export default function DashboardLayout({
       .then((data) => {
         if (data.user) {
           setUser(data.user);
+          if (data.user.role === "agent" && !pathname.startsWith("/dashboard/agent")) {
+            router.replace("/dashboard/agent");
+          }
         } else {
           router.replace("/login");
         }
@@ -210,6 +213,11 @@ export default function DashboardLayout({
       hidden: user?.role !== "viewer",
     },
   ];
+
+  // If user is accessing the Agent portal, provide the focused standalone mobile layout
+  if (pathname.startsWith("/dashboard/agent")) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="app-container">

@@ -89,7 +89,13 @@ function RegisterContent() {
         throw new Error(data.error || "Failed to complete registration");
       }
 
-      router.push("/dashboard/invoices");
+      if (data.user?.role === "agent") {
+        router.push("/dashboard/agent");
+      } else if (data.user?.role === "viewer") {
+        router.push("/dashboard/viewer");
+      } else {
+        router.push("/dashboard/invoices");
+      }
     } catch (err: any) {
       setError(err.message || "Registration failed");
     } finally {

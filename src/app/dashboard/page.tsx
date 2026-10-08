@@ -12,6 +12,8 @@ export default function DashboardPage() {
       .then((data) => {
         if (data.user?.role === "viewer") {
           router.replace("/dashboard/viewer");
+        } else if (data.user?.role === "agent") {
+          router.replace("/dashboard/agent");
         } else {
           router.replace("/dashboard/invoices");
         }
