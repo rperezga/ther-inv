@@ -162,13 +162,27 @@ export async function POST(req: NextRequest) {
       "name email"
     );
 
-    // Construct full URL using request origin or configured app URL
-    const appOrigin =
-      req.nextUrl?.origin ||
-      process.env.NEXT_PUBLIC_APP_URL ||
-      "http://localhost:3000";
+    // Construct full URL respecting reverse proxies (Nginx / Cloudflare) and env config
+    const forwardedProto = req.headers.get("x-forwarded-proto") || "https";
+    const forwardedHost = req.headers.get("x-forwarded-host") || req.headers.get("host");
+
+    let appOrigin = process.env.NEXT_PUBLIC_APP_URL;
+
+    // If NEXT_PUBLIC_APP_URL is not set or set to localhost, check forwarded headers
+    if (!appOrigin || appOrigin.includes("localhost")) {
+      if (forwardedHost && !forwardedHost.includes("localhost")) {
+        appOrigin = `${forwardedProto}://${forwardedHost}`;
+      } else if (req.nextUrl?.origin && !req.nextUrl.origin.includes("localhost")) {
+        appOrigin = req.nextUrl.origin;
+      }
+    }
+
+    if (!appOrigin) {
+      appOrigin = "https://therinv.roshhome.com";
+    }
+
     const inviteRelativePath = `/register?invite=${token}`;
-    const fullInviteUrl = `${appOrigin}${inviteRelativePath}`;
+    const fullInviteUrl = `${appOrigin.replace(/\/$/, "")}${inviteRelativePath}`;
 
     // Send invitation email via Resend
     const inviterObj = populated?.invitedBy as any;
