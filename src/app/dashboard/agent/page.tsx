@@ -323,21 +323,8 @@ export default function AgentPortalPage() {
         fontFamily: "var(--font-body, -apple-system, sans-serif)",
       }}
     >
-      {/* Top Mobile-Optimized Bar */}
-      <header
-        style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 40,
-          backgroundColor: "#ffffff",
-          borderBottom: "1px solid #e2e8f0",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-          padding: "0.85rem 1.15rem",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
+      {/* Top Bar with Responsive Optimization */}
+      <header className="agent-header">
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
           <div
             style={{
@@ -400,7 +387,7 @@ export default function AgentPortalPage() {
             }}
           >
             <User size={13} style={{ color: "#2563eb" }} />
-            <span style={{ maxWidth: "110px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <span style={{ maxWidth: "140px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {currentUser?.name || "Agente"}
             </span>
           </div>
@@ -426,46 +413,14 @@ export default function AgentPortalPage() {
         </div>
       </header>
 
-      {/* Main Container */}
-      <main
-        style={{
-          flex: 1,
-          width: "100%",
-          maxWidth: "540px",
-          margin: "0 auto",
-          padding: "1rem 1rem 2.5rem 1rem",
-        }}
-      >
-        {/* Navigation Tabs (Mobile Segmented Control) */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            backgroundColor: "#e2e8f0",
-            padding: "3px",
-            borderRadius: "12px",
-            marginBottom: "1.25rem",
-          }}
-        >
+      {/* Main Container with Responsive Classes */}
+      <main className="agent-portal-main">
+        {/* Navigation Tabs (Segmented Control) */}
+        <div className="agent-tabs-container">
           <button
             type="button"
             onClick={() => setActiveTab("form")}
-            style={{
-              padding: "0.6rem",
-              borderRadius: "9px",
-              fontSize: "0.88rem",
-              fontWeight: 700,
-              border: "none",
-              cursor: "pointer",
-              transition: "all 0.15s ease",
-              backgroundColor: activeTab === "form" ? "#ffffff" : "transparent",
-              color: activeTab === "form" ? "#1e293b" : "#64748b",
-              boxShadow: activeTab === "form" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "0.45rem",
-            }}
+            className={`agent-tab-btn ${activeTab === "form" ? "active" : ""}`}
           >
             <Plus size={16} />
             Registrar Visita
@@ -473,36 +428,12 @@ export default function AgentPortalPage() {
           <button
             type="button"
             onClick={() => setActiveTab("history")}
-            style={{
-              padding: "0.6rem",
-              borderRadius: "9px",
-              fontSize: "0.88rem",
-              fontWeight: 700,
-              border: "none",
-              cursor: "pointer",
-              transition: "all 0.15s ease",
-              backgroundColor: activeTab === "history" ? "#ffffff" : "transparent",
-              color: activeTab === "history" ? "#1e293b" : "#64748b",
-              boxShadow: activeTab === "history" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "0.45rem",
-            }}
+            className={`agent-tab-btn ${activeTab === "history" ? "active" : ""}`}
           >
             <CalendarCheck size={16} />
             Mis Registros
             {visits.length > 0 && (
-              <span
-                style={{
-                  backgroundColor: "#2563eb",
-                  color: "#ffffff",
-                  fontSize: "0.72rem",
-                  padding: "1px 6px",
-                  borderRadius: "9999px",
-                  fontWeight: 800,
-                }}
-              >
+              <span className="agent-tab-badge">
                 {visits.length}
               </span>
             )}
@@ -511,15 +442,7 @@ export default function AgentPortalPage() {
 
         {activeTab === "form" ? (
           /* FORM VIEW */
-          <div
-            style={{
-              backgroundColor: "#ffffff",
-              borderRadius: "16px",
-              border: "1px solid #e2e8f0",
-              boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
-              padding: "1.25rem",
-            }}
-          >
+          <div className="agent-form-card">
             {/* Header info */}
             <div style={{ marginBottom: "1.25rem" }}>
               <h1 style={{ fontSize: "1.25rem", fontWeight: 800, color: "#0f172a", marginBottom: "0.25rem" }}>
@@ -651,13 +574,7 @@ export default function AgentPortalPage() {
                   </span>
                 </div>
 
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: isPTA ? "repeat(3, 1fr)" : "repeat(3, 1fr)",
-                    gap: "0.5rem",
-                  }}
-                >
+                <div className="agent-service-grid">
                   {serviceOptions.map((opt) => {
                     const isSelected = serviceType === opt.id;
                     return (
@@ -1203,6 +1120,130 @@ export default function AgentPortalPage() {
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive Layout Optimization */
+        .agent-header {
+          position: sticky;
+          top: 0;
+          z-index: 40;
+          background-color: #ffffff;
+          border-bottom: 1px solid #e2e8f0;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+          padding: 0.85rem 1.15rem;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+        }
+
+        .agent-portal-main {
+          flex: 1;
+          width: 100%;
+          max-width: 580px;
+          margin: 0 auto;
+          padding: 1rem 1rem 3rem 1rem;
+          transition: max-width 0.2s ease, padding 0.2s ease;
+        }
+
+        .agent-tabs-container {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          background-color: #e2e8f0;
+          padding: 3px;
+          border-radius: 12px;
+          margin-bottom: 1.25rem;
+        }
+
+        .agent-tab-btn {
+          padding: 0.65rem;
+          border-radius: 9px;
+          font-size: 0.88rem;
+          font-weight: 700;
+          border: none;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          background-color: transparent;
+          color: #64748b;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.45rem;
+        }
+
+        .agent-tab-btn.active {
+          background-color: #ffffff;
+          color: #1e293b;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .agent-tab-badge {
+          background-color: #2563eb;
+          color: #ffffff;
+          font-size: 0.72rem;
+          padding: 1px 6px;
+          border-radius: 9999px;
+          font-weight: 800;
+        }
+
+        .agent-form-card {
+          background-color: #ffffff;
+          border-radius: 16px;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+          padding: 1.25rem;
+          transition: padding 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .agent-service-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 0.5rem;
+        }
+
+        /* Desktop and Tablet Adaptations (Screen width >= 768px) */
+        @media (min-width: 768px) {
+          .agent-header {
+            padding: 1rem 2.5rem;
+          }
+
+          .agent-portal-main {
+            max-width: 820px;
+            padding: 2rem 1.5rem 4rem 1.5rem;
+          }
+
+          .agent-tabs-container {
+            max-width: 480px;
+            margin: 0 auto 1.75rem auto;
+            padding: 4px;
+          }
+
+          .agent-tab-btn {
+            font-size: 0.95rem;
+            padding: 0.75rem;
+          }
+
+          .agent-form-card {
+            padding: 2.25rem 2.5rem;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+          }
+
+          .agent-service-grid {
+            grid-template-columns: repeat(6, 1fr);
+            gap: 0.65rem;
+          }
+        }
+
+        /* Large Desktop Adaptations (Screen width >= 1200px) */
+        @media (min-width: 1200px) {
+          .agent-portal-main {
+            max-width: 900px;
+          }
+
+          .agent-form-card {
+            padding: 2.5rem 3rem;
+          }
         }
       `}</style>
     </div>
