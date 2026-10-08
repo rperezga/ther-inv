@@ -594,7 +594,7 @@ export default function AgentPortalPage() {
             <div className="agent-panel">
               <form onSubmit={handleSubmitVisit}>
                 <div className="agent-panel-grid">
-                  {/* Left Column: Patient, Service Type, Notes, Submit */}
+                  {/* Left Column: Patient Name & Notes */}
                   <div className="agent-panel-left">
                     {/* Patient Name with Autocomplete */}
                     <div className="agent-field-block" ref={suggestionsRef}>
@@ -647,8 +647,24 @@ export default function AgentPortalPage() {
                       )}
                     </div>
 
-                    {/* Service Type Selection */}
+                    {/* Notes */}
                     <div className="agent-field-block">
+                      <label className="agent-label">Notes (Optional)</label>
+                      <textarea
+                        rows={3}
+                        disabled={isAgentLockedForPeriod}
+                        placeholder="Evaluation summary, progress notes..."
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        className="agent-input agent-textarea"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Right Column: Service Type, Dates Selector, and Save Button */}
+                  <div className="agent-panel-right">
+                    {/* Service Type Selection */}
+                    <div className="agent-field-block" style={{ marginBottom: "0.6rem" }}>
                       <div className="agent-field-header">
                         <label className="agent-label">Service Type</label>
                         <span className="agent-role-tag">Role: {agentRole}</span>
@@ -671,34 +687,7 @@ export default function AgentPortalPage() {
                       </div>
                     </div>
 
-                    {/* Notes */}
-                    <div className="agent-field-block">
-                      <label className="agent-label">Notes (Optional)</label>
-                      <input
-                        type="text"
-                        disabled={isAgentLockedForPeriod}
-                        placeholder="Evaluation summary, progress..."
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        className="agent-input agent-input-sm"
-                      />
-                    </div>
-
-                    {/* Submit Button */}
-                    <button
-                      type="submit"
-                      disabled={submitting || selectedDates.length === 0 || isAgentLockedForPeriod || !selectedPeriodId}
-                      className="agent-save-btn"
-                    >
-                      <Check size={16} />
-                      <span>
-                        Save Visit ({selectedDates.length} {selectedDates.length === 1 ? "day" : "days"})
-                      </span>
-                    </button>
-                  </div>
-
-                  {/* Right Column: Dates Selector */}
-                  <div className="agent-panel-right">
+                    {/* Dates Selector */}
                     <div className="agent-field-header" style={{ marginBottom: "0.35rem" }}>
                       <label className="agent-label" style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
                         <CalendarIcon size={14} style={{ color: "#2563eb" }} />
@@ -758,6 +747,19 @@ export default function AgentPortalPage() {
                         ))}
                       </div>
                     )}
+
+                    {/* Save Button on the Right */}
+                    <button
+                      type="submit"
+                      disabled={submitting || selectedDates.length === 0 || isAgentLockedForPeriod || !selectedPeriodId}
+                      className="agent-save-btn"
+                      style={{ marginTop: "0.6rem" }}
+                    >
+                      <Check size={16} />
+                      <span>
+                        Save Patient Visits ({selectedDates.length} {selectedDates.length === 1 ? "day" : "days"})
+                      </span>
+                    </button>
                   </div>
                 </div>
               </form>
@@ -1246,6 +1248,13 @@ export default function AgentPortalPage() {
           background-color: #ffffff;
           outline: none;
           box-sizing: border-box;
+        }
+
+        .agent-textarea {
+          padding: 0.5rem 0.75rem !important;
+          resize: none;
+          font-family: inherit;
+          min-height: 80px;
         }
 
         .agent-input-sm {
