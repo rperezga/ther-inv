@@ -189,7 +189,7 @@ describe("Invoice & Payroll Calculation Engine", () => {
       expect(getAgentInitials("Mary Jane", "Watson")).toBe("MW");
     });
 
-    it("should build structured invoice nomenclature INV-<INITIALS>-<YEAR>-LOT<LOT#>-<UID>", () => {
+    it("should build structured invoice nomenclature <INITIALS>-<YEAR>-<3-digit LOT>-<5-digit SEQ>", () => {
       const invNum1 = generateStructuredInvoiceNumber({
         agentName: "Camila",
         agentLastName: "Rodriguez",
@@ -197,7 +197,7 @@ describe("Invoice & Payroll Calculation Engine", () => {
         lotNumber: 1,
         sequenceNumber: 1,
       });
-      expect(invNum1).toBe("INV-CR-2026-LOT001-0001");
+      expect(invNum1).toBe("CR-2026-001-00001");
 
       const invNum2 = generateStructuredInvoiceNumber({
         agentName: "Alfredo",
@@ -206,17 +206,26 @@ describe("Invoice & Payroll Calculation Engine", () => {
         lotNumber: 5,
         sequenceNumber: 12,
       });
-      expect(invNum2).toBe("INV-AG-2026-LOT005-0012");
+      expect(invNum2).toBe("AG-2026-005-00012");
+
+      const invNum3 = generateStructuredInvoiceNumber({
+        agentName: "Odalys",
+        agentLastName: "Barroso",
+        year: 2026,
+        lotNumber: 2,
+        sequenceNumber: 4,
+      });
+      expect(invNum3).toBe("OB-2026-002-00004");
     });
 
-    it("should handle string lot numbers and pad correctly", () => {
+    it("should handle string lot numbers and pad correctly to 3 digits and 5 digits", () => {
       const invNum = generateStructuredInvoiceNumber({
         agentName: "Therina",
         year: 2026,
         lotNumber: "02",
         sequenceNumber: "45",
       });
-      expect(invNum).toBe("INV-TH-2026-LOT002-0045");
+      expect(invNum).toBe("TH-2026-002-00045");
     });
   });
 

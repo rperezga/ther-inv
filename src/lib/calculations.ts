@@ -176,8 +176,8 @@ export function generateUniqueInitials(
 
 /**
  * Generates structured invoice nomenclature:
- * INV-<AGENT INITIALS>-<YEAR>-<LOT#>-<INCREMENTAL UID>
- * e.g. INV-CR-2026-LOT01-0001
+ * <AGENT INITIALS>-<YEAR>-<3-DIGIT LOT#>-<5-DIGIT INCREMENTAL NUMBER>
+ * e.g. OB-2026-002-00004
  */
 export function generateStructuredInvoiceNumber(params: {
   agentName: string;
@@ -190,12 +190,12 @@ export function generateStructuredInvoiceNumber(params: {
   const year = params.year || new Date().getFullYear();
   
   const lotNum = parseInt(String(params.lotNumber), 10) || 1;
-  const lotFormatted = `LOT${String(lotNum).padStart(3, "0")}`;
+  const lotFormatted = String(lotNum).padStart(3, "0");
   
   const seqNum = parseInt(String(params.sequenceNumber), 10) || 1;
-  const seqFormatted = String(seqNum).padStart(4, "0");
+  const seqFormatted = String(seqNum).padStart(5, "0");
 
-  return `INV-${initials}-${year}-${lotFormatted}-${seqFormatted}`;
+  return `${initials}-${year}-${lotFormatted}-${seqFormatted}`;
 }
 
 export const PTA_SERVICES = ["Visit", "Missed Visit", "Special Rate"] as const;

@@ -199,6 +199,9 @@ export function generateInvoicePDF(invoice: IInvoice): void {
     },
   });
 
-  const fileName = `invoice-${invoice.invoiceNumber || "download"}.pdf`;
+  const baseInvNum = invoice.invoiceNumber ? invoice.invoiceNumber.trim() : "download";
+  const fileName = baseInvNum.toUpperCase().startsWith("INV-")
+    ? `${baseInvNum}.pdf`
+    : `INV-${baseInvNum}.pdf`;
   doc.save(fileName);
 }
