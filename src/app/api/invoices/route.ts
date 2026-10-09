@@ -219,26 +219,58 @@ export async function POST(req: NextRequest) {
     const taxAmount = Math.round(((subtotal * taxRateNum) / 100) * 100) / 100;
     const totalAmount = Math.round((subtotal + taxAmount) * 100) / 100;
 
-    const newInvoice = await Invoice.create({
-      invoiceNumber,
+    // 3. Prevent duplicate invoices for the same lot & worker:
+    // If an invoice already exists for this lot and worker/agent, update it instead of creating a duplicate
+    let existingInvoice = await Invoice.findOne({
       lotId: assignedLot._id,
-      lotNumber: assignedLot.lotNumber,
-      clientName: clientName.trim(),
-      clientEmail: clientEmail?.trim() || "",
-      clientAddress: clientAddress?.trim() || "",
-      periodStart: new Date(periodStart),
-      periodEnd: new Date(periodEnd),
-      invoiceDate: invoiceDate ? new Date(invoiceDate) : new Date(),
-      dueDate: new Date(dueDate),
-      items: calculatedItems,
-      subtotal,
-      taxRate: taxRateNum,
-      taxAmount,
-      totalAmount,
-      status,
-      notes: notes?.trim() || "",
-      createdBy: user.userId,
+      $or: [
+        ...(workerTargetId ? [{ "items.workerId": workerTargetId }] : []),
+        ...(agentFirstName ? [{ "items.workerName": `${agentFirstName} ${agentLastName}`.trim() }] : []),
+        ...(customInvoiceNumber ? [{ invoiceNumber: customInvoiceNumber.trim() }] : []),
+      ],
     });
+
+    let targetInvoiceDoc: any = null;
+
+    if (existingInvoice) {
+      existingInvoice.items = calculatedItems;
+      existingInvoice.subtotal = subtotal;
+      existingInvoice.taxRate = taxRateNum;
+      existingInvoice.taxAmount = taxAmount;
+      existingInvoice.totalAmount = totalAmount;
+      existingInvoice.clientName = clientName.trim();
+      existingInvoice.clientEmail = clientEmail?.trim() || "";
+      existingInvoice.clientAddress = clientAddress?.trim() || "";
+      existingInvoice.periodStart = new Date(periodStart);
+      existingInvoice.periodEnd = new Date(periodEnd);
+      existingInvoice.dueDate = new Date(dueDate);
+      if (invoiceDate) existingInvoice.invoiceDate = new Date(invoiceDate);
+      if (status) existingInvoice.status = status;
+      if (notes) existingInvoice.notes = notes.trim();
+      await existingInvoice.save();
+      targetInvoiceDoc = existingInvoice;
+    } else {
+      targetInvoiceDoc = await Invoice.create({
+        invoiceNumber,
+        lotId: assignedLot._id,
+        lotNumber: assignedLot.lotNumber,
+        clientName: clientName.trim(),
+        clientEmail: clientEmail?.trim() || "",
+        clientAddress: clientAddress?.trim() || "",
+        periodStart: new Date(periodStart),
+        periodEnd: new Date(periodEnd),
+        invoiceDate: invoiceDate ? new Date(invoiceDate) : new Date(),
+        dueDate: new Date(dueDate),
+        items: calculatedItems,
+        subtotal,
+        taxRate: taxRateNum,
+        taxAmount,
+        totalAmount,
+        status,
+        notes: notes?.trim() || "",
+        createdBy: user.userId,
+      });
+    }
 
     // Link invoice directly into assignedLot.agentStatuses if matching agent exists
     if (assignedLot && Array.isArray(assignedLot.agentStatuses)) {
@@ -249,14 +281,14 @@ export async function POST(req: NextRequest) {
       });
 
       if (matchIdx >= 0) {
-        assignedLot.agentStatuses[matchIdx].invoiceId = newInvoice._id;
-        assignedLot.agentStatuses[matchIdx].invoiceNumber = newInvoice.invoiceNumber;
+        assignedLot.agentStatuses[matchIdx].invoiceId = targetInvoiceDoc._id;
+        assignedLot.agentStatuses[matchIdx].invoiceNumber = targetInvoiceDoc.invoiceNumber;
         assignedLot.agentStatuses[matchIdx].status = "completed";
         await assignedLot.save();
       }
     }
 
-    return NextResponse.json({ success: true, invoice: newInvoice }, { status: 201 });
+    return NextResponse.json({ success: true, invoice: targetInvoiceDoc }, { status: existingInvoice ? 200 : 201 });
   } catch (error: any) {
     console.error("Invoice POST error:", error);
     if (error.code === 11000) {
