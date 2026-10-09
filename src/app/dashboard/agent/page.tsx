@@ -690,48 +690,75 @@ export default function AgentPortalPage() {
               </div>
             )}
 
-            {/* Compact Form Card: Entry Line & Dates (hidden when cycle is finalized/locked) */}
+            {/* Compact Form Card / Mobile Modal: Entry Line & Dates (hidden when cycle is finalized/locked) */}
             {!isAgentLockedForPeriod && (
               <>
                 {/* Full-width, highly visible mobile trigger button */}
-                {!isAddPatientOpenMobile && !editingVisitId && (
-                  <div className="agent-mobile-add-trigger">
-                    <button
-                      type="button"
-                      onClick={() => setIsAddPatientOpenMobile(true)}
-                      className="agent-mobile-add-btn"
-                    >
-                      <Plus size={18} strokeWidth={2.5} />
-                      <span>Add Patient</span>
-                    </button>
-                  </div>
-                )}
+                <div className="agent-mobile-add-trigger">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (editingVisitId) handleCancelEdit();
+                      setIsAddPatientOpenMobile(true);
+                    }}
+                    className="agent-mobile-add-btn"
+                  >
+                    <Plus size={18} strokeWidth={2.5} />
+                    <span>Add Patient</span>
+                  </button>
+                </div>
 
-                <div className={`agent-panel agent-form-panel ${isAddPatientOpenMobile || editingVisitId ? "mobile-open" : ""}`}>
-                  {/* Mobile header inside form with close button */}
-                  <div className="agent-form-mobile-header">
-                    <span style={{ fontWeight: 800, fontSize: "0.92rem", color: "#0f172a" }}>
-                      {editingVisitId ? "Edit Patient Record" : "New Patient Visit"}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (editingVisitId) handleCancelEdit();
-                        else setIsAddPatientOpenMobile(false);
-                      }}
-                      className="agent-form-mobile-close-btn"
-                      title="Close panel"
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
+                {/* Mobile Modal Backdrop & Container */}
+                <div className={`agent-form-modal-backdrop ${isAddPatientOpenMobile || editingVisitId ? "mobile-modal-active" : ""}`}>
+                  <div className="agent-form-modal-dialog">
+                    {/* Modal Header */}
+                    <div className="agent-form-modal-header">
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <div
+                          style={{
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "8px",
+                            backgroundColor: editingVisitId ? "#dcfce7" : "#eff6ff",
+                            color: editingVisitId ? "#15803d" : "#2563eb",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          {editingVisitId ? <Edit2 size={16} /> : <Plus size={18} strokeWidth={2.5} />}
+                        </div>
+                        <div>
+                          <h3 style={{ fontSize: "0.95rem", fontWeight: 800, margin: 0, color: "#0f172a", lineHeight: 1.2 }}>
+                            {editingVisitId ? "Edit Patient Record" : "Add Patient Visits"}
+                          </h3>
+                          <span style={{ fontSize: "0.72rem", color: "#64748b" }}>
+                            {activePeriod ? `${activePeriod.agencyName || "Agency"} • Cycle #${activePeriod.lotNumber ? String(activePeriod.lotNumber).padStart(3, "0") : ""}` : "Billing Cycle"}
+                          </span>
+                        </div>
+                      </div>
 
-                  <form onSubmit={handleSubmitVisit}>
-                    <div className="agent-panel-grid">
-                      {/* Left Column: Patient Name & Notes */}
-                      <div className="agent-panel-left">
-                        {/* Patient Name with Autocomplete */}
-                        <div className="agent-field-block" ref={suggestionsRef}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (editingVisitId) handleCancelEdit();
+                          setIsAddPatientOpenMobile(false);
+                        }}
+                        className="agent-form-modal-close-btn"
+                        title="Close modal"
+                      >
+                        <X size={17} />
+                      </button>
+                    </div>
+
+                    {/* Modal Body: The Visit Entry Form */}
+                    <div className="agent-form-modal-body">
+                      <form onSubmit={handleSubmitVisit}>
+                        <div className="agent-panel-grid">
+                          {/* Left Column: Patient Name & Notes */}
+                          <div className="agent-panel-left">
+                            {/* Patient Name with Autocomplete */}
+                            <div className="agent-field-block" ref={suggestionsRef}>
                         <div className="agent-field-header">
                           <label htmlFor="patient-input" className="agent-label">
                             Patient Name <span style={{ color: "#dc2626" }}>*</span>
@@ -946,8 +973,10 @@ export default function AgentPortalPage() {
                   </div>
                 </form>
               </div>
-            </>
-          )}
+            </div>
+          </div>
+        </>
+      )}
 
             {/* Bottom Records Table */}
             <div className="agent-panel">
@@ -2048,57 +2077,126 @@ export default function AgentPortalPage() {
             background-color: #1d4ed8;
           }
 
-          /* Hide form panel on mobile unless opened or in edit mode */
-          .agent-form-panel {
+          /* On mobile: backdrop overlay and popup modal */
+          .agent-form-modal-backdrop {
             display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1000;
+            background-color: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(4px);
+            padding: 1rem 0.75rem;
+            align-items: flex-end;
+            justify-content: center;
+            overflow-y: auto;
           }
 
-          .agent-form-panel.mobile-open {
-            display: block;
-            margin-bottom: 1rem;
-            animation: fadeInMobilePanel 0.2s ease-out;
+          .agent-form-modal-backdrop.mobile-modal-active {
+            display: flex;
+            animation: modalFadeIn 0.2s ease-out;
           }
 
-          .agent-form-mobile-header {
+          .agent-form-modal-dialog {
+            background-color: #ffffff;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 480px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.08);
+            animation: modalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+          }
+
+          .agent-form-modal-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding-bottom: 0.65rem;
-            margin-bottom: 0.75rem;
+            padding: 0.85rem 1rem;
             border-bottom: 1px solid #f1f5f9;
+            background-color: #ffffff;
+            flex-shrink: 0;
           }
 
-          .agent-form-mobile-close-btn {
+          .agent-form-modal-close-btn {
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            border: 1px solid #cbd5e1;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
             background-color: #f8fafc;
             color: #64748b;
             cursor: pointer;
           }
+
+          .agent-form-modal-close-btn:active {
+            background-color: #e2e8f0;
+          }
+
+          .agent-form-modal-body {
+            padding: 0.85rem 1rem 1.25rem 1rem;
+            overflow-y: auto;
+            flex: 1;
+            -webkit-overflow-scrolling: touch;
+          }
         }
 
-        @keyframes fadeInMobilePanel {
+        @keyframes modalFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes modalSlideUp {
           from {
             opacity: 0;
-            transform: translateY(-6px);
+            transform: translateY(20px) scale(0.98);
           }
           to {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateY(0) scale(1);
           }
         }
 
-        .agent-mobile-add-trigger {
-          display: none;
-        }
+        /* Desktop Mode (>= 768px): Appears as normal clean card, no backdrop */
+        @media (min-width: 768px) {
+          .agent-mobile-add-trigger {
+            display: none !important;
+          }
 
-        .agent-form-mobile-header {
-          display: none;
+          .agent-form-modal-backdrop {
+            display: block !important;
+            position: static !important;
+            background: none !important;
+            padding: 0 !important;
+            backdrop-filter: none !important;
+            z-index: auto !important;
+          }
+
+          .agent-form-modal-dialog {
+            background-color: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            width: 100% !important;
+            max-width: none !important;
+            max-height: none !important;
+            box-shadow: none !important;
+            animation: none !important;
+          }
+
+          .agent-form-modal-header {
+            display: none !important;
+          }
+
+          .agent-form-modal-body {
+            padding: 0.85rem 1rem !important;
+            overflow: visible !important;
+          }
         }
 
         /* Desktop Optimization (>= 1024px) */
