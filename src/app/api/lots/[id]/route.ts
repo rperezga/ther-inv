@@ -168,3 +168,48 @@ export async function PATCH(
     );
   }
 }
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { user, errorResponse } = await verifyUserHasRole(req, [
+      "admin",
+      "manager",
+    ]);
+    if (errorResponse) return errorResponse;
+
+    const { id } = await params;
+    if (!id) {
+      return NextResponse.json({ error: "Lot ID is required" }, { status: 400 });
+    }
+
+    await connectDB();
+
+    const lot = await Lot.findById(id);
+    if (!lot) {
+      return NextResponse.json({ error: "Period / Lot not found" }, { status: 404 });
+    }
+
+    // Unlink any invoices tied to this lot (or delete them if preferred; unlinking preserves financial ledger)
+    await Invoice.updateMany({ lotId: lot._id }, { $unset: { lotId: 1, lotNumber: 1 } });
+
+    // Remove agent visits tied to this lot
+    await AgentVisit.deleteMany({ lotId: lot._id });
+
+    // Delete the Lot itself
+    await Lot.findByIdAndDelete(id);
+
+    return NextResponse.json({
+      success: true,
+      message: `Billing Period ${lot.lotCode || id} deleted successfully`,
+    });
+  } catch (error: any) {
+    console.error("DELETE /api/lots/[id] error:", error);
+    return NextResponse.json(
+      { error: "Failed to delete billing period" },
+      { status: 500 }
+    );
+  }
+}

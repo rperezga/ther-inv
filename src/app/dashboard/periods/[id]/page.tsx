@@ -23,6 +23,8 @@ import {
   Eye,
   Check,
   RotateCcw,
+  Trash2,
+  X,
 } from "lucide-react";
 import { ILot, IAgentVisit, IInvoice } from "@/lib/types";
 
@@ -224,6 +226,29 @@ export default function PeriodDetailPage() {
     }
   };
 
+  // Manager action: Delete entire Lot/Billing Period
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteInput, setDeleteInput] = useState("");
+  const [deletingLot, setDeletingLot] = useState(false);
+
+  const handleDeleteLot = async () => {
+    if (!lot) return;
+    setDeletingLot(true);
+    try {
+      const res = await fetch(`/api/lots/${lot._id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to delete billing period");
+      }
+      router.push("/dashboard/periods");
+    } catch (err: any) {
+      alert(err.message || "Failed to delete period");
+      setDeletingLot(false);
+    }
+  };
+
   if (loading) {
     return (
       <div style={{ padding: "4rem 2rem", textAlign: "center", color: "var(--text-muted)" }}>
@@ -387,7 +412,7 @@ export default function PeriodDetailPage() {
           </div>
 
           {/* Quick Actions */}
-          <div style={{ display: "flex", gap: "0.5rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <button
               type="button"
               onClick={fetchDetails}
@@ -396,6 +421,29 @@ export default function PeriodDetailPage() {
             >
               <RefreshCw size={13} />
               <span>Refresh</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setDeleteInput("");
+                setShowDeleteModal(true);
+              }}
+              className="btn btn-sm"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.35rem",
+                padding: "0.35rem 0.65rem",
+                fontSize: "0.8rem",
+                backgroundColor: "#fff1f2",
+                color: "#e11d48",
+                border: "1px solid #fecdd3",
+              }}
+              title="Delete this billing period"
+            >
+              <Trash2 size={13} />
+              <span>Delete Lot</span>
             </button>
           </div>
         </div>
@@ -722,6 +770,92 @@ export default function PeriodDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Delete Lot Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: "420px" }}>
+            <div className="modal-header">
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <div
+                  style={{
+                    width: "32px",
+                    height: "32px",
+                    borderRadius: "8px",
+                    backgroundColor: "#fee2e2",
+                    color: "#dc2626",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Trash2 size={16} />
+                </div>
+                <h3 style={{ fontSize: "1.1rem", fontWeight: 800, margin: 0, color: "#0f172a" }}>
+                  Delete Billing Period
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                style={{ color: "var(--text-muted)", background: "transparent", border: "none", cursor: "pointer" }}
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ display: "flex", flexDirection: "column", gap: "0.85rem", padding: "1rem 1.25rem" }}>
+              <p style={{ fontSize: "0.85rem", color: "#475569", margin: 0, lineHeight: 1.45 }}>
+                Are you sure you want to permanently delete <strong>{lot.lotCode}</strong> ({lot.agencyName})? This will remove all associated visit logs for this cycle.
+              </p>
+
+              <div style={{ backgroundColor: "#f8fafc", padding: "0.65rem 0.85rem", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                <label style={{ fontSize: "0.78rem", color: "#64748b", display: "block", marginBottom: "0.35rem" }}>
+                  Type <strong>{lot.lotCode}</strong> to confirm:
+                </label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder={lot.lotCode}
+                  value={deleteInput}
+                  onChange={(e) => setDeleteInput(e.target.value)}
+                  style={{ fontSize: "0.85rem", textTransform: "uppercase" }}
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="modal-footer" style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", padding: "0.75rem 1.25rem" }}>
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                className="btn btn-secondary btn-sm"
+                disabled={deletingLot}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteLot}
+                disabled={deletingLot || deleteInput.trim().toUpperCase() !== lot.lotCode.trim().toUpperCase()}
+                className="btn btn-danger btn-sm"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.35rem",
+                  backgroundColor: "#dc2626",
+                  color: "#ffffff",
+                  opacity: deleteInput.trim().toUpperCase() === lot.lotCode.trim().toUpperCase() ? 1 : 0.5,
+                }}
+              >
+                <Trash2 size={13} />
+                <span>{deletingLot ? "Deleting..." : "Delete Lot"}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
