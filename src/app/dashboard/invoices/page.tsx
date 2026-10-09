@@ -40,7 +40,7 @@ export default function InvoicesListPage() {
   const [lotFilter, setLotFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("draft");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<string>("");
@@ -84,7 +84,7 @@ export default function InvoicesListPage() {
       const url = new URL("/api/invoices", window.location.origin);
       if (statusFilter !== "all") url.searchParams.set("status", statusFilter);
       if (lotFilter !== "all") url.searchParams.set("lotId", lotFilter);
-      if (search) url.searchParams.set("search", search);
+      if (search.trim()) url.searchParams.set("search", search.trim());
 
       const res = await fetch(url.toString());
       const data = await res.json();
@@ -102,14 +102,13 @@ export default function InvoicesListPage() {
     fetchLots();
   }, []);
 
+  // Live search debounced typing + filter change
   useEffect(() => {
-    fetchInvoices();
-  }, [statusFilter, lotFilter]);
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    fetchInvoices();
-  };
+    const handler = setTimeout(() => {
+      fetchInvoices();
+    }, 250);
+    return () => clearTimeout(handler);
+  }, [statusFilter, lotFilter, search]);
 
   // Open confirmation modal for submit
   const handleOpenSubmitConfirm = (inv: IInvoice) => {
@@ -345,17 +344,22 @@ export default function InvoicesListPage() {
         <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap", alignItems: "center" }}>
           <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
             {[
-              { id: "all", label: "All Invoices" },
+              { id: "draft", label: "In Progress" },
               { id: "pending", label: "Submitted" },
               { id: "paid", label: "Paid" },
-              { id: "draft", label: "Drafts" },
             ].map((st) => (
               <button
                 key={st.id}
+                type="button"
                 onClick={() => setStatusFilter(st.id)}
                 className={`btn btn-sm ${
                   statusFilter === st.id ? "btn-primary" : "btn-secondary"
                 }`}
+                style={{
+                  fontWeight: 700,
+                  fontSize: "0.82rem",
+                  padding: "0.35rem 0.85rem",
+                }}
               >
                 {st.label}
               </button>
@@ -394,35 +398,27 @@ export default function InvoicesListPage() {
           )}
         </div>
 
-        {/* Search Input with instant/live typing */}
-        <form
-          onSubmit={handleSearchSubmit}
-          style={{ display: "flex", gap: "0.5rem", minWidth: "280px" }}
-        >
-          <div style={{ position: "relative", flex: 1 }}>
-            <input
-              type="text"
-              className="form-input"
-              placeholder="Search agent, agency, invoice #..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{ paddingLeft: "2.2rem", paddingRight: "0.5rem" }}
-            />
-            <Search
-              size={16}
-              style={{
-                position: "absolute",
-                left: "0.75rem",
-                top: "50%",
-                transform: "translateY(-50%)",
-                color: "var(--text-muted)",
-              }}
-            />
-          </div>
-          <button type="submit" className="btn btn-secondary btn-sm">
-            Search
-          </button>
-        </form>
+        {/* Live Search Input */}
+        <div style={{ position: "relative", minWidth: "280px", maxWidth: "360px", flex: "1 1 280px" }}>
+          <input
+            type="text"
+            className="form-input"
+            placeholder="Search agent, agency, invoice #..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ paddingLeft: "2.2rem", paddingRight: "0.75rem", fontSize: "0.85rem" }}
+          />
+          <Search
+            size={16}
+            style={{
+              position: "absolute",
+              left: "0.75rem",
+              top: "50%",
+              transform: "translateY(-50%)",
+              color: "var(--text-muted)",
+            }}
+          />
+        </div>
       </div>
 
       {/* Invoices List Table */}

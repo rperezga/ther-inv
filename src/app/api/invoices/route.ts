@@ -39,6 +39,8 @@ export async function GET(req: NextRequest) {
       query.$or = [
         { invoiceNumber: { $regex: search, $options: "i" } },
         { clientName: { $regex: search, $options: "i" } },
+        { "items.workerName": { $regex: search, $options: "i" } },
+        { notes: { $regex: search, $options: "i" } },
       ];
     }
 

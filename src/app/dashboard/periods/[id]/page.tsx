@@ -659,16 +659,16 @@ export default function PeriodDetailPage() {
                       <table className="table" style={{ margin: 0, fontSize: "0.82rem" }}>
                         <thead>
                           <tr style={{ backgroundColor: "#fbfcfd" }}>
-                            <th style={{ width: "28%", padding: "0.45rem 0.75rem", fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Patient</th>
-                            <th style={{ width: "16%", padding: "0.45rem 0.75rem", fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Service</th>
-                            <th style={{ width: "36%", padding: "0.45rem 0.75rem", fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Dates</th>
-                            <th style={{ width: "20%", padding: "0.45rem 0.75rem", fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Notes</th>
+                            <th style={{ width: "20%", padding: "0.45rem 0.75rem", fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Patient</th>
+                            <th style={{ width: "12%", padding: "0.45rem 0.75rem", fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Service</th>
+                            <th style={{ width: "50%", padding: "0.45rem 0.75rem", fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Dates</th>
+                            <th style={{ width: "18%", padding: "0.45rem 0.75rem", fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: "0.04em", textAlign: "right" }}>Notes</th>
                           </tr>
                         </thead>
                         <tbody>
                           {group.visits.map((v) => (
                             <tr key={v._id}>
-                              <td style={{ fontWeight: 700, color: "#0f172a", padding: "0.45rem 0.75rem" }}>
+                              <td style={{ fontWeight: 700, color: "#0f172a", padding: "0.45rem 0.75rem", whiteSpace: "nowrap" }}>
                                 {v.patientName}
                               </td>
                               <td style={{ padding: "0.45rem 0.75rem" }}>
@@ -688,7 +688,7 @@ export default function PeriodDetailPage() {
                                 </span>
                               </td>
                               <td style={{ padding: "0.45rem 0.75rem" }}>
-                                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.25rem" }}>
+                                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.3rem" }}>
                                   {v.visitDates.map((dt) => (
                                     <span
                                       key={dt}
@@ -699,6 +699,7 @@ export default function PeriodDetailPage() {
                                         padding: "0.05rem 0.35rem",
                                         borderRadius: "4px",
                                         fontWeight: 600,
+                                        whiteSpace: "nowrap",
                                       }}
                                     >
                                       {formatDayLabel(dt)}
@@ -706,7 +707,7 @@ export default function PeriodDetailPage() {
                                   ))}
                                 </div>
                               </td>
-                              <td style={{ fontSize: "0.78rem", color: "var(--text-muted)", padding: "0.45rem 0.75rem" }}>
+                              <td style={{ fontSize: "0.78rem", color: "var(--text-muted)", padding: "0.45rem 0.75rem", textAlign: "right" }}>
                                 {v.notes || "-"}
                               </td>
                             </tr>
