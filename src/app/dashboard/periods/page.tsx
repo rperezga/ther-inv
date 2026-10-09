@@ -240,35 +240,30 @@ export default function PeriodsPage() {
         style={{
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "flex-start",
+          alignItems: "center",
           flexWrap: "wrap",
           gap: "1rem",
-          marginBottom: "1.5rem",
+          marginBottom: "1.25rem",
         }}
       >
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-            <div
-              style={{
-                width: "36px",
-                height: "36px",
-                borderRadius: "10px",
-                backgroundColor: "#eff6ff",
-                color: "#2563eb",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Layers size={20} />
-            </div>
-            <h1 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#0f172a", margin: 0 }}>
-              Billing Periods
-            </h1>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+          <div
+            style={{
+              width: "34px",
+              height: "34px",
+              borderRadius: "8px",
+              backgroundColor: "#eff6ff",
+              color: "#2563eb",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Layers size={18} />
           </div>
-          <p style={{ color: "var(--text-secondary)", fontSize: "0.92rem", marginTop: "0.35rem" }}>
-            Manage agency cycles, monitor real-time agent visit logs, review submissions, and generate final invoices.
-          </p>
+          <h1 style={{ fontSize: "1.5rem", fontWeight: 800, color: "#0f172a", margin: 0 }}>
+            Billing Periods
+          </h1>
         </div>
 
         <button
@@ -281,9 +276,9 @@ export default function PeriodsPage() {
             }
           }}
           className="btn btn-primary"
-          style={{ display: "flex", alignItems: "center", gap: "0.45rem", padding: "0.65rem 1.15rem" }}
+          style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.55rem 1rem", fontSize: "0.85rem" }}
         >
-          <Plus size={18} />
+          <Plus size={16} />
           <span>New Billing Period</span>
         </button>
       </div>

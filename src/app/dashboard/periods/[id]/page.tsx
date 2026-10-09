@@ -305,27 +305,27 @@ export default function PeriodDetailPage() {
       <div
         style={{
           backgroundColor: "#ffffff",
-          borderRadius: "14px",
+          borderRadius: "12px",
           border: isOpen ? "1px solid #bfdbfe" : "1px solid #e2e8f0",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-          padding: "1.5rem 1.75rem",
-          marginBottom: "1.5rem",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.03)",
+          padding: "1rem 1.25rem",
+          marginBottom: "1rem",
         }}
       >
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "flex-start",
+            alignItems: "center",
             flexWrap: "wrap",
-            gap: "1rem",
+            gap: "0.75rem",
           }}
         >
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.35rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <span
                 style={{
-                  fontSize: "1.35rem",
+                  fontSize: "1.2rem",
                   fontWeight: 900,
                   color: "#0f172a",
                   letterSpacing: "0.02em",
@@ -340,17 +340,17 @@ export default function PeriodDetailPage() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: "4px",
-                    fontSize: "0.75rem",
+                    fontSize: "0.72rem",
                     fontWeight: 700,
-                    padding: "0.2rem 0.6rem",
+                    padding: "0.15rem 0.5rem",
                     borderRadius: "6px",
                     backgroundColor: "#ecfdf5",
                     color: "#065f46",
                     border: "1px solid #a7f3d0",
                   }}
                 >
-                  <Unlock size={12} style={{ color: "#059669" }} />
-                  OPEN FOR AGENTS
+                  <Unlock size={11} style={{ color: "#059669" }} />
+                  OPEN
                 </span>
               ) : (
                 <span
@@ -358,33 +358,31 @@ export default function PeriodDetailPage() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: "4px",
-                    fontSize: "0.75rem",
+                    fontSize: "0.72rem",
                     fontWeight: 700,
-                    padding: "0.2rem 0.6rem",
+                    padding: "0.15rem 0.5rem",
                     borderRadius: "6px",
                     backgroundColor: "#f1f5f9",
                     color: "#475569",
                     border: "1px solid #cbd5e1",
                   }}
                 >
-                  <Lock size={12} />
-                  CLOSED & LOCKED
+                  <Lock size={11} />
+                  CLOSED
                 </span>
               )}
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap", marginTop: "0.5rem" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.95rem", fontWeight: 700, color: "#1e293b" }}>
-                <Building2 size={16} style={{ color: "var(--primary)" }} />
-                <span>Agency: {lot.agencyName || "General Agency"}</span>
-              </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.85rem", fontWeight: 700, color: "#1e293b" }}>
+              <Building2 size={15} style={{ color: "var(--primary)" }} />
+              <span>Agency: {lot.agencyName || "General Agency"}</span>
+            </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.88rem", color: "var(--text-secondary)" }}>
-                <Calendar size={15} style={{ color: "var(--text-muted)" }} />
-                <span>
-                  {formatDate(lot.periodStart)} — {formatDate(lot.periodEnd)}
-                </span>
-              </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+              <Calendar size={14} style={{ color: "var(--text-muted)" }} />
+              <span>
+                {formatDate(lot.periodStart)} — {formatDate(lot.periodEnd)}
+              </span>
             </div>
           </div>
 
@@ -394,17 +392,17 @@ export default function PeriodDetailPage() {
               type="button"
               onClick={fetchDetails}
               className="btn btn-secondary btn-sm"
-              style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}
+              style={{ display: "flex", alignItems: "center", gap: "0.35rem", padding: "0.35rem 0.65rem", fontSize: "0.8rem" }}
             >
-              <RefreshCw size={14} />
+              <RefreshCw size={13} />
               <span>Refresh</span>
             </button>
           </div>
         </div>
 
         {lot.notes && (
-          <p style={{ marginTop: "0.85rem", fontSize: "0.85rem", color: "var(--text-muted)", fontStyle: "italic", borderTop: "1px dashed #f1f5f9", paddingTop: "0.65rem" }}>
-            Cycle Notes: {lot.notes}
+          <p style={{ marginTop: "0.5rem", fontSize: "0.8rem", color: "var(--text-muted)", fontStyle: "italic", borderTop: "1px dashed #f1f5f9", paddingTop: "0.4rem", margin: "0.5rem 0 0 0" }}>
+            Notes: {lot.notes}
           </p>
         )}
       </div>
@@ -414,20 +412,20 @@ export default function PeriodDetailPage() {
         <div
           style={{
             backgroundColor: "#ffffff",
-            borderRadius: "14px",
+            borderRadius: "12px",
             border: "1px solid var(--border-color)",
-            padding: "1.25rem 1.5rem",
-            marginBottom: "1.75rem",
+            padding: "0.85rem 1.15rem",
+            marginBottom: "1rem",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.85rem" }}>
-            <h3 style={{ fontSize: "1.05rem", fontWeight: 800, color: "#0f172a", display: "flex", alignItems: "center", gap: "0.45rem" }}>
-              <FileText size={17} style={{ color: "var(--primary)" }} />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.6rem" }}>
+            <h3 style={{ fontSize: "0.92rem", fontWeight: 800, color: "#0f172a", display: "flex", alignItems: "center", gap: "0.45rem", margin: 0 }}>
+              <FileText size={15} style={{ color: "var(--primary)" }} />
               Generated Invoices ({invoices.length})
             </h3>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "0.75rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "0.5rem" }}>
             {invoices.map((inv) => (
               <Link
                 key={inv._id}
@@ -436,8 +434,8 @@ export default function PeriodDetailPage() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  padding: "0.75rem 1rem",
-                  borderRadius: "10px",
+                  padding: "0.55rem 0.85rem",
+                  borderRadius: "8px",
                   border: "1px solid #e2e8f0",
                   backgroundColor: "#f8fafc",
                   textDecoration: "none",
@@ -445,10 +443,10 @@ export default function PeriodDetailPage() {
                 }}
               >
                 <div>
-                  <div style={{ fontWeight: 800, fontSize: "0.9rem", color: "#1e293b" }}>
+                  <div style={{ fontWeight: 800, fontSize: "0.85rem", color: "#1e293b" }}>
                     {inv.invoiceNumber}
                   </div>
-                  <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+                  <div style={{ fontSize: "0.74rem", color: "var(--text-muted)" }}>
                     {inv.items?.length || 0} line items • ${inv.totalAmount?.toFixed(2)}
                   </div>
                 </div>
@@ -456,10 +454,10 @@ export default function PeriodDetailPage() {
                 <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
                   <span
                     style={{
-                      fontSize: "0.7rem",
+                      fontSize: "0.68rem",
                       fontWeight: 700,
-                      padding: "0.15rem 0.45rem",
-                      borderRadius: "6px",
+                      padding: "0.1rem 0.4rem",
+                      borderRadius: "5px",
                       textTransform: "uppercase",
                       backgroundColor: inv.status === "paid" ? "#ecfdf5" : inv.status === "pending" ? "#eff6ff" : "#fffbeb",
                       color: inv.status === "paid" ? "#065f46" : inv.status === "pending" ? "#1d4ed8" : "#b45309",
@@ -467,7 +465,7 @@ export default function PeriodDetailPage() {
                   >
                     {inv.status}
                   </span>
-                  <ExternalLink size={14} style={{ color: "var(--text-muted)" }} />
+                  <ExternalLink size={13} style={{ color: "var(--text-muted)" }} />
                 </div>
               </Link>
             ))}
@@ -476,38 +474,33 @@ export default function PeriodDetailPage() {
       )}
 
       {/* Agents Submissions & Progress */}
-      <div style={{ marginBottom: "1.5rem" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
-          <div>
-            <h2 style={{ fontSize: "1.3rem", fontWeight: 800, color: "#0f172a" }}>
-              Agent Rosters & Review Tables
-            </h2>
-            <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-              Inspect visits submitted by each therapist. Once reviewed, mark the agent as completed to lock their records and generate their invoice.
-            </p>
-          </div>
+      <div style={{ marginBottom: "1rem" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+          <h2 style={{ fontSize: "0.95rem", fontWeight: 800, color: "#0f172a", margin: 0 }}>
+            Agent Rosters
+          </h2>
         </div>
 
         {agentGroups.length === 0 ? (
           <div
             style={{
               backgroundColor: "#ffffff",
-              borderRadius: "14px",
+              borderRadius: "10px",
               border: "1px dashed var(--border-color)",
-              padding: "3.5rem 1.5rem",
+              padding: "2rem 1.25rem",
               textAlign: "center",
             }}
           >
-            <Users size={36} style={{ color: "var(--text-muted)", margin: "0 auto 0.75rem" }} />
-            <h3 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: "0.35rem" }}>
+            <Users size={26} style={{ color: "var(--text-muted)", margin: "0 auto 0.4rem" }} />
+            <h3 style={{ fontSize: "0.9rem", fontWeight: 700, margin: "0 0 0.2rem 0" }}>
               No agent submissions yet
             </h3>
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.875rem", maxWidth: "450px", margin: "0 auto" }}>
-              Agents assigned to this platform can now open their portal, select this period (<strong>{lot.lotCode}</strong>), and tap their treatment dates.
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.8rem", margin: 0 }}>
+              Visits logged by therapists for this period ({lot.lotCode}) will appear here in real time.
             </p>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
             {agentGroups.map((group) => {
               const isCompleted = group.status === "completed";
               const isSubmitted = group.status === "submitted";
@@ -518,20 +511,20 @@ export default function PeriodDetailPage() {
                   key={group.agentId}
                   style={{
                     backgroundColor: "#ffffff",
-                    borderRadius: "14px",
+                    borderRadius: "10px",
                     border: isCompleted
                       ? "1px solid #a7f3d0"
                       : isSubmitted
                       ? "1.5px solid #fde68a"
                       : "1px solid var(--border-color)",
-                    boxShadow: "0 2px 6px rgba(0,0,0,0.03)",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
                     overflow: "hidden",
                   }}
                 >
-                  {/* Agent Header Bar */}
+                  {/* Compact Agent Header Bar */}
                   <div
                     style={{
-                      padding: "1rem 1.25rem",
+                      padding: "0.55rem 0.9rem",
                       backgroundColor: isCompleted
                         ? "#f0fdf4"
                         : isSubmitted
@@ -542,156 +535,150 @@ export default function PeriodDetailPage() {
                       alignItems: "center",
                       justifyContent: "space-between",
                       flexWrap: "wrap",
-                      gap: "0.75rem",
+                      gap: "0.5rem",
                     }}
                   >
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        <span style={{ fontWeight: 800, fontSize: "1.05rem", color: "#0f172a" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: "0.35rem" }}>
+                        <span style={{ fontWeight: 800, fontSize: "0.92rem", color: "#0f172a" }}>
                           {group.agentName}
                         </span>
-                        <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                        <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
                           ({group.agentEmail})
                         </span>
                       </div>
 
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginTop: "0.25rem", fontSize: "0.8rem", color: "#475569" }}>
-                        <span>
-                          <strong>{group.visits.length}</strong> patients recorded
-                        </span>
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", fontSize: "0.76rem", color: "#64748b" }}>
+                        <span><strong>{group.visits.length}</strong> pts</span>
                         <span>•</span>
-                        <span>
-                          <strong>{group.totalVisitsCount}</strong> total treatment visits
-                        </span>
+                        <span><strong>{group.totalVisitsCount}</strong> visits</span>
                       </div>
                     </div>
 
-                    {/* Agent Status Badge & Actions */}
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                    {/* Compact Status & Actions */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                       {isCompleted ? (
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <>
                           <span
                             style={{
                               display: "inline-flex",
                               alignItems: "center",
-                              gap: "4px",
-                              fontSize: "0.75rem",
+                              gap: "3px",
+                              fontSize: "0.72rem",
                               fontWeight: 700,
-                              padding: "0.25rem 0.65rem",
-                              borderRadius: "6px",
+                              padding: "0.15rem 0.45rem",
+                              borderRadius: "5px",
                               backgroundColor: "#ecfdf5",
                               color: "#065f46",
                               border: "1px solid #a7f3d0",
                             }}
                           >
-                            <Check size={13} style={{ color: "#059669" }} />
-                            Completed & Locked
+                            <Check size={12} style={{ color: "#059669" }} />
+                            Completed
                           </span>
 
-                          {/* Re-open button */}
                           <button
                             type="button"
                             onClick={() => handleReopenAgent(group)}
                             disabled={isProcessing}
                             className="btn btn-secondary btn-sm"
-                            style={{ fontSize: "0.75rem", padding: "0.25rem 0.6rem", gap: "0.3rem" }}
-                            title="Reopen period so agent can make edits"
+                            style={{ fontSize: "0.72rem", padding: "0.2rem 0.5rem", gap: "0.25rem", height: "auto" }}
+                            title="Reopen for agent edits"
                           >
-                            <RotateCcw size={12} />
+                            <RotateCcw size={11} />
                             <span>Re-open</span>
                           </button>
-                        </div>
+                        </>
                       ) : (
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <>
                           {isSubmitted ? (
                             <span
                               style={{
                                 display: "inline-flex",
                                 alignItems: "center",
-                                gap: "4px",
-                                fontSize: "0.75rem",
+                                gap: "3px",
+                                fontSize: "0.72rem",
                                 fontWeight: 700,
-                                padding: "0.25rem 0.65rem",
-                                borderRadius: "6px",
+                                padding: "0.15rem 0.45rem",
+                                borderRadius: "5px",
                                 backgroundColor: "#fffbeb",
                                 color: "#b45309",
                                 border: "1px solid #fde68a",
                               }}
                             >
-                              <Clock size={13} style={{ color: "#d97706" }} />
-                              Ready for Review
+                              <Clock size={12} style={{ color: "#d97706" }} />
+                              Submitted
                             </span>
                           ) : (
                             <span
                               style={{
                                 display: "inline-flex",
                                 alignItems: "center",
-                                gap: "4px",
-                                fontSize: "0.75rem",
+                                fontSize: "0.72rem",
                                 fontWeight: 600,
-                                padding: "0.25rem 0.65rem",
-                                borderRadius: "6px",
+                                padding: "0.15rem 0.45rem",
+                                borderRadius: "5px",
                                 backgroundColor: "#f1f5f9",
                                 color: "#475569",
                                 border: "1px solid #e2e8f0",
                               }}
                             >
-                              Logging in Progress
+                              In Progress
                             </span>
                           )}
 
-                          {/* Mark Completed & Generate Invoice */}
                           <button
                             type="button"
                             onClick={() => handleMarkAgentCompleted(group)}
                             disabled={isProcessing || group.visits.length === 0}
                             className="btn btn-primary btn-sm"
                             style={{
-                              fontSize: "0.78rem",
-                              padding: "0.3rem 0.75rem",
-                              gap: "0.35rem",
+                              fontSize: "0.75rem",
+                              padding: "0.22rem 0.65rem",
+                              gap: "0.3rem",
+                              height: "auto",
                             }}
                           >
-                            <CheckCircle2 size={13} />
+                            <CheckCircle2 size={12} />
                             <span>
-                              {isProcessing ? "Processing..." : "Complete & Generate Invoice"}
+                              {isProcessing ? "Processing..." : "Complete & Invoice"}
                             </span>
                           </button>
-                        </div>
+                        </>
                       )}
                     </div>
                   </div>
 
                   {/* Agent Patient Visits Table */}
                   {group.visits.length === 0 ? (
-                    <div style={{ padding: "1.5rem", textAlign: "center", color: "var(--text-muted)", fontSize: "0.85rem" }}>
-                      No patients logged yet by this therapist.
+                    <div style={{ padding: "1rem", textAlign: "center", color: "var(--text-muted)", fontSize: "0.8rem" }}>
+                      No patients logged yet.
                     </div>
                   ) : (
                     <div style={{ overflowX: "auto" }}>
-                      <table className="table" style={{ margin: 0 }}>
+                      <table className="table" style={{ margin: 0, fontSize: "0.82rem" }}>
                         <thead>
-                          <tr>
-                            <th style={{ width: "28%" }}>Patient Name</th>
-                            <th style={{ width: "20%" }}>Service Type</th>
-                            <th style={{ width: "32%" }}>Visit Dates</th>
-                            <th style={{ width: "20%" }}>Notes</th>
+                          <tr style={{ backgroundColor: "#fbfcfd" }}>
+                            <th style={{ width: "28%", padding: "0.45rem 0.75rem", fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Patient</th>
+                            <th style={{ width: "16%", padding: "0.45rem 0.75rem", fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Service</th>
+                            <th style={{ width: "36%", padding: "0.45rem 0.75rem", fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Dates</th>
+                            <th style={{ width: "20%", padding: "0.45rem 0.75rem", fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Notes</th>
                           </tr>
                         </thead>
                         <tbody>
                           {group.visits.map((v) => (
                             <tr key={v._id}>
-                              <td style={{ fontWeight: 700, color: "#0f172a" }}>
+                              <td style={{ fontWeight: 700, color: "#0f172a", padding: "0.45rem 0.75rem" }}>
                                 {v.patientName}
                               </td>
-                              <td>
+                              <td style={{ padding: "0.45rem 0.75rem" }}>
                                 <span
                                   style={{
                                     display: "inline-block",
-                                    fontSize: "0.75rem",
-                                    fontWeight: 600,
-                                    padding: "0.15rem 0.5rem",
-                                    borderRadius: "6px",
+                                    fontSize: "0.72rem",
+                                    fontWeight: 700,
+                                    padding: "0.1rem 0.4rem",
+                                    borderRadius: "5px",
                                     backgroundColor: "#eff6ff",
                                     color: "#1d4ed8",
                                     border: "1px solid #bfdbfe",
@@ -700,8 +687,8 @@ export default function PeriodDetailPage() {
                                   {v.serviceType || "Visit"}
                                 </span>
                               </td>
-                              <td>
-                                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem" }}>
+                              <td style={{ padding: "0.45rem 0.75rem" }}>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.25rem" }}>
                                   {v.visitDates.map((dt) => (
                                     <span
                                       key={dt}
@@ -709,8 +696,8 @@ export default function PeriodDetailPage() {
                                         fontSize: "0.72rem",
                                         backgroundColor: "#f1f5f9",
                                         color: "#334155",
-                                        padding: "0.1rem 0.4rem",
-                                        borderRadius: "5px",
+                                        padding: "0.05rem 0.35rem",
+                                        borderRadius: "4px",
                                         fontWeight: 600,
                                       }}
                                     >
@@ -719,7 +706,7 @@ export default function PeriodDetailPage() {
                                   ))}
                                 </div>
                               </td>
-                              <td style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                              <td style={{ fontSize: "0.78rem", color: "var(--text-muted)", padding: "0.45rem 0.75rem" }}>
                                 {v.notes || "-"}
                               </td>
                             </tr>
