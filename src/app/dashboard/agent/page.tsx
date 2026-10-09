@@ -71,6 +71,7 @@ export default function AgentPortalPage() {
   const [serviceType, setServiceType] = useState("PT Visit");
   const [notes, setNotes] = useState("");
   const [showNotesMobile, setShowNotesMobile] = useState(false);
+  const [isAddPatientOpenMobile, setIsAddPatientOpenMobile] = useState(false);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
@@ -402,6 +403,7 @@ export default function AgentPortalPage() {
       setSelectedDates([]);
       setNotes("");
       setShowNotesMobile(false);
+      setIsAddPatientOpenMobile(false);
       setShowSuggestions(false);
       loadVisits();
       loadPeriods();
@@ -423,6 +425,7 @@ export default function AgentPortalPage() {
     setServiceType(visit.serviceType || (isPTA ? "Visit" : "Eval"));
     setNotes(visit.notes || "");
     setShowNotesMobile(Boolean(visit.notes && visit.notes.trim()));
+    setIsAddPatientOpenMobile(true);
     setSelectedDates(visit.visitDates ? [...visit.visitDates] : []);
     setFormError("");
     setFormSuccess(false);
@@ -437,6 +440,7 @@ export default function AgentPortalPage() {
     setServiceType(isPTA ? "Visit" : "Eval");
     setNotes("");
     setShowNotesMobile(false);
+    setIsAddPatientOpenMobile(false);
     setSelectedDates([]);
     setFormError("");
   };
@@ -688,13 +692,46 @@ export default function AgentPortalPage() {
 
             {/* Compact Form Card: Entry Line & Dates (hidden when cycle is finalized/locked) */}
             {!isAgentLockedForPeriod && (
-              <div className="agent-panel">
-                <form onSubmit={handleSubmitVisit}>
-                  <div className="agent-panel-grid">
-                    {/* Left Column: Patient Name & Notes */}
-                    <div className="agent-panel-left">
-                      {/* Patient Name with Autocomplete */}
-                      <div className="agent-field-block" ref={suggestionsRef}>
+              <>
+                {/* Full-width, highly visible mobile trigger button */}
+                {!isAddPatientOpenMobile && !editingVisitId && (
+                  <div className="agent-mobile-add-trigger">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddPatientOpenMobile(true)}
+                      className="agent-mobile-add-btn"
+                    >
+                      <Plus size={18} strokeWidth={2.5} />
+                      <span>Add Patient</span>
+                    </button>
+                  </div>
+                )}
+
+                <div className={`agent-panel agent-form-panel ${isAddPatientOpenMobile || editingVisitId ? "mobile-open" : ""}`}>
+                  {/* Mobile header inside form with close button */}
+                  <div className="agent-form-mobile-header">
+                    <span style={{ fontWeight: 800, fontSize: "0.92rem", color: "#0f172a" }}>
+                      {editingVisitId ? "Edit Patient Record" : "New Patient Visit"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (editingVisitId) handleCancelEdit();
+                        else setIsAddPatientOpenMobile(false);
+                      }}
+                      className="agent-form-mobile-close-btn"
+                      title="Close panel"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleSubmitVisit}>
+                    <div className="agent-panel-grid">
+                      {/* Left Column: Patient Name & Notes */}
+                      <div className="agent-panel-left">
+                        {/* Patient Name with Autocomplete */}
+                        <div className="agent-field-block" ref={suggestionsRef}>
                         <div className="agent-field-header">
                           <label htmlFor="patient-input" className="agent-label">
                             Patient Name <span style={{ color: "#dc2626" }}>*</span>
@@ -909,7 +946,8 @@ export default function AgentPortalPage() {
                   </div>
                 </form>
               </div>
-            )}
+            </>
+          )}
 
             {/* Bottom Records Table */}
             <div className="agent-panel">
@@ -1980,6 +2018,87 @@ export default function AgentPortalPage() {
           .agent-edit-btn-text {
             display: inline;
           }
+
+          .agent-mobile-add-trigger {
+            display: block;
+            width: 100%;
+            margin-bottom: 0.75rem;
+          }
+
+          .agent-mobile-add-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.85rem 1rem;
+            background-color: #2563eb;
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 800;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+            cursor: pointer;
+            transition: all 0.15s ease;
+          }
+
+          .agent-mobile-add-btn:active {
+            transform: scale(0.98);
+            background-color: #1d4ed8;
+          }
+
+          /* Hide form panel on mobile unless opened or in edit mode */
+          .agent-form-panel {
+            display: none;
+          }
+
+          .agent-form-panel.mobile-open {
+            display: block;
+            margin-bottom: 1rem;
+            animation: fadeInMobilePanel 0.2s ease-out;
+          }
+
+          .agent-form-mobile-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 0.65rem;
+            margin-bottom: 0.75rem;
+            border-bottom: 1px solid #f1f5f9;
+          }
+
+          .agent-form-mobile-close-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1px solid #cbd5e1;
+            background-color: #f8fafc;
+            color: #64748b;
+            cursor: pointer;
+          }
+        }
+
+        @keyframes fadeInMobilePanel {
+          from {
+            opacity: 0;
+            transform: translateY(-6px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .agent-mobile-add-trigger {
+          display: none;
+        }
+
+        .agent-form-mobile-header {
+          display: none;
         }
 
         /* Desktop Optimization (>= 1024px) */
