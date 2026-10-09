@@ -96,7 +96,7 @@ export async function PATCH(
     // - "submitted": agent marks their visits completed and ready for manager review
     // - "completed": manager reviews and completes the agent (generates invoice / locks agent)
     // - "reopen": manager re-opens the period for this agent so they can edit
-    if (action === "set_agent_status") {
+    if (action === "set_agent_status" || action === "reopen") {
       const targetAgentId = agentId || (user.role === "agent" ? user.userId : null);
       if (!targetAgentId) {
         return NextResponse.json({ error: "Agent ID is required" }, { status: 400 });
