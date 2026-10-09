@@ -682,206 +682,204 @@ export default function AgentPortalPage() {
               </div>
             )}
 
-            {/* Compact Form Card: Entry Line & Dates */}
-            <div className={`agent-panel ${isAgentLockedForPeriod ? "agent-panel-locked" : ""}`}>
-              <form onSubmit={handleSubmitVisit}>
-                <div className="agent-panel-grid">
-                  {/* Left Column: Patient Name & Notes */}
-                  <div className="agent-panel-left">
-                    {/* Patient Name with Autocomplete */}
-                    <div className="agent-field-block" ref={suggestionsRef}>
-                      <div className="agent-field-header">
-                        <label htmlFor="patient-input" className="agent-label">
-                          Patient Name <span style={{ color: "#dc2626" }}>*</span>
-                        </label>
-                        {distinctPatientNames.length > 0 && (
-                          <span className="agent-hint">
-                            <Sparkles size={11} style={{ color: "#2563eb" }} /> Suggestions active
-                          </span>
+            {/* Compact Form Card: Entry Line & Dates (hidden when cycle is finalized/locked) */}
+            {!isAgentLockedForPeriod && (
+              <div className="agent-panel">
+                <form onSubmit={handleSubmitVisit}>
+                  <div className="agent-panel-grid">
+                    {/* Left Column: Patient Name & Notes */}
+                    <div className="agent-panel-left">
+                      {/* Patient Name with Autocomplete */}
+                      <div className="agent-field-block" ref={suggestionsRef}>
+                        <div className="agent-field-header">
+                          <label htmlFor="patient-input" className="agent-label">
+                            Patient Name <span style={{ color: "#dc2626" }}>*</span>
+                          </label>
+                          {distinctPatientNames.length > 0 && (
+                            <span className="agent-hint">
+                              <Sparkles size={11} style={{ color: "#2563eb" }} /> Suggestions active
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ position: "relative" }}>
+                          <input
+                            id="patient-input"
+                            type="text"
+                            required
+                            placeholder="e.g. Maria Gonzalez"
+                            value={patientName}
+                            autoComplete="off"
+                            onFocus={() => setShowSuggestions(true)}
+                            onChange={(e) => {
+                              setPatientName(e.target.value);
+                              setShowSuggestions(true);
+                            }}
+                            className="agent-input"
+                          />
+                          <User size={15} className="agent-input-icon" />
+                        </div>
+
+                        {showSuggestions && patientSuggestions.length > 0 && (
+                          <div className="agent-suggest-menu">
+                            {patientSuggestions.map((name) => (
+                              <button
+                                key={name}
+                                type="button"
+                                onClick={() => {
+                                  setPatientName(name);
+                                  setShowSuggestions(false);
+                                }}
+                                className="agent-suggest-item"
+                              >
+                                <span>{name}</span>
+                                <span style={{ fontSize: "0.68rem", color: "#2563eb" }}>Select ↵</span>
+                              </button>
+                            ))}
+                          </div>
                         )}
                       </div>
-                      <div style={{ position: "relative" }}>
-                        <input
-                          id="patient-input"
-                          type="text"
-                          required
-                          disabled={isAgentLockedForPeriod}
-                          placeholder="e.g. Maria Gonzalez"
-                          value={patientName}
-                          autoComplete="off"
-                          onFocus={() => setShowSuggestions(true)}
-                          onChange={(e) => {
-                            setPatientName(e.target.value);
-                            setShowSuggestions(true);
-                          }}
-                          className="agent-input"
+
+                      {/* Notes */}
+                      <div className="agent-field-block">
+                        <label className="agent-label">Notes (Optional)</label>
+                        <textarea
+                          rows={3}
+                          placeholder="Evaluation summary, progress notes..."
+                          value={notes}
+                          onChange={(e) => setNotes(e.target.value)}
+                          className="agent-input agent-textarea"
                         />
-                        <User size={15} className="agent-input-icon" />
                       </div>
+                    </div>
 
-                      {showSuggestions && !isAgentLockedForPeriod && patientSuggestions.length > 0 && (
-                        <div className="agent-suggest-menu">
-                          {patientSuggestions.map((name) => (
-                            <button
-                              key={name}
-                              type="button"
-                              onClick={() => {
-                                setPatientName(name);
-                                setShowSuggestions(false);
-                              }}
-                              className="agent-suggest-item"
-                            >
-                              <span>{name}</span>
-                              <span style={{ fontSize: "0.68rem", color: "#2563eb" }}>Select ↵</span>
-                            </button>
-                          ))}
+                    {/* Right Column: Service Type, Dates Selector, and Save Button */}
+                    <div className="agent-panel-right">
+                      {/* Service Type Selection */}
+                      <div className="agent-field-block" style={{ marginBottom: "0.6rem" }}>
+                        <div className="agent-field-header">
+                          <label className="agent-label">Service Type</label>
+                          <span className="agent-role-tag">Role: {agentRole}</span>
                         </div>
-                      )}
-                    </div>
-
-                    {/* Notes */}
-                    <div className="agent-field-block">
-                      <label className="agent-label">Notes (Optional)</label>
-                      <textarea
-                        rows={3}
-                        disabled={isAgentLockedForPeriod}
-                        placeholder="Evaluation summary, progress notes..."
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        className="agent-input agent-textarea"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Right Column: Service Type, Dates Selector, and Save Button */}
-                  <div className="agent-panel-right">
-                    {/* Service Type Selection */}
-                    <div className="agent-field-block" style={{ marginBottom: "0.6rem" }}>
-                      <div className="agent-field-header">
-                        <label className="agent-label">Service Type</label>
-                        <span className="agent-role-tag">Role: {agentRole}</span>
-                      </div>
-                      <div className="agent-btn-group">
-                        {serviceOptions.map((opt) => {
-                          const isSelected = serviceType === opt.id;
-                          return (
-                            <button
-                              key={opt.id}
-                              type="button"
-                              disabled={isAgentLockedForPeriod}
-                              onClick={() => setServiceType(opt.id)}
-                              className={`agent-service-btn ${isSelected ? "selected" : ""}`}
-                            >
-                              {opt.id}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Dates Selector */}
-                    <div className="agent-field-header" style={{ marginBottom: "0.35rem" }}>
-                      <label className="agent-label" style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                        <CalendarIcon size={14} style={{ color: "#2563eb" }} />
-                        Treatment Dates <span style={{ color: "#dc2626" }}>*</span>
-                      </label>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        <span className="agent-period-range">
-                          {formatDateRange(activePeriod?.periodStart, activePeriod?.periodEnd)}
-                        </span>
-                        {selectedDates.length > 0 && !isAgentLockedForPeriod && (
-                          <button
-                            type="button"
-                            onClick={() => setSelectedDates([])}
-                            className="agent-clear-link"
-                          >
-                            Clear ({selectedDates.length})
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Days Grid */}
-                    <div className="agent-days-container">
-                      {periodDays.length === 0 ? (
-                        <div style={{ textAlign: "center", padding: "1.5rem", color: "#64748b", fontSize: "0.8rem" }}>
-                          No dates available for this cycle.
-                        </div>
-                      ) : (
-                        <div className="agent-days-grid">
-                          {periodDays.map((d) => {
-                            const isSelected = selectedDates.includes(d.key);
+                        <div className="agent-btn-group">
+                          {serviceOptions.map((opt) => {
+                            const isSelected = serviceType === opt.id;
                             return (
                               <button
-                                key={d.key}
+                                key={opt.id}
                                 type="button"
-                                disabled={isAgentLockedForPeriod}
-                                onClick={() => toggleDateSelection(d.key)}
-                                className={`agent-day-cell ${isSelected ? "selected" : ""} ${d.isToday ? "today" : ""}`}
+                                onClick={() => setServiceType(opt.id)}
+                                className={`agent-service-btn ${isSelected ? "selected" : ""}`}
                               >
-                                <span className="agent-day-name">{d.dayOfWeek}</span>
-                                <span className="agent-day-num">{d.dayNumber}</span>
-                                {d.isToday && !isSelected && <span className="agent-day-badge">TODAY</span>}
+                                {opt.id}
                               </button>
                             );
                           })}
                         </div>
-                      )}
-                    </div>
-
-                    {/* Selected Tags */}
-                    {selectedDates.length > 0 && (
-                      <div className="agent-selected-tags">
-                        {selectedDates.map((dKey) => (
-                          <span key={dKey} onClick={() => toggleDateSelection(dKey)} className="agent-date-pill">
-                            {formatDisplayDate(dKey)} ✕
-                          </span>
-                        ))}
                       </div>
-                    )}
 
-                    {/* Save / Update Button on the Right */}
-                    <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.6rem" }}>
-                      {editingVisitId && (
+                      {/* Dates Selector */}
+                      <div className="agent-field-header" style={{ marginBottom: "0.35rem" }}>
+                        <label className="agent-label" style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                          <CalendarIcon size={14} style={{ color: "#2563eb" }} />
+                          Treatment Dates <span style={{ color: "#dc2626" }}>*</span>
+                        </label>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <span className="agent-period-range">
+                            {formatDateRange(activePeriod?.periodStart, activePeriod?.periodEnd)}
+                          </span>
+                          {selectedDates.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedDates([])}
+                              className="agent-clear-link"
+                            >
+                              Clear ({selectedDates.length})
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Days Grid */}
+                      <div className="agent-days-container">
+                        {periodDays.length === 0 ? (
+                          <div style={{ textAlign: "center", padding: "1.5rem", color: "#64748b", fontSize: "0.8rem" }}>
+                            No dates available for this cycle.
+                          </div>
+                        ) : (
+                          <div className="agent-days-grid">
+                            {periodDays.map((d) => {
+                              const isSelected = selectedDates.includes(d.key);
+                              return (
+                                <button
+                                  key={d.key}
+                                  type="button"
+                                  onClick={() => toggleDateSelection(d.key)}
+                                  className={`agent-day-cell ${isSelected ? "selected" : ""} ${d.isToday ? "today" : ""}`}
+                                >
+                                  <span className="agent-day-name">{d.dayOfWeek}</span>
+                                  <span className="agent-day-num">{d.dayNumber}</span>
+                                  {d.isToday && !isSelected && <span className="agent-day-badge">TODAY</span>}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Selected Tags */}
+                      {selectedDates.length > 0 && (
+                        <div className="agent-selected-tags">
+                          {selectedDates.map((dKey) => (
+                            <span key={dKey} onClick={() => toggleDateSelection(dKey)} className="agent-date-pill">
+                              {formatDisplayDate(dKey)} ✕
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Save / Update Button on the Right */}
+                      <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.6rem" }}>
+                        {editingVisitId && (
+                          <button
+                            type="button"
+                            onClick={handleCancelEdit}
+                            style={{
+                              padding: "0.6rem 0.85rem",
+                              borderRadius: "10px",
+                              border: "1px solid #cbd5e1",
+                              backgroundColor: "#ffffff",
+                              color: "#475569",
+                              fontSize: "0.85rem",
+                              fontWeight: 700,
+                              cursor: "pointer",
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        )}
                         <button
-                          type="button"
-                          onClick={handleCancelEdit}
+                          type="submit"
+                          disabled={submitting || selectedDates.length === 0 || !selectedPeriodId}
+                          className="agent-save-btn"
                           style={{
-                            padding: "0.6rem 0.85rem",
-                            borderRadius: "10px",
-                            border: "1px solid #cbd5e1",
-                            backgroundColor: "#ffffff",
-                            color: "#475569",
-                            fontSize: "0.85rem",
-                            fontWeight: 700,
-                            cursor: "pointer",
+                            flex: 1,
+                            marginTop: 0,
+                            backgroundColor: editingVisitId ? "#059669" : "#2563eb",
                           }}
                         >
-                          Cancel
+                          <Check size={16} />
+                          <span>
+                            {editingVisitId
+                              ? `Update Record (${selectedDates.length} ${selectedDates.length === 1 ? "day" : "days"})`
+                              : `Save Patient Visits (${selectedDates.length} ${selectedDates.length === 1 ? "day" : "days"})`}
+                          </span>
                         </button>
-                      )}
-                      <button
-                        type="submit"
-                        disabled={submitting || selectedDates.length === 0 || isAgentLockedForPeriod || !selectedPeriodId}
-                        className="agent-save-btn"
-                        style={{
-                          flex: 1,
-                          marginTop: 0,
-                          backgroundColor: editingVisitId ? "#059669" : "#2563eb",
-                        }}
-                      >
-                        <Check size={16} />
-                        <span>
-                          {editingVisitId
-                            ? `Update Record (${selectedDates.length} ${selectedDates.length === 1 ? "day" : "days"})`
-                            : `Save Patient Visits (${selectedDates.length} ${selectedDates.length === 1 ? "day" : "days"})`}
-                        </span>
-                      </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </form>
-            </div>
+                </form>
+              </div>
+            )}
 
             {/* Bottom Records Table */}
             <div className="agent-panel">
