@@ -249,6 +249,36 @@ export default function InvoicesListPage() {
     return "Staff Member";
   };
 
+  /**
+   * Checks whether the agent associated with this invoice is marked as "completed" in its Billing Period.
+   * If the period is not loaded or has no agentStatuses, defaults to true if lotId isn't tracked.
+   */
+  const isInvoicePeriodCompleted = (inv: IInvoice): boolean => {
+    // If invoice is already submitted/paid, it's considered valid
+    if (inv.status === "pending" || inv.status === "paid") return true;
+
+    // Resolve Lot: either populated on inv.lotId or from loaded lots state
+    const lotObj: any = typeof inv.lotId === "object" ? inv.lotId : lots.find((l) => l._id === inv.lotId);
+    if (!lotObj || !Array.isArray(lotObj.agentStatuses) || lotObj.agentStatuses.length === 0) {
+      return false;
+    }
+
+    const invIdStr = inv._id?.toString();
+    const invNum = inv.invoiceNumber;
+    const workerTargetId = inv.items?.[0]?.workerId?.toString();
+    const workerName = inv.items?.[0]?.workerName?.toLowerCase().trim();
+
+    const matchingStatus = lotObj.agentStatuses.find((as: any) => {
+      if (as.invoiceId && as.invoiceId.toString() === invIdStr) return true;
+      if (as.invoiceNumber && as.invoiceNumber === invNum) return true;
+      if (workerTargetId && as.agentId && as.agentId.toString() === workerTargetId) return true;
+      if (workerName && as.agentName && as.agentName.toLowerCase().trim() === workerName) return true;
+      return false;
+    });
+
+    return matchingStatus?.status === "completed";
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "paid":
@@ -460,6 +490,7 @@ export default function InvoicesListPage() {
                   const agentName = getAgentName(inv);
                   const isSubmitted = inv.status === "pending" || inv.status === "paid";
                   const isDraft = inv.status === "draft";
+                  const canSubmit = isInvoicePeriodCompleted(inv);
 
                   return (
                     <tr key={inv._id}>
@@ -524,15 +555,15 @@ export default function InvoicesListPage() {
                             justifyContent: "flex-end",
                           }}
                         >
-                          {/* Submit Action Button (Only for Managers/Admins, disabled/locked once submitted) */}
+                          {/* Submit Action Button (Only enabled once marked completed in Billing Period) */}
                           {currentUserRole !== "viewer" && (
                             <button
                               onClick={() => {
-                                if (isDraft) {
+                                if (isDraft && canSubmit) {
                                   handleOpenSubmitConfirm(inv);
                                 }
                               }}
-                              disabled={!isDraft || updatingId === inv._id}
+                              disabled={!isDraft || !canSubmit || updatingId === inv._id}
                               className={`btn btn-sm ${
                                 isSubmitted ? "btn-primary" : "btn-secondary"
                               }`}
@@ -540,12 +571,14 @@ export default function InvoicesListPage() {
                                 padding: "0.3rem 0.6rem",
                                 fontSize: "0.78rem",
                                 gap: "0.25rem",
-                                opacity: isSubmitted ? 0.85 : 1,
-                                cursor: isSubmitted ? "default" : "pointer",
+                                opacity: isSubmitted ? 0.85 : !canSubmit ? 0.45 : 1,
+                                cursor: isSubmitted ? "default" : !canSubmit ? "not-allowed" : "pointer",
                               }}
                               title={
                                 isSubmitted
                                   ? "Submitted & Locked"
+                                  : !canSubmit
+                                  ? "Waiting for manager to mark this agent as 'Completed' in Billing Period before submitting"
                                   : "Submit invoice (confirms and makes visible to viewers)"
                               }
                             >

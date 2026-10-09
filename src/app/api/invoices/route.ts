@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
 
     const invoices = await Invoice.find(query)
       .populate("createdBy", "name email")
-      .populate("lotId", "lotNumber lotCode name")
+      .populate("lotId", "lotNumber lotCode name agentStatuses")
       .sort({ createdAt: -1 });
 
     return NextResponse.json({ invoices });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { Invoice } from "@/models/Invoice";
+import { Lot } from "@/models/Lot";
 import { verifyUserHasRole } from "@/lib/auth";
 
 export async function GET(
@@ -57,6 +58,44 @@ export async function PUT(
 
     const body = await req.json();
     await connectDB();
+
+    const currentInvoice = await Invoice.findById(id);
+    if (!currentInvoice) {
+      return NextResponse.json(
+        { error: "Invoice not found" },
+        { status: 404 }
+      );
+    }
+
+    // Validation: Cannot submit invoice (transition to "pending") unless marked as completed in Billing Period
+    if (body.status === "pending" && currentInvoice.status === "draft") {
+      if (currentInvoice.lotId) {
+        const lot = await Lot.findById(currentInvoice.lotId);
+        if (lot && Array.isArray(lot.agentStatuses)) {
+          const invIdStr = currentInvoice._id.toString();
+          const invNum = currentInvoice.invoiceNumber;
+          const firstWorkerId = currentInvoice.items?.[0]?.workerId?.toString();
+          const firstWorkerName = currentInvoice.items?.[0]?.workerName?.toLowerCase().trim();
+
+          const agentStatusObj = lot.agentStatuses.find((as: any) => {
+            if (as.invoiceId && as.invoiceId.toString() === invIdStr) return true;
+            if (as.invoiceNumber && as.invoiceNumber === invNum) return true;
+            if (firstWorkerId && as.agentId && as.agentId.toString() === firstWorkerId) return true;
+            if (firstWorkerName && as.agentName && as.agentName.toLowerCase().trim() === firstWorkerName) return true;
+            return false;
+          });
+
+          if (!agentStatusObj || agentStatusObj.status !== "completed") {
+            return NextResponse.json(
+              {
+                error: `Cannot submit this invoice yet. The agent's visits must first be marked as "Completed" in Billing Period (${lot.lotCode || "Period"}).`,
+              },
+              { status: 400 }
+            );
+          }
+        }
+      }
+    }
 
     // If items are provided, recalculate totals
     let updateData: any = { ...body };
