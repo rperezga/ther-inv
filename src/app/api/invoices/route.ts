@@ -240,6 +240,22 @@ export async function POST(req: NextRequest) {
       createdBy: user.userId,
     });
 
+    // Link invoice directly into assignedLot.agentStatuses if matching agent exists
+    if (assignedLot && Array.isArray(assignedLot.agentStatuses)) {
+      const matchIdx = assignedLot.agentStatuses.findIndex((as: any) => {
+        if (workerTargetId && as.agentId?.toString() === workerTargetId.toString()) return true;
+        if (inputAgentName && as.agentName?.toLowerCase().trim() === inputAgentName.toLowerCase().trim()) return true;
+        return false;
+      });
+
+      if (matchIdx >= 0) {
+        assignedLot.agentStatuses[matchIdx].invoiceId = newInvoice._id;
+        assignedLot.agentStatuses[matchIdx].invoiceNumber = newInvoice.invoiceNumber;
+        assignedLot.agentStatuses[matchIdx].status = "completed";
+        await assignedLot.save();
+      }
+    }
+
     return NextResponse.json({ success: true, invoice: newInvoice }, { status: 201 });
   } catch (error: any) {
     console.error("Invoice POST error:", error);

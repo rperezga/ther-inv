@@ -138,8 +138,24 @@ export default function PeriodDetailPage() {
       group.totalVisitsCount += v.visitDates?.length || 0;
     });
 
+    // Match each group with existing invoices in this period
+    invoices.forEach((inv) => {
+      const invWorkerName = inv.items?.[0]?.workerName?.toLowerCase().trim();
+      for (const group of map.values()) {
+        const groupName = group.agentName?.toLowerCase().trim();
+        if (
+          (group.invoiceId && group.invoiceId === inv._id) ||
+          (groupName && invWorkerName && (invWorkerName.includes(groupName) || groupName.includes(invWorkerName)))
+        ) {
+          group.invoiceId = inv._id;
+          group.invoiceNumber = inv.invoiceNumber;
+          break;
+        }
+      }
+    });
+
     return Array.from(map.values());
-  }, [lot, visits]);
+  }, [lot, visits, invoices]);
 
   // Modal state for Complete & Invoice
   const [agentToComplete, setAgentToComplete] = useState<AgentGroup | null>(null);
@@ -632,6 +648,50 @@ export default function PeriodDetailPage() {
                             <Check size={12} style={{ color: "#059669" }} />
                             Completed
                           </span>
+
+                          {group.invoiceId ? (
+                            <Link
+                              href={`/dashboard/invoices/${group.invoiceId}`}
+                              className="btn btn-sm"
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "0.25rem",
+                                fontSize: "0.72rem",
+                                padding: "0.2rem 0.55rem",
+                                backgroundColor: "#eff6ff",
+                                color: "#1d4ed8",
+                                border: "1px solid #bfdbfe",
+                                textDecoration: "none",
+                                fontWeight: 700,
+                              }}
+                              title="View generated invoice"
+                            >
+                              <FileText size={11} />
+                              <span>{group.invoiceNumber ? group.invoiceNumber : "View Invoice"}</span>
+                            </Link>
+                          ) : (
+                            <Link
+                              href={`/dashboard/invoices/new?lotId=${lot._id}&workerEmail=${encodeURIComponent(group.agentEmail)}&agency=${encodeURIComponent(lot.agencyName || "")}`}
+                              className="btn btn-sm"
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "0.25rem",
+                                fontSize: "0.72rem",
+                                padding: "0.2rem 0.55rem",
+                                backgroundColor: "#eff6ff",
+                                color: "#1d4ed8",
+                                border: "1px solid #bfdbfe",
+                                textDecoration: "none",
+                                fontWeight: 700,
+                              }}
+                              title="Generate invoice"
+                            >
+                              <FileText size={11} />
+                              <span>Create Invoice</span>
+                            </Link>
+                          )}
 
                           <button
                             type="button"
