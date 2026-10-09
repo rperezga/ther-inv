@@ -163,18 +163,21 @@ export default function PeriodsPage() {
     }
   };
 
-  // Toggle period open/closed
-  const handleToggleStatus = async (periodId: string, currentStatus: "open" | "closed") => {
-    const nextStatus = currentStatus === "open" ? "closed" : "open";
-    const confirmMsg =
-      currentStatus === "open"
-        ? "Are you sure you want to CLOSE this billing period? Closed periods lock all agent submissions."
-        : "Re-open this billing period? Agents will be able to submit visits again.";
+  // Modal state for Toggle Period Status (Open / Close)
+  const [periodToToggle, setPeriodToToggle] = useState<{ id: string; lotCode?: string; currentStatus: "open" | "closed" } | null>(null);
+  const [togglingStatus, setTogglingStatus] = useState(false);
 
-    if (!confirm(confirmMsg)) return;
+  const handleOpenToggleStatusModal = (periodId: string, currentStatus: "open" | "closed", lotCode?: string) => {
+    setPeriodToToggle({ id: periodId, currentStatus, lotCode });
+  };
+
+  const handleConfirmToggleStatus = async () => {
+    if (!periodToToggle) return;
+    const nextStatus = periodToToggle.currentStatus === "open" ? "closed" : "open";
+    setTogglingStatus(true);
 
     try {
-      const res = await fetch(`/api/lots/${periodId}`, {
+      const res = await fetch(`/api/lots/${periodToToggle.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -189,9 +192,12 @@ export default function PeriodsPage() {
         return;
       }
 
+      setPeriodToToggle(null);
       fetchPeriods();
     } catch {
       alert("Network error updating period");
+    } finally {
+      setTogglingStatus(false);
     }
   };
 
@@ -563,7 +569,7 @@ export default function PeriodsPage() {
 
                     <button
                       type="button"
-                      onClick={() => handleToggleStatus(lot._id!, lot.status)}
+                      onClick={() => handleOpenToggleStatusModal(lot._id!, lot.status, lot.lotCode)}
                       className="btn btn-sm"
                       style={{
                         fontSize: "0.72rem",
@@ -980,6 +986,93 @@ export default function PeriodsPage() {
               >
                 <Trash2 size={13} />
                 <span>{deletingLot ? "Deleting..." : "Delete Lot"}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Toggle Period Status (Open / Close) */}
+      {periodToToggle && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: "420px", borderRadius: "14px", overflow: "hidden" }}>
+            <div className="modal-header" style={{ padding: "1.1rem 1.25rem", borderBottom: "1px solid #f1f5f9" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                <div
+                  style={{
+                    width: "34px",
+                    height: "34px",
+                    borderRadius: "10px",
+                    backgroundColor: periodToToggle.currentStatus === "open" ? "#fef2f2" : "#eff6ff",
+                    color: periodToToggle.currentStatus === "open" ? "#dc2626" : "#2563eb",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {periodToToggle.currentStatus === "open" ? <Lock size={17} /> : <Unlock size={17} />}
+                </div>
+                <div>
+                  <h3 style={{ fontSize: "1.05rem", fontWeight: 800, margin: 0, color: "#0f172a" }}>
+                    {periodToToggle.currentStatus === "open" ? "Close Billing Period" : "Re-open Billing Period"}
+                  </h3>
+                  <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                    {periodToToggle.lotCode || "Billing Period"}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPeriodToToggle(null)}
+                style={{ color: "var(--text-muted)", background: "transparent", border: "none", cursor: "pointer" }}
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ padding: "1.2rem 1.25rem", display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+              <p style={{ fontSize: "0.86rem", color: "#475569", margin: 0, lineHeight: 1.5 }}>
+                {periodToToggle.currentStatus === "open"
+                  ? `Closing ${periodToToggle.lotCode || "this period"} will lock all agent visit submissions for this cycle.`
+                  : `Re-opening ${periodToToggle.lotCode || "this period"} will allow therapists to log and edit treatment visits again.`}
+              </p>
+            </div>
+
+            <div className="modal-footer" style={{ padding: "0.85rem 1.25rem", display: "flex", justifyContent: "flex-end", gap: "0.5rem", borderTop: "1px solid #f1f5f9" }}>
+              <button
+                type="button"
+                onClick={() => setPeriodToToggle(null)}
+                className="btn btn-secondary btn-sm"
+                disabled={togglingStatus}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmToggleStatus}
+                disabled={togglingStatus}
+                className="btn btn-sm"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.35rem",
+                  padding: "0.4rem 0.95rem",
+                  fontSize: "0.82rem",
+                  fontWeight: 700,
+                  backgroundColor: periodToToggle.currentStatus === "open" ? "#dc2626" : "#2563eb",
+                  color: "#ffffff",
+                  border: "none",
+                }}
+              >
+                {periodToToggle.currentStatus === "open" ? <Lock size={13} /> : <Unlock size={13} />}
+                <span>
+                  {togglingStatus
+                    ? "Updating..."
+                    : periodToToggle.currentStatus === "open"
+                    ? "Confirm Close"
+                    : "Confirm Re-open"}
+                </span>
               </button>
             </div>
           </div>

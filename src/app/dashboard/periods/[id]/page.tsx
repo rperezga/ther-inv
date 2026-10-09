@@ -141,21 +141,26 @@ export default function PeriodDetailPage() {
     return Array.from(map.values());
   }, [lot, visits]);
 
-  // Manager action: Complete agent and generate invoice
-  const handleMarkAgentCompleted = async (group: AgentGroup) => {
-    if (!lot) return;
+  // Modal state for Complete & Invoice
+  const [agentToComplete, setAgentToComplete] = useState<AgentGroup | null>(null);
 
-    // Check if visits exist
+  // Modal state for Re-open
+  const [agentToReopen, setAgentToReopen] = useState<AgentGroup | null>(null);
+
+  // Manager action: Trigger modal or execute Complete agent and generate invoice
+  const handleOpenCompleteModal = (group: AgentGroup) => {
+    if (!lot) return;
     if (group.visits.length === 0) {
       alert(`Agent ${group.agentName} has not submitted any visits for this period yet.`);
       return;
     }
+    setAgentToComplete(group);
+  };
 
-    const confirmAction = confirm(
-      `Mark ${group.agentName} as COMPLETED for ${lot.lotCode}?\n\nThis will lock the agent from further edits and take you to the invoice review generator.`
-    );
-    if (!confirmAction) return;
+  const handleConfirmCompleteAgent = async () => {
+    if (!lot || !agentToComplete) return;
 
+    const group = agentToComplete;
     setActionLoading(group.agentId);
 
     try {
@@ -177,28 +182,30 @@ export default function PeriodDetailPage() {
         throw new Error(err.error || "Failed to update agent status");
       }
 
+      setAgentToComplete(null);
       setActionSuccess(`Agent ${group.agentName} marked as completed! Redirecting to create invoice...`);
       setTimeout(() => {
         // Redirect to invoice creator pre-filled with this lot and worker
         router.push(
           `/dashboard/invoices/new?lotId=${lot._id}&workerEmail=${encodeURIComponent(group.agentEmail)}&agency=${encodeURIComponent(lot.agencyName || "")}`
         );
-      }, 1200);
+      }, 1000);
     } catch (err: any) {
       alert(err.message || "Failed to mark agent completed");
       setActionLoading(null);
     }
   };
 
-  // Manager action: Reopen agent submissions
-  const handleReopenAgent = async (group: AgentGroup) => {
+  // Manager action: Trigger modal or execute Reopen agent submissions
+  const handleOpenReopenModal = (group: AgentGroup) => {
     if (!lot) return;
+    setAgentToReopen(group);
+  };
 
-    const confirmAction = confirm(
-      `Re-open ${lot.lotCode} for ${group.agentName}?\n\nThe agent will be unlocked and able to modify or add patient visits.`
-    );
-    if (!confirmAction) return;
+  const handleConfirmReopenAgent = async () => {
+    if (!lot || !agentToReopen) return;
 
+    const group = agentToReopen;
     setActionLoading(group.agentId);
 
     try {
@@ -216,6 +223,7 @@ export default function PeriodDetailPage() {
         throw new Error(err.error || "Failed to reopen agent");
       }
 
+      setAgentToReopen(null);
       setActionSuccess(`Period re-opened for ${group.agentName}. The agent can now edit their records.`);
       setTimeout(() => setActionSuccess(""), 5000);
       fetchDetails();
@@ -627,7 +635,7 @@ export default function PeriodDetailPage() {
 
                           <button
                             type="button"
-                            onClick={() => handleReopenAgent(group)}
+                            onClick={() => handleOpenReopenModal(group)}
                             disabled={isProcessing}
                             className="btn btn-secondary btn-sm"
                             style={{ fontSize: "0.72rem", padding: "0.2rem 0.5rem", gap: "0.25rem", height: "auto" }}
@@ -677,7 +685,7 @@ export default function PeriodDetailPage() {
 
                           <button
                             type="button"
-                            onClick={() => handleMarkAgentCompleted(group)}
+                            onClick={() => handleOpenCompleteModal(group)}
                             disabled={isProcessing || group.visits.length === 0}
                             className="btn btn-primary btn-sm"
                             style={{
@@ -851,6 +859,171 @@ export default function PeriodDetailPage() {
               >
                 <Trash2 size={13} />
                 <span>{deletingLot ? "Deleting..." : "Delete Lot"}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modern Modal: Complete Agent & Generate Invoice */}
+      {agentToComplete && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: "440px", borderRadius: "14px", overflow: "hidden" }}>
+            <div className="modal-header" style={{ padding: "1.1rem 1.25rem", borderBottom: "1px solid #f1f5f9" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                <div
+                  style={{
+                    width: "34px",
+                    height: "34px",
+                    borderRadius: "10px",
+                    backgroundColor: "#eff6ff",
+                    color: "#2563eb",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <CheckCircle2 size={18} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: "1.05rem", fontWeight: 800, margin: 0, color: "#0f172a" }}>
+                    Complete & Lock Agent
+                  </h3>
+                  <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                    {agentToComplete.agentName} ({lot.lotCode})
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAgentToComplete(null)}
+                style={{ color: "var(--text-muted)", background: "transparent", border: "none", cursor: "pointer" }}
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ padding: "1.2rem 1.25rem", display: "flex", flexDirection: "column", gap: "0.9rem" }}>
+              <p style={{ fontSize: "0.86rem", color: "#475569", margin: 0, lineHeight: 1.5 }}>
+                Marking <strong>{agentToComplete.agentName}</strong> as completed will lock their treatment visits for this billing cycle and direct you to the invoice generator.
+              </p>
+
+              <div style={{ backgroundColor: "#f8fafc", padding: "0.75rem 1rem", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "#64748b", marginBottom: "0.3rem" }}>
+                  <span>Recorded Patients:</span>
+                  <strong style={{ color: "#0f172a" }}>{agentToComplete.visits.length}</strong>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "#64748b" }}>
+                  <span>Total Treatment Visits:</span>
+                  <strong style={{ color: "#0f172a" }}>{agentToComplete.totalVisitsCount}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer" style={{ padding: "0.85rem 1.25rem", display: "flex", justifyContent: "flex-end", gap: "0.5rem", borderTop: "1px solid #f1f5f9" }}>
+              <button
+                type="button"
+                onClick={() => setAgentToComplete(null)}
+                className="btn btn-secondary btn-sm"
+                disabled={actionLoading === agentToComplete.agentId}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmCompleteAgent}
+                disabled={actionLoading === agentToComplete.agentId}
+                className="btn btn-primary btn-sm"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.35rem",
+                  padding: "0.4rem 0.95rem",
+                  fontSize: "0.82rem",
+                  fontWeight: 700,
+                }}
+              >
+                <CheckCircle2 size={13} />
+                <span>{actionLoading === agentToComplete.agentId ? "Processing..." : "Confirm & Invoice"}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modern Modal: Reopen Agent */}
+      {agentToReopen && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: "440px", borderRadius: "14px", overflow: "hidden" }}>
+            <div className="modal-header" style={{ padding: "1.1rem 1.25rem", borderBottom: "1px solid #f1f5f9" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                <div
+                  style={{
+                    width: "34px",
+                    height: "34px",
+                    borderRadius: "10px",
+                    backgroundColor: "#fef3c7",
+                    color: "#d97706",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <RotateCcw size={17} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: "1.05rem", fontWeight: 800, margin: 0, color: "#0f172a" }}>
+                    Re-open Billing Cycle
+                  </h3>
+                  <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                    {agentToReopen.agentName} ({lot.lotCode})
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAgentToReopen(null)}
+                style={{ color: "var(--text-muted)", background: "transparent", border: "none", cursor: "pointer" }}
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ padding: "1.2rem 1.25rem", display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+              <p style={{ fontSize: "0.86rem", color: "#475569", margin: 0, lineHeight: 1.5 }}>
+                Re-opening <strong>{lot.lotCode}</strong> for <strong>{agentToReopen.agentName}</strong> will unlock their portal. The agent will be able to add new patient visits or modify existing records.
+              </p>
+            </div>
+
+            <div className="modal-footer" style={{ padding: "0.85rem 1.25rem", display: "flex", justifyContent: "flex-end", gap: "0.5rem", borderTop: "1px solid #f1f5f9" }}>
+              <button
+                type="button"
+                onClick={() => setAgentToReopen(null)}
+                className="btn btn-secondary btn-sm"
+                disabled={actionLoading === agentToReopen.agentId}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmReopenAgent}
+                disabled={actionLoading === agentToReopen.agentId}
+                className="btn btn-primary btn-sm"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.35rem",
+                  padding: "0.4rem 0.95rem",
+                  fontSize: "0.82rem",
+                  fontWeight: 700,
+                  backgroundColor: "#d97706",
+                  borderColor: "#d97706",
+                }}
+              >
+                <RotateCcw size={13} />
+                <span>{actionLoading === agentToReopen.agentId ? "Reopening..." : "Confirm Re-open"}</span>
               </button>
             </div>
           </div>
