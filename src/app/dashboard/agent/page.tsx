@@ -683,7 +683,7 @@ export default function AgentPortalPage() {
             )}
 
             {/* Compact Form Card: Entry Line & Dates */}
-            <div className="agent-panel">
+            <div className={`agent-panel ${isAgentLockedForPeriod ? "agent-panel-locked" : ""}`}>
               <form onSubmit={handleSubmitVisit}>
                 <div className="agent-panel-grid">
                   {/* Left Column: Patient Name & Notes */}
@@ -1368,6 +1368,27 @@ export default function AgentPortalPage() {
           padding: 0.85rem 1rem;
           box-sizing: border-box;
           width: 100%;
+          transition: all 0.2s ease;
+        }
+
+        .agent-panel-locked {
+          background-color: #f8fafc;
+          border-color: #e2e8f0;
+          opacity: 0.58;
+          filter: grayscale(85%);
+          pointer-events: none;
+          user-select: none;
+          cursor: not-allowed;
+          position: relative;
+        }
+
+        .agent-panel-locked input,
+        .agent-panel-locked textarea,
+        .agent-panel-locked button {
+          cursor: not-allowed !important;
+          background-color: #f1f5f9 !important;
+          color: #94a3b8 !important;
+          border-color: #e2e8f0 !important;
         }
 
         .agent-panel-grid {
