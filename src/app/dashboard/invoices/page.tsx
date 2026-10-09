@@ -446,7 +446,6 @@ export default function InvoicesListPage() {
               <thead>
                 <tr>
                   <th>Invoice #</th>
-                  <th>LOT</th>
                   <th>Clinical Agent</th>
                   <th>Agency</th>
                   <th>Period</th>
@@ -461,19 +460,6 @@ export default function InvoicesListPage() {
                   const agentName = getAgentName(inv);
                   const isSubmitted = inv.status === "pending" || inv.status === "paid";
                   const isDraft = inv.status === "draft";
-                  const lotInfo = (inv as any).lotId;
-
-                  // Format 3-digit LOT number e.g. LOT 001
-                  let lotDisplay = "LOT 001";
-                  if (lotInfo?.lotNumber) {
-                    lotDisplay = `LOT ${String(lotInfo.lotNumber).padStart(3, "0")}`;
-                  } else if (inv.lotNumber) {
-                    lotDisplay = `LOT ${String(inv.lotNumber).padStart(3, "0")}`;
-                  } else if (lotInfo?.lotCode) {
-                    const match = lotInfo.lotCode.match(/(\d+)/g);
-                    const lastNum = match ? match[match.length - 1] : "1";
-                    lotDisplay = `LOT ${String(lastNum).padStart(3, "0")}`;
-                  }
 
                   return (
                     <tr key={inv._id}>
@@ -482,29 +468,6 @@ export default function InvoicesListPage() {
                         <Link href={`/dashboard/invoices/${inv._id}`}>
                           {inv.invoiceNumber}
                         </Link>
-                      </td>
-
-                      {/* LOT (3 digits, e.g. LOT 001) */}
-                      <td>
-                        <span
-                          style={{
-                            fontSize: "0.78rem",
-                            backgroundColor: "#eff6ff",
-                            color: "#1d4ed8",
-                            border: "1px solid #bfdbfe",
-                            padding: "0.22rem 0.55rem",
-                            borderRadius: "5px",
-                            fontWeight: 800,
-                            letterSpacing: "0.03em",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "0.25rem",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          <Layers size={12} color="#1d4ed8" />
-                          {lotDisplay}
-                        </span>
                       </td>
 
                       {/* Agent Name */}
