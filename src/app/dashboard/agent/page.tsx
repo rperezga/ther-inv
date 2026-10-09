@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Calendar as CalendarIcon,
@@ -70,6 +70,7 @@ export default function AgentPortalPage() {
   const [patientName, setPatientName] = useState("");
   const [serviceType, setServiceType] = useState("PT Visit");
   const [notes, setNotes] = useState("");
+  const [showNotesMobile, setShowNotesMobile] = useState(false);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
@@ -400,6 +401,7 @@ export default function AgentPortalPage() {
       setPatientName("");
       setSelectedDates([]);
       setNotes("");
+      setShowNotesMobile(false);
       setShowSuggestions(false);
       loadVisits();
       loadPeriods();
@@ -420,6 +422,7 @@ export default function AgentPortalPage() {
     setPatientName(visit.patientName || "");
     setServiceType(visit.serviceType || (isPTA ? "Visit" : "Eval"));
     setNotes(visit.notes || "");
+    setShowNotesMobile(Boolean(visit.notes && visit.notes.trim()));
     setSelectedDates(visit.visitDates ? [...visit.visitDates] : []);
     setFormError("");
     setFormSuccess(false);
@@ -433,6 +436,7 @@ export default function AgentPortalPage() {
     setPatientName("");
     setServiceType(isPTA ? "Visit" : "Eval");
     setNotes("");
+    setShowNotesMobile(false);
     setSelectedDates([]);
     setFormError("");
   };
@@ -739,16 +743,42 @@ export default function AgentPortalPage() {
                         )}
                       </div>
 
-                      {/* Notes */}
-                      <div className="agent-field-block">
-                        <label className="agent-label">Notes (Optional)</label>
-                        <textarea
-                          rows={3}
-                          placeholder="Evaluation summary, progress notes..."
-                          value={notes}
-                          onChange={(e) => setNotes(e.target.value)}
-                          className="agent-input agent-textarea"
-                        />
+                      {/* Notes - collapsible / hidden on mobile */}
+                      <div className="agent-field-block agent-notes-block">
+                        {!showNotesMobile && !notes ? (
+                          <div className="agent-notes-mobile-toggle">
+                            <button
+                              type="button"
+                              onClick={() => setShowNotesMobile(true)}
+                              className="agent-add-notes-btn"
+                            >
+                              <Plus size={13} />
+                              <span>Add notes</span>
+                            </button>
+                          </div>
+                        ) : null}
+
+                        <div className={`agent-notes-content ${showNotesMobile || notes ? "open-mobile" : ""}`}>
+                          <div className="agent-field-header">
+                            <label className="agent-label">Notes (Optional)</label>
+                            {showNotesMobile && !notes && (
+                              <button
+                                type="button"
+                                onClick={() => setShowNotesMobile(false)}
+                                className="agent-notes-hide-btn"
+                              >
+                                Hide
+                              </button>
+                            )}
+                          </div>
+                          <textarea
+                            rows={3}
+                            placeholder="Evaluation summary, progress notes..."
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                            className="agent-input agent-textarea"
+                          />
+                        </div>
                       </div>
                     </div>
 
@@ -912,78 +942,93 @@ export default function AgentPortalPage() {
                     <thead>
                       <tr>
                         <th>Patient</th>
-                        <th>Service</th>
+                        <th className="hide-on-mobile">Service</th>
                         <th>Dates</th>
-                        <th>Notes</th>
-                        <th style={{ textAlign: "center" }}>Status</th>
+                        <th className="hide-on-mobile">Notes</th>
+                        <th className="hide-on-mobile" style={{ textAlign: "center" }}>Status</th>
                         <th style={{ textAlign: "right" }}>Action</th>
                       </tr>
                     </thead>
                     <tbody>
                       {currentCycleVisits.map((v) => {
                         const isBeingEdited = editingVisitId === v._id;
+                        const hasNote = Boolean(v.notes && v.notes.trim());
                         return (
-                          <tr
-                            key={v._id}
-                            style={{
-                              backgroundColor: isBeingEdited ? "#eff6ff" : undefined,
-                              borderLeft: isBeingEdited ? "3px solid #2563eb" : undefined,
-                            }}
-                          >
-                            <td style={{ fontWeight: 700, color: "#0f172a" }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                                <span>{v.patientName}</span>
-                                {isBeingEdited && (
-                                  <span style={{ fontSize: "0.65rem", padding: "1px 5px", borderRadius: "4px", backgroundColor: "#dbeafe", color: "#1d4ed8", fontWeight: 700 }}>
-                                    EDITING
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-                            <td>
-                              <span className="agent-service-tag">{v.serviceType || "Visit"}</span>
-                            </td>
-                            <td>
-                              <div className="agent-table-dates">
-                                {v.visitDates.map((dt) => (
-                                  <span key={dt} className="agent-table-date-pill">
-                                    {formatDisplayDate(dt)}
-                                  </span>
-                                ))}
-                              </div>
-                            </td>
-                            <td style={{ color: "#64748b", fontSize: "0.78rem" }}>{v.notes || "—"}</td>
-                            <td style={{ textAlign: "center" }}>
-                              <span className={`agent-row-status status-${v.status || "pending"}`}>
-                                {v.status === "invoiced" ? "Invoiced" : v.status === "approved" ? "Approved" : "Pending"}
-                              </span>
-                            </td>
-                            <td style={{ textAlign: "right" }}>
-                              {v.status !== "invoiced" && !isAgentLockedForPeriod ? (
-                                <div style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleSelectVisitForEdit(v)}
-                                    className={`agent-edit-btn ${isBeingEdited ? "active" : ""}`}
-                                    title="Edit patient name or dates"
-                                  >
-                                    <Edit2 size={13} />
-                                    <span>{isBeingEdited ? "Editing" : "Edit"}</span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDeleteVisit(v._id)}
-                                    className="agent-delete-btn"
-                                    title="Delete"
-                                  >
-                                    <Trash2 size={13} />
-                                  </button>
+                          <React.Fragment key={v._id}>
+                            <tr
+                              style={{
+                                backgroundColor: isBeingEdited ? "#eff6ff" : undefined,
+                                borderLeft: isBeingEdited ? "3px solid #2563eb" : undefined,
+                              }}
+                            >
+                              <td style={{ fontWeight: 700, color: "#0f172a" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                                  <span>{v.patientName}</span>
+                                  {isBeingEdited && (
+                                    <span style={{ fontSize: "0.65rem", padding: "1px 5px", borderRadius: "4px", backgroundColor: "#dbeafe", color: "#1d4ed8", fontWeight: 700 }}>
+                                      EDITING
+                                    </span>
+                                  )}
                                 </div>
-                              ) : (
-                                <span style={{ fontSize: "0.72rem", color: "#94a3b8" }}>Locked</span>
-                              )}
-                            </td>
-                          </tr>
+                              </td>
+                              <td className="hide-on-mobile">
+                                <span className="agent-service-tag">{v.serviceType || "Visit"}</span>
+                              </td>
+                              <td>
+                                <div className="agent-table-dates">
+                                  {v.visitDates.map((dt) => (
+                                    <span key={dt} className="agent-table-date-pill">
+                                      {formatDisplayDate(dt)}
+                                    </span>
+                                  ))}
+                                </div>
+                              </td>
+                              <td className="hide-on-mobile" style={{ color: "#64748b", fontSize: "0.78rem" }}>
+                                {v.notes || "—"}
+                              </td>
+                              <td className="hide-on-mobile" style={{ textAlign: "center" }}>
+                                <span className={`agent-row-status status-${v.status || "pending"}`}>
+                                  {v.status === "invoiced" ? "Invoiced" : v.status === "approved" ? "Approved" : "Pending"}
+                                </span>
+                              </td>
+                              <td style={{ textAlign: "right" }}>
+                                {v.status !== "invoiced" && !isAgentLockedForPeriod ? (
+                                  <div style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSelectVisitForEdit(v)}
+                                      className={`agent-edit-btn ${isBeingEdited ? "active" : ""}`}
+                                      title="Edit patient name or dates"
+                                    >
+                                      <Edit2 size={13} />
+                                      <span className="agent-edit-btn-text">{isBeingEdited ? "Editing" : "Edit"}</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteVisit(v._id)}
+                                      className="agent-delete-btn hide-on-mobile"
+                                      title="Delete"
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span style={{ fontSize: "0.72rem", color: "#94a3b8" }}>Locked</span>
+                                )}
+                              </td>
+                            </tr>
+                            {/* Mobile Note Sub-Row: Appears under the row if a note exists */}
+                            {hasNote && (
+                              <tr className="agent-mobile-note-row show-on-mobile-row">
+                                <td colSpan={3} style={{ padding: "0.2rem 0.6rem 0.45rem 0.6rem", borderBottom: "1px solid #f1f5f9" }}>
+                                  <div className="agent-mobile-note-badge">
+                                    <span className="agent-mobile-note-label">Note:</span>
+                                    <span className="agent-mobile-note-text">{v.notes}</span>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
                         );
                       })}
                     </tbody>
@@ -1820,6 +1865,121 @@ export default function AgentPortalPage() {
           border: 1px solid #e2e8f0;
           border-radius: 6px;
           padding: 0.5rem;
+        }
+
+        .agent-notes-mobile-toggle {
+          display: none;
+        }
+
+        .agent-notes-content {
+          display: block;
+        }
+
+        .agent-add-notes-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.3rem;
+          font-size: 0.78rem;
+          font-weight: 700;
+          color: #2563eb;
+          background: none;
+          border: none;
+          padding: 0.2rem 0;
+          cursor: pointer;
+        }
+
+        .agent-add-notes-btn:hover {
+          text-decoration: underline;
+        }
+
+        .agent-notes-hide-btn {
+          font-size: 0.72rem;
+          color: #64748b;
+          background: none;
+          border: none;
+          cursor: pointer;
+          font-weight: 600;
+        }
+
+        .agent-notes-hide-btn:hover {
+          color: #0f172a;
+          text-decoration: underline;
+        }
+
+        .show-on-mobile-row {
+          display: none;
+        }
+
+        .agent-mobile-note-badge {
+          display: flex;
+          align-items: baseline;
+          gap: 0.35rem;
+          background-color: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 6px;
+          padding: 0.25rem 0.5rem;
+          font-size: 0.72rem;
+        }
+
+        .agent-mobile-note-label {
+          font-weight: 700;
+          color: #64748b;
+          text-transform: uppercase;
+          font-size: 0.65rem;
+          flex-shrink: 0;
+        }
+
+        .agent-mobile-note-text {
+          color: #334155;
+          line-height: 1.35;
+          word-break: break-word;
+        }
+
+        /* Mobile specific styles (< 768px) */
+        @media (max-width: 767px) {
+          .agent-notes-mobile-toggle {
+            display: block;
+            margin-bottom: 0.25rem;
+          }
+
+          .agent-notes-content {
+            display: none;
+          }
+
+          .agent-notes-content.open-mobile {
+            display: block;
+          }
+
+          .hide-on-mobile {
+            display: none !important;
+          }
+
+          .show-on-mobile-row {
+            display: table-row !important;
+          }
+
+          .agent-table th,
+          .agent-table td {
+            padding: 0.45rem 0.45rem !important;
+          }
+
+          .agent-table td:first-child {
+            padding-left: 0.55rem !important;
+            font-size: 0.84rem;
+          }
+
+          .agent-table td:last-child {
+            padding-right: 0.55rem !important;
+          }
+
+          .agent-edit-btn {
+            padding: 0.28rem 0.45rem !important;
+            font-size: 0.72rem !important;
+          }
+
+          .agent-edit-btn-text {
+            display: inline;
+          }
         }
 
         /* Desktop Optimization (>= 1024px) */
