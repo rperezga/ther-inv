@@ -4,6 +4,7 @@ import { Lot } from "@/models/Lot";
 import { Invoice } from "@/models/Invoice";
 import { AgentVisit } from "@/models/AgentVisit";
 import { verifyUserHasRole } from "@/lib/auth";
+import { syncAgentInvoiceForLot } from "@/lib/invoiceSync";
 
 export async function GET(
   req: NextRequest,
@@ -131,13 +132,27 @@ export async function PATCH(
 
       const newStatusVal = action === "reopen" ? "in_progress" : agentStatus;
 
+      let linkedInvoice: any = null;
+      if (newStatusVal === "completed") {
+        // Guarantee invoice exists and is up to date
+        const syncRes = await syncAgentInvoiceForLot({
+          agentId: targetAgentId,
+          lotId: lot._id,
+          createdById: user.userId,
+        });
+        linkedInvoice = syncRes.invoice;
+      }
+
+      const invId = body.invoiceId || linkedInvoice?._id;
+      const invNum = body.invoiceNumber || linkedInvoice?.invoiceNumber;
+
       if (existingIndex >= 0) {
         lot.agentStatuses[existingIndex].status = newStatusVal;
         if (newStatusVal === "completed") {
           lot.agentStatuses[existingIndex].completedAt = new Date();
           lot.agentStatuses[existingIndex].completedBy = user.userId as any;
-          if (body.invoiceId) lot.agentStatuses[existingIndex].invoiceId = body.invoiceId;
-          if (body.invoiceNumber) lot.agentStatuses[existingIndex].invoiceNumber = body.invoiceNumber;
+          if (invId) lot.agentStatuses[existingIndex].invoiceId = invId;
+          if (invNum) lot.agentStatuses[existingIndex].invoiceNumber = invNum;
         } else if (newStatusVal === "in_progress") {
           // Re-opened: clear completedAt
           lot.agentStatuses[existingIndex].completedAt = undefined;
@@ -148,15 +163,15 @@ export async function PATCH(
           agentName: body.agentName || user.name,
           agentEmail: (body.agentEmail || user.email).toLowerCase(),
           status: newStatusVal,
-          invoiceId: body.invoiceId,
-          invoiceNumber: body.invoiceNumber,
+          invoiceId: invId,
+          invoiceNumber: invNum,
           completedAt: newStatusVal === "completed" ? new Date() : undefined,
           completedBy: newStatusVal === "completed" ? (user.userId as any) : undefined,
         });
       }
 
       await lot.save();
-      return NextResponse.json({ success: true, lot });
+      return NextResponse.json({ success: true, lot, invoice: linkedInvoice });
     }
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });

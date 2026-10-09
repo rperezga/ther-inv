@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/db";
 import { AgentVisit } from "@/models/AgentVisit";
 import { Lot } from "@/models/Lot";
 import { getUserFromRequest } from "@/lib/auth";
+import { syncAgentInvoiceForLot } from "@/lib/invoiceSync";
 
 export async function GET(req: NextRequest) {
   try {
@@ -127,6 +128,13 @@ export async function POST(req: NextRequest) {
         });
         await targetLot.save();
       }
+
+      // Automatically sync and generate/update draft invoice in real-time
+      await syncAgentInvoiceForLot({
+        agentId: auth.userId,
+        lotId: targetLot._id,
+        createdById: auth.userId,
+      });
     }
 
     return NextResponse.json(
@@ -210,6 +218,15 @@ export async function PUT(req: NextRequest) {
 
     await visit.save();
 
+    // Automatically sync updated draft invoice
+    if (visit.lotId) {
+      await syncAgentInvoiceForLot({
+        agentId: visit.agentId,
+        lotId: visit.lotId,
+        createdById: auth.userId,
+      });
+    }
+
     return NextResponse.json({ success: true, visit });
   } catch (error: any) {
     console.error("PUT /api/agent/visits error:", error);
@@ -274,7 +291,19 @@ export async function DELETE(req: NextRequest) {
       }
     }
 
+    const deletedLotId = visit.lotId;
+    const deletedAgentId = visit.agentId;
+
     await AgentVisit.findByIdAndDelete(id);
+
+    // Automatically sync draft invoice (update lines or delete if empty)
+    if (deletedLotId) {
+      await syncAgentInvoiceForLot({
+        agentId: deletedAgentId,
+        lotId: deletedLotId,
+        createdById: auth.userId,
+      });
+    }
 
     return NextResponse.json({ success: true, message: "Visit record deleted successfully" });
   } catch (error: any) {

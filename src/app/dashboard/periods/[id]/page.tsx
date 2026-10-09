@@ -180,7 +180,7 @@ export default function PeriodDetailPage() {
     setActionLoading(group.agentId);
 
     try {
-      // Step 1: Update agent status to completed in lot
+      // Step 1: Update agent status to completed in lot (which automatically syncs & generates the invoice)
       const res = await fetch(`/api/lots/${lot._id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -198,16 +198,14 @@ export default function PeriodDetailPage() {
         throw new Error(err.error || "Failed to update agent status");
       }
 
+      const data = await res.json();
       setAgentToComplete(null);
-      setActionSuccess(`Agent ${group.agentName} marked as completed! Redirecting to create invoice...`);
-      setTimeout(() => {
-        // Redirect to invoice creator pre-filled with this lot and worker
-        router.push(
-          `/dashboard/invoices/new?lotId=${lot._id}&workerEmail=${encodeURIComponent(group.agentEmail)}&agency=${encodeURIComponent(lot.agencyName || "")}`
-        );
-      }, 1000);
+      setActionSuccess(`Agent ${group.agentName} marked as completed and invoice generated successfully!`);
+      await fetchDetails();
+      setTimeout(() => setActionSuccess(""), 4000);
     } catch (err: any) {
       alert(err.message || "Failed to mark agent completed");
+    } finally {
       setActionLoading(null);
     }
   };
@@ -966,7 +964,7 @@ export default function PeriodDetailPage() {
 
             <div className="modal-body" style={{ padding: "1.2rem 1.25rem", display: "flex", flexDirection: "column", gap: "0.9rem" }}>
               <p style={{ fontSize: "0.86rem", color: "#475569", margin: 0, lineHeight: 1.5 }}>
-                Marking <strong>{agentToComplete.agentName}</strong> as completed will lock their treatment visits for this billing cycle and direct you to the invoice generator.
+                Marking <strong>{agentToComplete.agentName}</strong> as completed will finalize their submissions and link their auto-generated invoice for this billing cycle.
               </p>
 
               <div style={{ backgroundColor: "#f8fafc", padding: "0.75rem 1rem", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
